@@ -22,7 +22,9 @@ def test_jaccard_matches_upstream_token_semantics(spark):
 
 def test_jaccard_is_exposed_through_native_facade(spark):
     df = spark.sql("SELECT 'New York' AS left, 'new-york' AS right")
-    actual = Zingg(spark).jaccard(df, "left", "right").first().z_jaccard
+    # This test exercises the preserved formula prototype explicitly. The
+    # production facade defaults to the shared Scala Classic transport.
+    actual = Zingg(spark=spark, backend="expressions").jaccard(df, "left", "right").first().z_jaccard
     assert actual == 1.0
 
 
