@@ -11,6 +11,7 @@ target/
 .metals/
 .bloop/
 .tools/
+reference/upstream-zingg/
 .venv/
 venv/
 .coverage
