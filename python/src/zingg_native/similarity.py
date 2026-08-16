@@ -1,4 +1,9 @@
-"""Similarity expressions implemented exclusively with Spark SQL expressions."""
+"""Deprecated Python comparison prototypes.
+
+The formulas in this module are retained only for execution-feasibility and
+oracle comparison. Production transports must not import this module; use
+``backend=\"expressions\"`` explicitly to opt into the prototype backend.
+"""
 
 from pyspark.sql import Column, DataFrame
 from pyspark.sql import functions as F
