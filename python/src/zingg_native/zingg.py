@@ -4,18 +4,32 @@ from typing import Any
 
 from .backend import resolve_backend
 from .runtime import detect_runtime
+from .config import NativeConfig
 
 
 class Zingg:
     """Facade that keeps configuration and execution transport-independent."""
 
-    def __init__(self, arguments: Any = None, spark: Any = None, backend: str | None = None):
+    def __init__(self, arguments: Any = None, spark: Any = None, backend: str | None = None, config: NativeConfig | None = None):
         if spark is None:
             raise ValueError("spark is required; create a Spark 4 Classic or Connect session")
         self.arguments = arguments
         self.spark = spark
+        self.config = config or NativeConfig()
         self.runtime = detect_runtime(spark)
         self.backend = resolve_backend(spark, backend)
+
+    def status(self) -> dict[str, Any]:
+        """Return diagnostics without using them as a correctness switch."""
+        return {
+            "library_version": "0.2.0-SNAPSHOT",
+            "protocol_version": self.config.protocol_version,
+            "backend": getattr(self.backend, "name", type(self.backend).__name__),
+            "spark_version": self.runtime.spark_version,
+            "api_mode": self.runtime.api_mode,
+            "engine": self.runtime.engine,
+            "native_execution_observed": self.runtime.native_execution,
+        }
 
     def transform(self, df: Any, operation: str, **options: Any) -> Any:
         return self.backend.transform(df, operation, **options)

@@ -6,6 +6,8 @@ wheel or JAR is not sufficient and is intentionally rejected here.
 
 from typing import Any
 
+from ..errors import BackendUnavailableError
+
 
 class ConnectBackend:
     name = "connect-plugin"
@@ -18,11 +20,10 @@ class ConnectBackend:
         except Exception:
             pass
         if not supported:
-            raise RuntimeError(
+            raise BackendUnavailableError(
                 "The zingg-native Spark Connect server plugin is not installed. "
                 "Client-side Databricks Serverless wheel execution is not a substitute."
             )
 
     def transform(self, df: Any, operation: str, **options: Any) -> Any:
         raise NotImplementedError("ConnectBackend requires the installed server plugin protocol")
-

@@ -2,6 +2,8 @@
 
 from typing import Any
 
+from ..errors import BackendUnavailableError
+
 
 class ClassicBackend:
     name = "classic-py4j"
@@ -12,12 +14,12 @@ class ClassicBackend:
             gateway = spark._jvm.ai.zingg.native.gateway.ClassicGateway()
             self._gateway = gateway
         except Exception as exc:
-            raise RuntimeError(
+            raise BackendUnavailableError(
                 "The shared zingg-native Scala core is not loaded in this Spark JVM; "
                 "install the core JAR before using backend='classic'."
             ) from exc
         if gateway.protocolVersion() != "1":
-            raise RuntimeError(f"Unsupported zingg-native protocol: {gateway.protocolVersion()}")
+            raise BackendUnavailableError(f"Unsupported zingg-native protocol: {gateway.protocolVersion()}")
 
     def transform(self, df: Any, operation: str, **options: Any) -> Any:
         jdf = self._gateway.transform(
