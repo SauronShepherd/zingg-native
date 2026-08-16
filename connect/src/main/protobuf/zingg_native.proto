@@ -6,5 +6,6 @@ package ai.zingg.native.connect.v1;
 message ZinggNativeExpression {
   uint32 protocol_version = 1;
   string operation = 2;
-  bytes options = 3;
+  repeated spark.connect.Expression arguments = 3;
+  bytes options = 4;
 }
