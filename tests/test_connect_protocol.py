@@ -9,7 +9,7 @@ class _Argument:
         from pyspark.sql.connect import proto
 
         return proto.Expression(expression_string=proto.Expression.ExpressionString(
-            expression_string=self.value.decode("utf-8")
+            expression=self.value.decode("utf-8")
         ))
 
 
