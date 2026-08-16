@@ -13,4 +13,9 @@ class CoreRegistryTest {
   @Test def rejectsUnknownOperations(): Unit = {
     assertThrows(classOf[IllegalArgumentException], () => SimilarityRegistry.resolve("NOPE", NativeMode.SAFE))
   }
+
+  @Test def buildsCatalystJaccardExpression(): Unit = {
+    val expression = CatalystSimilarity("JACCARD_SIMILARITY", org.apache.spark.sql.catalyst.expressions.Literal("a"), org.apache.spark.sql.catalyst.expressions.Literal("b"))
+    assertTrue(expression.isInstanceOf[org.apache.spark.sql.catalyst.expressions.If])
+  }
 }

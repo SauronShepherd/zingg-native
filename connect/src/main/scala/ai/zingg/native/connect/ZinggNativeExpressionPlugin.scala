@@ -6,6 +6,7 @@ import org.apache.spark.sql.connect.planner.SparkConnectPlanner
 import org.apache.spark.sql.connect.plugin.ExpressionPlugin
 import org.apache.spark.connect.proto.{Expression => ConnectExpression}
 import org.sparkproject.connect.protobuf.CodedInputStream
+import ai.zingg.native.CatalystSimilarity
 import java.util.Optional
 
 /**
@@ -40,6 +41,8 @@ final class ZinggNativeExpressionPlugin extends ExpressionPlugin {
         val one = Literal(1.0)
         val zero = Literal(0.0)
         Optional.of[Expression](If(Or(IsNull(left), IsNull(right)), one, If(EqualTo(left, right), one, zero)))
+      case "JACCARD_SIMILARITY" =>
+        Optional.of[Expression](CatalystSimilarity(operation, left, right))
       case other => throw new IllegalArgumentException(s"Unknown zingg-native Connect operation: $other")
     }
   }

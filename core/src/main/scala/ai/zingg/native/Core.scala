@@ -1,6 +1,8 @@
 package ai.zingg.native
 
 import org.apache.spark.sql.{Column, DataFrame, SparkSession}
+import org.apache.spark.sql.catalyst.expressions.{ArrayIntersect, ArrayUnion, Cast, EqualTo, Expression, If, IsNull, Length, Literal, Lower, RegExpExtractAll, Size, Divide, Or}
+import org.apache.spark.sql.types.{DoubleType, StringType}
 import org.apache.spark.sql.functions.{array, array_intersect, array_union, col, concat, element_at, floor, greatest, least, length, lit, lower, regexp_extract_all, sequence, size, struct, transform, when, zip_with, aggregate}
 
 sealed trait NativeMode
@@ -74,6 +76,23 @@ object SimilarityRegistry {
   private val all = Map[String, NativeSimilarity](ExactSimilarity.id -> ExactSimilarity, JaccardSimilarity.id -> JaccardSimilarity, JaroSimilarity.id -> JaroSimilarity)
   def metadata: Seq[OperationMetadata] = Seq(OperationMetadata(ExactSimilarity.id, "certified", "standard-expression"), OperationMetadata(JaccardSimilarity.id, "certified", "standard-expression"), OperationMetadata(JaroSimilarity.id, "certified", "standard-expression-fallback"))
   def resolve(id: String, mode: NativeMode): NativeSimilarity = all.getOrElse(id, throw new IllegalArgumentException(s"Unknown or unavailable operation: $id"))
+}
+
+/** Catalyst-only entry point used by Spark Connect plugins. */
+object CatalystSimilarity {
+  def apply(operationId: String, left: Expression, right: Expression): Expression = operationId match {
+    case "EXACT_SIMILARITY" =>
+      val one = Literal(1.0)
+      If(Or(IsNull(left), IsNull(right)), one, If(EqualTo(left, right), one, Literal(0.0)))
+    case "JACCARD_SIMILARITY" =>
+      val l = RegExpExtractAll(Lower(Cast(left, StringType)), Literal("[a-z0-9]+"), Literal(0))
+      val r = RegExpExtractAll(Lower(Cast(right, StringType)), Literal("[a-z0-9]+"), Literal(0))
+      val empty = Or(IsNull(left), Or(IsNull(right), Or(EqualTo(left, Literal("")), EqualTo(right, Literal("")))))
+      val intersection = Size(ArrayIntersect(l, r))
+      val union = Size(ArrayUnion(l, r))
+      If(empty, Literal(1.0), Divide(Cast(intersection, DoubleType), Cast(union, DoubleType)))
+    case other => throw new IllegalArgumentException(s"Catalyst Connect operation not implemented: $other")
+  }
 }
 
 object Core {

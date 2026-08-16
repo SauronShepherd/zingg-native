@@ -59,7 +59,7 @@ class ConnectBackend:
             )
 
     def transform(self, df: Any, operation: str, **options: Any) -> Any:
-        if operation not in {"EXACT_SIMILARITY"}:
+        if operation not in {"EXACT_SIMILARITY", "JACCARD_SIMILARITY"}:
             raise NotImplementedError(
                 f"Connect server plugin does not certify operation {operation}"
             )
