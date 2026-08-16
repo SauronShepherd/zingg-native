@@ -1,10 +1,26 @@
 """Small, explicit facade for Spark 4 native Zingg operations."""
 
-from typing import Any
+from functools import wraps
+from typing import Any, Callable
 
 from .backend import resolve_backend
 from .runtime import detect_runtime
 from .config import NativeConfig
+from .errors import UnsupportedOperationError
+
+
+def _prototype_phase(method: Callable[..., Any]) -> Callable[..., Any]:
+    """Keep unverified phase orchestration out of the production transports."""
+    @wraps(method)
+    def guarded(self: "Zingg", *args: Any, **kwargs: Any) -> Any:
+        if type(self.backend).__name__ != "PrototypeExpressionBackend":
+            raise UnsupportedOperationError(
+                f"{method.__name__} is not certified in the shared-core SAFE API; "
+                "use an upstream-parity implementation or explicitly opt into "
+                "backend='expressions' for prototype comparison."
+            )
+        return method(self, *args, **kwargs)
+    return guarded
 
 
 class Zingg:
@@ -45,6 +61,7 @@ class Zingg:
         """Add the native equivalent of Zingg 0.7's Jaro-backed score."""
         return self.transform(df, "JARO_SIMILARITY", left=left, right=right, output=output)
 
+    @_prototype_phase
     def exact_match(self, df: Any, keys: list[str], cluster_column: str = "z_cluster") -> Any:
         """Deterministically cluster records sharing all supplied exact keys.
 
@@ -64,6 +81,7 @@ class Zingg:
             F.dense_rank().over(Window.orderBy(*[F.col(k).asc_nulls_first() for k in keys])).cast("long"),
         )
 
+    @_prototype_phase
     def find_training_data(
         self,
         df: Any,
@@ -120,6 +138,7 @@ class Zingg:
             F.when(left == right, F.lit(1.0)).otherwise(F.lit(0.0))
         )
 
+    @_prototype_phase
     def label(self, pairs: Any, match_threshold: float = 1.0, output_path: str | None = None) -> Any:
         """Apply deterministic non-interactive labels to candidate pairs."""
         from pyspark.sql import functions as F
@@ -132,6 +151,7 @@ class Zingg:
             labeled.write.mode("overwrite").parquet(output_path)
         return labeled
 
+    @_prototype_phase
     def score_features(self, df: Any, output: str = "z_score") -> Any:
         """Score a pre-built candidate relation with its native feature column.
 
@@ -149,6 +169,7 @@ class Zingg:
             raise ValueError("candidate relation must contain z_exact or z_jaro")
         return df.withColumn(output, sum(F.col(name) for name in available) / F.lit(float(len(available))))
 
+    @_prototype_phase
     def update_label(self, pairs: Any, labels: Any, output_path: str | None = None) -> Any:
         """Merge explicit ``(z_cluster, z_isMatch)`` labels into pairs."""
         from pyspark.sql import functions as F
@@ -162,6 +183,7 @@ class Zingg:
             updated.write.mode("overwrite").parquet(output_path)
         return updated
 
+    @_prototype_phase
     def train(self, labeled: Any, keys: list[str], model_path: str | None = None, match_threshold: float = 1.0, feature_functions: dict[str, str] | None = None) -> dict[str, Any]:
         """Train the exact model contract from labeled native pairs."""
         from pyspark.sql import functions as F
@@ -180,6 +202,7 @@ class Zingg:
                 json.dump(model, handle, sort_keys=True)
         return model
 
+    @_prototype_phase
     def match_pairs(self, pairs: Any, model: dict[str, Any]) -> Any:
         """Return native-scored candidate pairs accepted by a threshold model."""
         from pyspark.sql import functions as F
@@ -187,10 +210,12 @@ class Zingg:
             raise ValueError("match_pairs requires a NATIVE_FEATURE_THRESHOLD model")
         return pairs.where(F.col("z_score") >= F.lit(float(model["threshold"])))
 
+    @_prototype_phase
     def link_pairs(self, pairs: Any, model: dict[str, Any]) -> Any:
         """Link is the cross-source form of native threshold pair matching."""
         return self.match_pairs(pairs, model)
 
+    @_prototype_phase
     def cluster_pairs(self, pairs: Any, id_column: str = "record_id", max_iterations: int = 32) -> Any:
         """Build deterministic connected-component clusters from accepted pairs."""
         from pyspark.sql import functions as F
@@ -218,6 +243,7 @@ class Zingg:
             vertices = updated
         return vertices
 
+    @_prototype_phase
     def fuzzy_match(self, df: Any, model: dict[str, Any], id_column: str = "record_id", right_df: Any = None) -> Any:
         """Generate, score, and threshold record pairs from a trained feature model."""
         from pyspark.sql import functions as F
@@ -252,12 +278,14 @@ class Zingg:
             ))
         return self.score_features(pairs)
 
+    @_prototype_phase
     def link_sources(self, left_df: Any, right_df: Any, model: dict[str, Any], id_column: str = "record_id") -> Any:
         """Score and threshold pairs across two distinct source DataFrames."""
         from pyspark.sql import functions as F
         pairs = self.fuzzy_match(left_df, model, id_column=id_column, right_df=right_df)
         return pairs.where(F.col("z_score") >= F.lit(float(model["threshold"])))
 
+    @_prototype_phase
     def match(self, df: Any, model: dict[str, Any], cluster_column: str = "z_cluster") -> Any:
         """Apply a trained exact-key model."""
         from pyspark.sql import functions as F
@@ -267,15 +295,18 @@ class Zingg:
             raise ValueError("unsupported native model algorithm")
         return self.exact_match(df, list(model["keys"]), cluster_column)
 
+    @_prototype_phase
     def link(self, df: Any, model: dict[str, Any], cluster_column: str = "z_cluster") -> Any:
         """Link is the cross-source equivalent of exact-key match."""
         return self.match(df, model, cluster_column)
 
+    @_prototype_phase
     def generate_docs(self, model: dict[str, Any]) -> dict[str, Any]:
         """Return a serializable model document for the native workflow."""
         return {"operation": "ZINGG_NATIVE_EXACT_WORKFLOW", "model": model,
                 "native_plan": "join -> project -> dense_rank / CASE expressions"}
 
+    @_prototype_phase
     def execute(self, phase: str | None = None, **kwargs: Any) -> Any:
         """Execute one native exact-workflow phase.
 
