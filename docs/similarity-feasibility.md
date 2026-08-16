@@ -37,3 +37,9 @@ so no approximate replacement is claimed.
 | `CRATE` | `TRACE` | 0.8666666666666667 | 0.48 |
 | `abc` | `xyz` | 0.0 | 0.0 |
 | `prefix` | `prefixation` | 0.8484848484848485 | 1.0 |
+# Shared-core migration status
+
+Exact, Jaccard, and Jaro are now implemented in the Scala 2.13 core and
+exposed through the Classic gateway. Jaro is semantically certified but uses
+Spark higher-order expressions and therefore must be reported as Photon
+fallback unless a target runtime demonstrates native execution.
