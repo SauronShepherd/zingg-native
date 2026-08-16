@@ -37,7 +37,7 @@ object Core {
   val libraryVersion = "0.2.0-SNAPSHOT"
   val protocolVersion = "1"
   def transform(df: DataFrame, operationId: String, left: String, right: String, output: String): DataFrame = {
-    val ctx = NativeContext(df.sparkSession, NativeMode.SAFE, RuntimeDescriptor(df.sparkSession.version, util.Properties.versionNumber))
+    val ctx = NativeContext(df.sparkSession, NativeMode.SAFE, RuntimeDescriptor(df.sparkSession.version, "2.13"))
     df.withColumn(output, SimilarityRegistry.resolve(operationId, NativeMode.SAFE)(col(left), col(right), ctx))
   }
 }

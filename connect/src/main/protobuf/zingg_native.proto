@@ -1,0 +1,10 @@
+syntax = "proto3";
+package ai.zingg.native.connect.v1;
+
+// Versioned transport envelope. Spark Connect child expressions remain owned
+// by Spark's surrounding plan; this payload carries only operation metadata.
+message ZinggNativeExpression {
+  uint32 protocol_version = 1;
+  string operation = 2;
+  bytes options = 3;
+}
