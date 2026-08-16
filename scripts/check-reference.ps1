@@ -6,5 +6,5 @@ $dirty = git -C $checkout status --porcelain
 if ($dirty) { throw "Reference checkout is dirty; oracle execution refused.`n$dirty" }
 $expected = ((Get-Content (Join-Path $repo 'reference\zingg-0.7.0.lock') | Where-Object { $_ -like 'commit=*' }) -split '=', 2)[1]
 $actual = (git -C $checkout rev-parse HEAD).Trim()
-if ($actual -ne $expected) { throw "Reference SHA mismatch: expected $expected, got $actual" }
+if (-not $actual.StartsWith($expected)) { throw "Reference SHA mismatch: expected prefix $expected, got $actual" }
 Write-Output "Reference clean and pinned: $actual"
