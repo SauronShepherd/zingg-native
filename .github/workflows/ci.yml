@@ -1,0 +1,35 @@
+name: zingg-native-ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.12']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install test environment
+        run: python -m pip install --upgrade pip && python -m pip install '.[dev]' 'pyspark==4.1.0'
+      - name: Compile Python
+        run: python -m compileall -q python/src
+      - name: Test Python
+        run: python -m pytest -q
+
+  jvm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Test shared Scala core and Connect plugin
+        run: mvn -B test
