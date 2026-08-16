@@ -35,10 +35,11 @@ final class ZinggNativeExpressionPlugin extends ExpressionPlugin {
     if (args.size != 2) throw new IllegalArgumentException(s"$operation requires exactly two child expressions")
     val left = planner.transformExpression(args(0))
     val right = planner.transformExpression(args(1))
-    val one = Literal(1.0)
-    val zero = Literal(0.0)
     operation match {
-      case "EXACT_SIMILARITY" => Optional.of[Expression](If(Or(IsNull(left), IsNull(right)), one, If(EqualTo(left, right), one, zero)))
+      case "EXACT_SIMILARITY" =>
+        val one = Literal(1.0)
+        val zero = Literal(0.0)
+        Optional.of[Expression](If(Or(IsNull(left), IsNull(right)), one, If(EqualTo(left, right), one, zero)))
       case other => throw new IllegalArgumentException(s"Unknown zingg-native Connect operation: $other")
     }
   }
