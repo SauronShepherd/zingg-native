@@ -10,10 +10,10 @@ target/
 .scala-build/
 .metals/
 .bloop/
+.tools/
 .venv/
 venv/
 .coverage
 htmlcov/
 *.log
 .DS_Store
-
