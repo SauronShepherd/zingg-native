@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "zingg-native"
+version = "0.1.5"
+description = "Spark 4 native-friendly facade for selected Zingg 0.7 semantics"
+requires-python = ">=3.10"
+# PySpark is supplied by the target Spark 4 runtime (including Databricks
+# Serverless); installing it into a remote task is neither necessary nor safe.
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8",
+  "pytest-cov>=5",
+  "hypothesis>=6",
+  "ruff>=0.6",
+  "mypy>=1.11",
+  "build>=1.2",
+]
+
+[tool.setuptools.packages.find]
+where = ["python/src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
