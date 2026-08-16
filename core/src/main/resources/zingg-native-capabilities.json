@@ -1,0 +1,14 @@
+{
+  "libraryVersion": "0.2.0-SNAPSHOT",
+  "protocolVersion": "1",
+  "sparkLine": "4.1",
+  "scalaBinaryVersion": "2.13",
+  "operations": {
+    "EXACT_SIMILARITY": {"semantic": "certified", "nativeExecution": "standard-expression"},
+    "JACCARD_SIMILARITY": {"semantic": "certified", "nativeExecution": "standard-expression"},
+    "JARO_SIMILARITY": {"semantic": "certified", "nativeExecution": "fallback-unless-verified"}
+  },
+  "phaseParity": "not-certified",
+  "databricksDedicatedPhoton": "not-verified",
+  "databricksServerless": "not-supported-until-server-plugin-proven"
+}

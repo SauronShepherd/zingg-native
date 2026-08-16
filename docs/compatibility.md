@@ -1,19 +1,15 @@
 # Compatibility
 
-| Runtime | Classic | Connect | Native engine |
-|---|---|---|---|
-| Apache Spark 4.0/4.1 | expression path | expression path | Spark-dependent |
-| Databricks Photon | validated for Exact and Jaccard E2E | Serverless environment 4, Spark 4.1.0, Spark Connect; both expression plans report PhotonRange/PhotonProject and “fully supported by Photon” | 2026-08-16 |
-| Fabric Runtime 2 / Gluten+Velox | deferred | deferred | deferred |
+**Status: architecture remediation in progress — not release ready.**
 
-This validates Photon for the native Exact and Jaccard paths and the complete
-implemented exact phase flow. Jaro is semantically validated as
-Spark SQL but currently falls back from Photon because its required nested
-`aggregate` expression is unsupported by the observed Serverless Photon
-planner. It does not certify Affine Gap or every non-exact production workload.
-# Current transport boundary
+| Runtime / transport | Exact | Jaccard | Jaro | Evidence |
+|---|---:|---:|---:|---|
+| Local Spark 4.0 Classic + Scala core JAR | PASS | PASS | PASS | Real Py4J execution; Jaro matches SecondString vectors |
+| Databricks Dedicated + Photon | NOT VERIFIED | NOT VERIFIED | NOT VERIFIED | No worker environment is available in the `sda` workspace |
+| Databricks Serverless / managed Connect | NOT SUPPORTED | NOT SUPPORTED | NOT SUPPORTED | Custom server plugin installation is not proven |
+| Self-managed Spark Connect 4.1 | PROTOCOL BUILD ONLY | OPEN | OPEN | Connect JAR and Exact plugin compile; server E2E pending |
+| Fabric Runtime 2 / Gluten+Velox | DEFERRED | DEFERRED | DEFERRED | Outside current scope |
 
-The Classic/Py4J path now routes Exact, Jaccard, and Jaro through the shared
-Scala core. The Spark Connect plugin currently routes Exact through the
-versioned expression payload; Jaccard and Jaro remain pending Connect parity
-verification. No Databricks Serverless support claim is made.
+The previous Serverless wheel-only runs are retained as prototype expression
+feasibility evidence. They do not validate this repository's shared Scala core
+or Connect server plugin and are not support evidence.

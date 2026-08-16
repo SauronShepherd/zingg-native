@@ -1,18 +1,22 @@
 # Upstream-to-native phase map
 
+**Phase parity is not yet implemented in the shared Scala core.** The entries
+below are a contract inventory, not release claims. The former Python phase
+shortcuts remain available only through the explicitly named prototype backend.
+
 The upstream Zingg 0.7 phase executors are the baseline, not the native
 implementation. The native adapter must preserve their phase contracts while
 replacing their Spark-sensitive internals.
 
 | Phase | Upstream executor | Native boundary | Status |
 |---|---|---|---|
-| findTrainingData | `SparkTrainingDataFinder` | candidate-pair relation and persistence | native exact implementation; Databricks E2E PASS |
-| label | `SparkLabeller` | read/write pair relation; interactive UI excluded from non-interactive run | native exact implementation; Databricks E2E PASS |
-| updateLabel | `SparkLabelUpdater` | deterministic label merge/update | native exact implementation; Databricks E2E PASS |
-| train | `SparkTrainer` | feature construction and model persistence | native exact model contract; Databricks E2E PASS |
-| match | `SparkMatcher` | scoring, thresholding, clustering, output | native exact implementation; Databricks E2E PASS |
-| link | `SparkLinker` | cross-source candidate generation and scoring | native exact alias; Databricks E2E PASS |
-| generateDocs | `SparkDocumenter` | metadata/document output | native exact implementation; Databricks E2E PASS |
+| findTrainingData | `SparkTrainingDataFinder` | candidate-pair relation and persistence | contract inventory; shared-core implementation open |
+| label | `SparkLabeller` | read/write pair relation; interactive UI excluded from non-interactive run | contract inventory; shared-core implementation open |
+| updateLabel | `SparkLabelUpdater` | deterministic label merge/update | contract inventory; shared-core implementation open |
+| train | `SparkTrainer` | feature construction and model persistence | contract inventory; shared-core implementation open |
+| match | `SparkMatcher` | scoring, thresholding, clustering, output | contract inventory; shared-core implementation open |
+| link | `SparkLinker` | cross-source candidate generation and scoring | contract inventory; shared-core implementation open |
+| generateDocs | `SparkDocumenter` | metadata/document output | contract inventory; shared-core implementation open |
 
 The upstream checkout at `../zingg` is read-only. Each phase will be run there
 as a semantic and plan oracle, then implemented behind `zingg_native` with

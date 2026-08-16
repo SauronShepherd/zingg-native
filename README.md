@@ -9,9 +9,9 @@ release architecture.
 
 ## Current slice
 
-The first native operation is `EXACT_SIMILARITY`, including Zingg's unusual
-null behavior. It works through Spark Classic and Spark Connect because both
-consume the same declarative expression plan.
+The certified shared-core similarity slice is Exact, Jaccard, and Jaro through
+Classic/Py4J. Connect currently has an Exact protocol/plugin build path only;
+its server execution is not yet claimed.
 
 ```python
 from zingg_native import Zingg

@@ -1,43 +1,26 @@
 # Release readiness
 
-Status: **Databricks scope ready for the supported native slice; Fabric deferred**.
+**ARCHITECTURE REMEDIATION IN PROGRESS — NOT RELEASE READY**
 
-## Verified gates
+## Completed implementation gates
 
-| Gate | Result | Evidence |
-|---|---|---|
-| Spark 4.1 Serverless environment 4 | PASS | Databricks run `1022375059248846` |
-| Spark Connect facade | PASS | Same run reports `api_mode=connect` |
-| Exact semantics | PASS | Null/equal/non-equal cases and Photon plan |
-| Jaccard semantics | PASS | Token parity cases and Photon plan |
-| Jaro semantics | PASS | SecondString oracle vectors, including null/empty |
-| Exact phases | PASS | `findTrainingData`, `label`, `updateLabel`, `train`, `match`, `link`, `generateDocs` |
-| Fuzzy feature/training/match/link/cluster path | PASS | Databricks run `71045321447523`: 3 candidate pairs; Exact + Jaro features; 1 positive/2 negative; direct/pre-scored match and link each return 1 pair; accepted edge yields 1 cluster containing 2 records; cross-source link returns 2 pairs |
-| Photon Exact/Jaccard execution | PASS | `PhotonRange`/`PhotonProject`; Photon says fully supported |
-| Photon fuzzy execution | FALLBACK | Run `734731292536358` confirms semantics, but Jaro's nested `aggregate` makes the fuzzy plan fall back |
+- Shared Scala 2.13/Spark 4.1 Maven build exists.
+- Classic/Py4J gateway exists and has real local execution evidence.
+- Exact, Jaccard, and Jaro are implemented in the shared core.
+- Jaro matches pinned Zingg 0.7 / SecondString oracle vectors locally.
+- Connect Exact payload serialization and plugin compilation are covered.
+- Unverified Python phase shortcuts are prototype-only.
+- Python and Scala unit suites pass locally.
 
-## Open gates
+## Open mandatory gates
 
-| Gate | Result | Reason |
-|---|---|---|
-| Jaro Photon execution | FALLBACK | Photon rejects the required nested `aggregate` expression |
-| Affine Gap native implementation | OPEN | Upstream Monge-Elkan/AffineGap uses dynamic programming and approximate character scoring; no faithful Photon-safe expression is implemented |
-| Fabric Runtime 2 / Gluten+Velox | DEFERRED | Explicitly outside the current validation scope |
-| Full upstream phase parity | LIMITED | Native fuzzy feature/threshold path is tested, but it is not a replacement for every Zingg 0.7 trainer/model implementation |
+- Self-managed Spark Connect server E2E with the installed plugin.
+- Connect parity for Jaccard and Jaro.
+- Databricks Dedicated + Photon compute with the core JAR installed.
+- Photon execution evidence through Classic/Py4J, not a wheel-only Serverless run.
+- Full upstream Zingg 0.7 phase/model parity.
+- CI execution and artifact-install integration tests.
 
-The supported Databricks claim is limited to the tested native Exact and
-Jaccard workflow on Serverless environment 4 with Photon. Jaro is
-available as semantically validated Spark SQL with an explicit Photon fallback.
-
-Fabric validation source is prepared in `examples/fabric_runtime2_e2e.py` but
-is not part of the current release gate.
-# ARCHITECTURE REMEDIATION IN PROGRESS — NOT RELEASE READY
-
-This repository is not yet a releasable Zingg Native implementation. The
-current Python-only expression prototype is retained for comparison while the
-shared Scala core, Classic/Py4J transport, Spark Connect transport, semantic
-oracle, and reproducible integration gates are rebuilt.
-
-No Databricks Serverless or Connect support claim is valid until a custom
-server-side extension is actually installable and tested. Previous Serverless
-wheel runs are prototype evidence only.
+The `sda` workspace currently has no associated worker environments, so a
+Dedicated Photon cluster cannot be created there. Databricks Serverless is not
+claimed until managed server-plugin installation is proven.

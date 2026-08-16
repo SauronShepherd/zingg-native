@@ -7,6 +7,7 @@ import org.apache.spark.sql.DataFrame
 class ClassicGateway {
   def libraryVersion: String = Core.libraryVersion
   def protocolVersion: String = Core.protocolVersion
+  def capabilityMetadata: String = "shared-core;EXACT_SIMILARITY;JACCARD_SIMILARITY;JARO_SIMILARITY;phase-parity-not-certified"
   def sparkVersion(df: DataFrame): String = df.sparkSession.version
   def supportedOperations: Array[String] = Array("EXACT_SIMILARITY", "JACCARD_SIMILARITY", "JARO_SIMILARITY")
   def transform(df: DataFrame, operationId: String, left: String, right: String, output: String): DataFrame = Core.transform(df, operationId, left, right, output)
