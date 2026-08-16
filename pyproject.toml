@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "zingg-native"
-version = "0.1.5"
+version = "0.2.0.dev0"
 description = "Spark 4 native-friendly facade for selected Zingg 0.7 semantics"
 requires-python = ">=3.10"
 # PySpark is supplied by the target Spark 4 runtime (including Databricks
