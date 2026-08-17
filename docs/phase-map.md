@@ -1,6 +1,8 @@
 # Upstream-to-native phase map
 
-**Phase parity is not yet implemented in the shared Scala core.** The entries
+**The complete phase contract is regression-tested on the explicit expression
+adapter; upstream-parity and Databricks runtime certification remain separate
+release gates.** The entries
 below are a contract inventory, not release claims. The former Python phase
 shortcuts remain available only through the explicitly named prototype backend.
 
