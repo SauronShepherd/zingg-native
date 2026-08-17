@@ -2,7 +2,7 @@
 
 This runbook reproduces the verified shared-core E2E slice using the `sda`
 Databricks CLI profile. It exercises Exact, Jaccard, and Jaro similarities,
-`findTrainingData`, `label`, `updateLabel`, and persistence through a Unity
+`preprocess`, `findTrainingData`, `buildTrainingPairs`, `label`, `updateLabel`, and persistence through a Unity
 Catalog Volume.
 
 It does not claim managed Spark Connect plugin activation. That feasibility

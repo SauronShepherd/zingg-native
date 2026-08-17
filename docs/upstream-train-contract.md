@@ -26,10 +26,12 @@ are also exposed by the capability manifest; these contracts are validated but
 do not persist or fit a model. The Classic gateway exposes the same schema
 versions for Py4J compatibility checks.
 
-`Core.inspectTrainingEvidence` and the Classic gateway now provide the first
-shared-core training prerequisite: deterministic counts of positive and
-negative `z_isMatch` rows, with `TrainingEvidence.isSufficient` enforcing the
-upstream five/five minimum. No model fitting is performed yet.
+`Core.buildTrainingPairs` now implements the declarative self-join prerequisite
+for labeled records, and `Core.inspectTrainingEvidence` plus the Classic
+gateway provide deterministic counts of positive and negative `z_isMatch`
+rows. `TrainingEvidence.isSufficient` enforces the upstream five/five minimum.
+This is still a prerequisite, not the complete trainer; no blocking-tree
+learning or production model fitting is performed yet.
 
 `ExperimentalModelTrainer.fit` now provides a Spark ML logistic-regression fit
 over caller-supplied feature columns and persists the model to a caller-

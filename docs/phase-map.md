@@ -11,6 +11,8 @@ replacing their Spark-sensitive internals.
 | Phase | Upstream executor | Native boundary | Status |
 |---|---|---|---|
 | findTrainingData | `SparkTrainingDataFinder` | candidate-pair relation and persistence | Classic shared-core exact-key subset verified locally; upstream blocking-tree/sampling/model path and Connect remain open |
+| preprocess | `TrainingDataFinder` / `IPreprocessors` | declarative field normalization | TRIM and CASE_NORMALIZE verified through Classic, self-managed Connect, and Serverless; other upstream preprocessors remain open |
+| buildTrainingPairs | `TrainingDataFinder` self-join | labeled record self-join into pair relation | Shared Scala primitive verified on Serverless with 5 positive and 5 negative pairs; full trainer integration remains open |
 | label | `SparkLabeller` | read/write pair relation; interactive UI excluded from non-interactive run | Classic shared-core deterministic threshold adaptation verified locally; upstream parity and Connect open |
 | updateLabel | `SparkLabelUpdater` | deterministic label merge/update | Classic shared-core implementation verified locally; upstream parity and Connect open |
 | train | `SparkTrainer` | feature construction and model persistence | contract inventory in `docs/upstream-train-contract.md`; shared-core implementation open |
