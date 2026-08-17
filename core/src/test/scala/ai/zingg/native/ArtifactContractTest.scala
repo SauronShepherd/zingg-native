@@ -37,6 +37,12 @@ class ArtifactContractTest {
     assertThrows(classOf[IllegalArgumentException], () => ArtifactSchema.validatePath("dbfs:/out/\nnext"))
     assert(ArtifactSchema.validatePath("/Volumes/catalog/schema/volume/run") != null)
     assert(ArtifactSchema.validatePath("s3://bucket/prefix") == "s3://bucket/prefix")
+    assertThrows(classOf[IllegalArgumentException], () =>
+      BlockingTreeArtifact(1, "dbfs:/tree/../escape", "sha256:tree")
+    )
+    assertThrows(classOf[IllegalArgumentException], () =>
+      ModelArtifact(1, "UPSTREAM_MODEL", "dbfs:/model/\u0000bad", "sha256:model", Seq("name"), 5, 5, tree)
+    )
   }
 
   @Test

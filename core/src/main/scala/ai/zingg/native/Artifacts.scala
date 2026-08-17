@@ -13,7 +13,7 @@ final case class BlockingTreeArtifact(
     checksum: String
 ) {
   require(schemaVersion == 1, "unsupported blocking-tree artifact schema")
-  require(artifactPath.nonEmpty, "blocking-tree artifact path must be non-empty")
+  require(ArtifactSchema.validatePath(artifactPath).nonEmpty, "blocking-tree artifact path must be non-empty")
   require(checksum.nonEmpty, "blocking-tree artifact checksum must be non-empty")
 }
 
@@ -29,7 +29,7 @@ final case class ModelArtifact(
 ) {
   require(schemaVersion == 1, "unsupported model artifact schema")
   require(modelType.nonEmpty, "model type must be non-empty")
-  require(artifactPath.nonEmpty, "model artifact path must be non-empty")
+  require(ArtifactSchema.validatePath(artifactPath).nonEmpty, "model artifact path must be non-empty")
   require(checksum.nonEmpty, "model artifact checksum must be non-empty")
   require(featureColumns.nonEmpty, "model artifact must declare feature columns")
   require(positivePairs >= 5, "training requires at least five positive pairs")

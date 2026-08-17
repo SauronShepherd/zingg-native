@@ -21,7 +21,7 @@ object ExperimentalModelTrainer {
       blockingTree: BlockingTreeArtifact
   ): ModelArtifact = {
     require(featureColumns.nonEmpty, "feature columns must be non-empty")
-    require(modelPath != null && modelPath.nonEmpty, "model path must be non-empty")
+    ArtifactSchema.validatePath(modelPath)
     require(modelChecksum != null && modelChecksum.nonEmpty, "model checksum must be non-empty")
     val evidence = Core.inspectTrainingEvidence(labeled)
     require(evidence.isSufficient, s"insufficient training evidence: $evidence")
