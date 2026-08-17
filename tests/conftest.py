@@ -1,6 +1,13 @@
 import pytest
 import sys
 import os
+import socketserver
+
+# Spark 4.1's Windows client imports this Unix-only symbol during startup.
+# The tests use a local TCP Spark session, so the standard TCP implementation
+# is the appropriate compatibility fallback.
+if not hasattr(socketserver, "UnixStreamServer"):
+    socketserver.UnixStreamServer = socketserver.TCPServer  # type: ignore[attr-defined]
 
 SparkSession = pytest.importorskip("pyspark.sql").SparkSession
 
