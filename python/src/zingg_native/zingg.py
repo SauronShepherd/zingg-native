@@ -1,12 +1,13 @@
 """Small, explicit facade for Spark 4 native Zingg operations."""
 
+from collections.abc import Callable
 from functools import wraps
-from typing import Any, Callable
+from typing import Any
 
 from .backend import resolve_backend
-from .runtime import detect_runtime
 from .config import NativeConfig
 from .errors import UnsupportedOperationError
+from .runtime import detect_runtime
 
 
 def _prototype_phase(method: Callable[..., Any]) -> Callable[..., Any]:
@@ -104,13 +105,14 @@ class Zingg:
                     "Classic shared-core find_training_data implements shared-key candidates only; "
                     "include_all_pairs is not supported."
                 )
-            return self.backend.find_training_data(df, keys, id_column, output_path)
+            return self.backend.find_training_data(df, keys, id_column, output_path)  # type: ignore[attr-defined]
         if type(self.backend).__name__ != "PrototypeExpressionBackend":
             raise UnsupportedOperationError(
                 "find_training_data is not implemented by this transport; "
                 "the shared-core phase currently supports Classic only."
             )
         from functools import reduce
+
         from pyspark.sql import functions as F
         if not keys:
             raise ValueError("keys must contain at least one column")
@@ -155,7 +157,7 @@ class Zingg:
     def label(self, pairs: Any, match_threshold: float = 1.0, output_path: str | None = None) -> Any:
         """Apply deterministic non-interactive labels to candidate pairs."""
         if type(self.backend).__name__ == "ClassicBackend":
-            return self.backend.label(pairs, match_threshold, output_path)
+            return self.backend.label(pairs, match_threshold, output_path)  # type: ignore[attr-defined]
         if type(self.backend).__name__ != "PrototypeExpressionBackend":
             raise UnsupportedOperationError(
                 "label is not implemented by this transport; "
@@ -192,7 +194,7 @@ class Zingg:
     def update_label(self, pairs: Any, labels: Any, output_path: str | None = None) -> Any:
         """Merge explicit ``(z_cluster, z_isMatch)`` labels into pairs."""
         if type(self.backend).__name__ == "ClassicBackend":
-            return self.backend.update_label(pairs, labels, output_path)
+            return self.backend.update_label(pairs, labels, output_path)  # type: ignore[attr-defined]
         if type(self.backend).__name__ != "PrototypeExpressionBackend":
             raise UnsupportedOperationError(
                 "update_label is not implemented by this transport; "
@@ -273,6 +275,7 @@ class Zingg:
     def fuzzy_match(self, df: Any, model: dict[str, Any], id_column: str = "record_id", right_df: Any = None) -> Any:
         """Generate, score, and threshold record pairs from a trained feature model."""
         from pyspark.sql import functions as F
+
         from .similarity import exact_similarity, jaro_similarity
         keys = list(model.get("keys", []))
         functions = model.get("feature_functions", {})
@@ -354,4 +357,4 @@ class Zingg:
             return method(kwargs["df"], kwargs["model"], kwargs.get("cluster_column", "z_cluster"))
         if phase == "generateDocs":
             return self.generate_docs(kwargs["model"])
-        raise ValueError("Unsupported native phase: {!r}".format(phase))
+        raise ValueError(f"Unsupported native phase: {phase!r}")

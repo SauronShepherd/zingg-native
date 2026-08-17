@@ -18,6 +18,8 @@ def detect_runtime(spark: Any) -> RuntimeInfo:
     conf = getattr(spark, "conf", None)
 
     def get(key: str, default: str = "") -> str:
+        if conf is None:
+            return default
         try:
             return str(conf.get(key, default))
         except Exception:
