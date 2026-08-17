@@ -1,7 +1,7 @@
 package ai.zingg.native
 
 import org.apache.spark.sql.Column
-import org.apache.spark.sql.functions.{length, lower, substring, trim, when}
+import org.apache.spark.sql.functions.{element_at, length, lower, regexp_extract, substring, trim, when}
 
 /** Public Spark-expression rewrite rules shared by all supported runtimes. */
 object PublicRewriteRules {
@@ -47,8 +47,24 @@ object PublicRewriteRules {
   object Last2Chars extends SuffixRule("rewrite.blocking.last2Chars", NativeOperation.Last2Chars, 2)
   object Last3Chars extends SuffixRule("rewrite.blocking.last3Chars", NativeOperation.Last3Chars, 3)
 
+  object LastWord extends RewriteRule {
+    val id = "rewrite.blocking.lastWord"
+    val operation = NativeOperation.LastWord
+    def apply(left: Column, right: Option[Column], context: RewriteContext): Column =
+      when(left.isNull || length(left.cast("string")) === 0, left)
+        .otherwise(regexp_extract(left.cast("string"), "([^ ]+)$", 1))
+  }
+
+  object IsNullOrEmpty extends RewriteRule {
+    val id = "rewrite.blocking.isNullOrEmpty"
+    val operation = NativeOperation.IsNullOrEmpty
+    def apply(left: Column, right: Option[Column], context: RewriteContext): Column =
+      left.isNull || length(left.cast("string")) === 0
+  }
+
   val all: Seq[RewriteRule] = Seq(Exact, Jaccard, Jaro, Trim, CaseNormalize,
-    First1Chars, First2Chars, First3Chars, First4Chars, Last1Chars, Last2Chars, Last3Chars)
+    First1Chars, First2Chars, First3Chars, First4Chars, Last1Chars, Last2Chars, Last3Chars,
+    LastWord, IsNullOrEmpty)
 }
 
 object NativeRewriteRegistry {
