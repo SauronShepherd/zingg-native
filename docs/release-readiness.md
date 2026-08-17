@@ -15,6 +15,8 @@
 - Versioned model and blocking-tree artifact contracts are defined and exposed
   through the capability handshake; no trainer parity is claimed.
 - Python and Scala unit suites pass locally.
+- Python Ruff/Mypy gates and artifact SHA-256 generation are wired into CI and
+  pass locally.
 
 ## Open mandatory gates
 
