@@ -9,8 +9,13 @@
 - Exact, Jaccard, and Jaro are implemented in the shared core.
 - Jaro matches pinned Zingg 0.7 / SecondString oracle vectors locally.
 - Connect Exact payload serialization and plugin compilation are covered.
+- Shared TRIM and CASE_NORMALIZE preprocessing is verified through Classic,
+  self-managed Connect, and Databricks Serverless.
 - Classic shared-core candidate, label, and update-label phases pass a real
   local Py4J E2E example; this is adapted phase evidence, not upstream parity.
+- Labeled-record pair expansion (`buildTrainingPairs`) and genuine 5/5
+  positive/negative evidence pass the Serverless E2E; blocking-tree learning
+  and model fitting remain open.
 - Unverified Python phase shortcuts are prototype-only.
 - Versioned model and blocking-tree artifact contracts are defined and exposed
   through the capability handshake; no trainer parity is claimed.
