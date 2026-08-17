@@ -11,3 +11,4 @@ def test_preprocessing_is_declared_as_shared_classic_operation():
     assert 'case "CASE_NORMALIZE"' in core
     assert "def preprocess" in gateway
     assert "def preprocess" in facade
+    assert "buildTrainingPairs" in gateway

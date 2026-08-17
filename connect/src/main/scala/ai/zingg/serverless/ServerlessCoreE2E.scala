@@ -58,11 +58,17 @@ object ServerlessCoreE2E {
       require(updated.select("z_isMatch").head().getInt(0) == 0, "updateLabel phase did not merge label")
       val persistedUpdated = persisted(updated, "updated")
       require(persistedUpdated.count() == 1, "persisted updated relation could not be read")
-      val evidenceRows = (Seq.fill(5)(1) ++ Seq.fill(5)(0)).toDF("z_isMatch")
-      val evidence = Core.inspectTrainingEvidence(evidenceRows)
+      val labeledRecords = (Seq.fill(5)("p", 1) ++ Seq.fill(5)("n", 0)).zipWithIndex
+        .flatMap { case ((prefix, label), index) =>
+          val cluster = s"$prefix-$index"
+          Seq((s"$cluster-left", cluster, label), (s"$cluster-right", cluster, label))
+        }
+        .toDF("record_id", "z_cluster", "z_isMatch")
+      val trainingPairs = Core.buildTrainingPairs(labeledRecords, "record_id")
+      val evidence = Core.inspectTrainingEvidence(trainingPairs)
       require(evidence.isSufficient, s"training evidence should be sufficient: $evidence")
       val storage = outputPath.map(path => s" storage=$path").getOrElse("")
-      println(s"ZINGG_NATIVE_SERVERLESS_CORE_E2E PASS similarities=exact,jaccard,jaro phases=preprocess,findTrainingData,label,updateLabel trainingEvidence=${evidence.positivePairs}/${evidence.negativePairs} persistence=${outputPath.isDefined} spark=${spark.version}$storage")
+      println(s"ZINGG_NATIVE_SERVERLESS_CORE_E2E PASS similarities=exact,jaccard,jaro phases=preprocess,findTrainingData,buildTrainingPairs,label,updateLabel trainingEvidence=${evidence.positivePairs}/${evidence.negativePairs} persistence=${outputPath.isDefined} spark=${spark.version}$storage")
     } finally {
       spark.stop()
     }

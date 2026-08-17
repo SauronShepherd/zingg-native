@@ -70,6 +70,11 @@ class ClassicBackend:
         from pyspark.sql import DataFrame
         return DataFrame(jdf, self.spark)
 
+    def build_training_pairs(self, df: Any, id_column: str) -> Any:
+        jdf = self._gateway.buildTrainingPairs(df._jdf, id_column)
+        from pyspark.sql import DataFrame
+        return DataFrame(jdf, self.spark)
+
     def update_label(self, pairs: Any, labels: Any, output_path: str | None = None) -> Any:
         jdf = self._gateway.updateLabel(pairs._jdf, labels._jdf)
         if output_path:

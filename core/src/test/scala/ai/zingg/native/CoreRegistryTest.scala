@@ -21,7 +21,7 @@ class CoreRegistryTest {
 
   @Test def gatewayAdvertisesOnlyVerifiedClassicPhases(): Unit = {
     val phases = new gateway.ClassicGateway().supportedPhases.toSet
-    assertEquals(Set("preprocess", "findTrainingData", "label", "updateLabel"), phases)
+    assertEquals(Set("preprocess", "findTrainingData", "buildTrainingPairs", "label", "updateLabel"), phases)
   }
 
   @Test def gatewayExposesArtifactSchemaVersions(): Unit = {

@@ -146,6 +146,34 @@ object Core {
       .withColumn("z_isMatch", lit(null).cast("int"))
   }
 
+  /**
+    * Expand record-level training labels into labeled pairs by cluster.
+    * This is the declarative self-join prerequisite used by the upstream
+    * trainer; model fitting and blocking-tree learning remain separate gates.
+    */
+  def buildTrainingPairs(df: DataFrame, idColumn: String): DataFrame = {
+    val required = Set(idColumn, "z_cluster", "z_isMatch")
+    val missing = required.filterNot(df.columns.contains)
+    require(missing.isEmpty, s"training relation is missing columns: ${missing.mkString(", ")}")
+    val left = df.select(
+      col(idColumn).cast("string").alias("_left_id"),
+      col("z_cluster").alias("_left_cluster"),
+      col("z_isMatch").cast("int").alias("z_isMatch")
+    ).alias("left")
+    val right = df.select(
+      col(idColumn).cast("string").alias("_right_id"),
+      col("z_cluster").alias("_right_cluster")
+    ).alias("right")
+    left.join(right, col("left._left_cluster") <=> col("right._right_cluster") &&
+      col("left._left_id") < col("right._right_id"))
+      .select(
+        org.apache.spark.sql.functions.sha2(org.apache.spark.sql.functions.concat_ws("|", col("left._left_id"), col("right._right_id")), 256).alias("z_cluster"),
+        col("left._left_id").alias(s"z_left_$idColumn"),
+        col("right._right_id").alias(s"z_right_$idColumn"),
+        col("left.z_isMatch").alias("z_isMatch")
+      )
+  }
+
   /** Apply a deterministic non-interactive label to a candidate relation. */
   def label(df: DataFrame, threshold: Double): DataFrame = {
     require(df.columns.contains("z_score"), "candidate relation must contain z_score")

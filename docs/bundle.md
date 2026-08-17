@@ -25,9 +25,9 @@ managed Spark Connect can load the `ExpressionPlugin`.
 
 The latest real deployment and run passed on 2026-08-17:
 
-- Bundle job `190949869955356`, latest run `168088194011842`;
-- task run `1072118149398301`;
+- Bundle job `190949869955356`, latest run `807529510025681`;
+- task run `889856143647722`;
 - Spark 4.1.0 with all three similarities, declarative preprocessing, the
-  three shared phases, and
+  four shared phases, and
   five-positive/five-negative training-evidence readiness and Unity Catalog
   Volume persistence.

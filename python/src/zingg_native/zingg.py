@@ -181,6 +181,14 @@ class Zingg:
             labeled.write.mode("overwrite").parquet(output_path)
         return labeled
 
+    def build_training_pairs(self, labeled: Any, id_column: str) -> Any:
+        """Expand record-level labels into same-cluster training pairs on Classic."""
+        if type(self.backend).__name__ != "ClassicBackend":
+            raise UnsupportedOperationError(
+                "build_training_pairs is currently implemented only by the Classic shared-core transport."
+            )
+        return self.backend.build_training_pairs(labeled, id_column)  # type: ignore[attr-defined]
+
     @_prototype_phase
     def score_features(self, df: Any, output: str = "z_score") -> Any:
         """Score a pre-built candidate relation with its native feature column.

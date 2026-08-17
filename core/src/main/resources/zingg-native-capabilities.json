@@ -19,6 +19,6 @@
   "connectCaseNormalize": "verified-self-managed-spark-4.1",
   "connectJaro": "open",
   "databricksDedicatedPhoton": "out-of-scope-serverless-only",
-  "databricksServerlessSharedCoreJarTask": "verified-exact-jaccard-jaro-preprocessing-and-three-phases-spark-4.1.0",
+  "databricksServerlessSharedCoreJarTask": "verified-exact-jaccard-jaro-preprocessing-pair-expansion-and-four-phases-spark-4.1.0",
   "databricksServerless": "shared-core-jar-verified-managed-connect-plugin-unsupported-current-path"
 }
