@@ -42,6 +42,8 @@ through the real Py4J boundary with:
 
 ```powershell
 $env:ZINGG_NATIVE_CORE_JAR = (Resolve-Path .\core\target\zingg-native-core_2.13-0.2.0-SNAPSHOT.jar)
+$env:PYSPARK_PYTHON = (Resolve-Path .\.venv\Scripts\python.exe)
+$env:PYSPARK_DRIVER_PYTHON = $env:PYSPARK_PYTHON
 python .\examples\classic_candidate_e2e.py
 ```
 
