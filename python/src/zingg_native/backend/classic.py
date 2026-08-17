@@ -66,3 +66,12 @@ class ClassicBackend:
             jdf = self._gateway.persist(jdf, output_path)
         from pyspark.sql import DataFrame
         return DataFrame(jdf, self.spark)
+
+    def inspect_training_evidence(self, df: Any) -> dict[str, Any]:
+        counts = self._gateway.inspectTrainingEvidence(df._jdf)
+        positive, negative = int(counts[0]), int(counts[1])
+        return {
+            "positive_pairs": positive,
+            "negative_pairs": negative,
+            "sufficient": positive >= 5 and negative >= 5,
+        }

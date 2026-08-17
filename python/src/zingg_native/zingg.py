@@ -211,6 +211,15 @@ class Zingg:
             updated.write.mode("overwrite").parquet(output_path)
         return updated
 
+    def inspect_training_evidence(self, pairs: Any) -> dict[str, Any]:
+        """Count labels required by the upstream trainer contract."""
+        if type(self.backend).__name__ == "ClassicBackend":
+            return self.backend.inspect_training_evidence(pairs)  # type: ignore[attr-defined]
+        raise UnsupportedOperationError(
+            "training evidence inspection is not implemented by this transport; "
+            "the shared-core prerequisite currently supports Classic only."
+        )
+
     @_prototype_phase
     def train(self, labeled: Any, keys: list[str], model_path: str | None = None, match_threshold: float = 1.0, feature_functions: dict[str, str] | None = None) -> dict[str, Any]:
         """Train the exact model contract from labeled native pairs."""

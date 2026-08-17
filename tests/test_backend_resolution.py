@@ -57,6 +57,13 @@ def test_candidate_phase_dispatches_only_to_shared_classic_backend():
         z.find_training_data(None, ["key"], "id")
 
 
+def test_training_evidence_dispatches_only_to_shared_classic_backend():
+    z = object.__new__(Zingg)
+    z.backend = type("ConnectBackend", (), {})()
+    with pytest.raises(UnsupportedOperationError, match="training evidence"):
+        z.inspect_training_evidence(None)
+
+
 def test_classic_phase_supports_persistence_but_rejects_all_pairs_shortcut():
     z = object.__new__(Zingg)
     calls = []
