@@ -10,7 +10,7 @@ class ClassicGateway {
   def protocolVersion: String = Core.protocolVersion
   def modelArtifactSchemaVersion: Int = ArtifactSchema.currentVersion
   def blockingTreeArtifactSchemaVersion: Int = ArtifactSchema.currentVersion
-  def capabilityMetadata: String = "shared-core;EXACT_SIMILARITY;JACCARD_SIMILARITY;JARO_SIMILARITY;CLASSIC_FIND_TRAINING_DATA;CLASSIC_LABEL;CLASSIC_UPDATE_LABEL;phase-parity-not-certified"
+  def capabilityMetadata: String = "shared-core;EXACT_SIMILARITY;JACCARD_SIMILARITY;JARO_SIMILARITY;CLASSIC_FIND_TRAINING_DATA;CLASSIC_LABEL;CLASSIC_UPDATE_LABEL;model-artifact-schema-v1;blocking-tree-artifact-schema-v1;phase-parity-not-certified"
   def sparkVersion(df: DataFrame): String = df.sparkSession.version
   def supportedOperations: Array[String] = Array("EXACT_SIMILARITY", "JACCARD_SIMILARITY", "JARO_SIMILARITY")
   def supportedPhases: Array[String] = Array("findTrainingData", "label", "updateLabel")

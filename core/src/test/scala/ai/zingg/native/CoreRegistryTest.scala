@@ -28,5 +28,7 @@ class CoreRegistryTest {
     val g = new gateway.ClassicGateway()
     assertEquals(1, g.modelArtifactSchemaVersion)
     assertEquals(1, g.blockingTreeArtifactSchemaVersion)
+    assertTrue(g.capabilityMetadata.contains("model-artifact-schema-v1"))
+    assertTrue(g.capabilityMetadata.contains("blocking-tree-artifact-schema-v1"))
   }
 }
