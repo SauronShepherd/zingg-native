@@ -9,6 +9,8 @@
 - Exact, Jaccard, and Jaro are implemented in the shared core.
 - Jaro matches pinned Zingg 0.7 / SecondString oracle vectors locally.
 - Connect Exact payload serialization and plugin compilation are covered.
+- Classic shared-core candidate, label, and update-label phases pass a real
+  local Py4J E2E example; this is adapted phase evidence, not upstream parity.
 - Unverified Python phase shortcuts are prototype-only.
 - Python and Scala unit suites pass locally.
 

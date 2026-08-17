@@ -10,9 +10,9 @@ replacing their Spark-sensitive internals.
 
 | Phase | Upstream executor | Native boundary | Status |
 |---|---|---|---|
-| findTrainingData | `SparkTrainingDataFinder` | candidate-pair relation and persistence | contract inventory; shared-core implementation open |
-| label | `SparkLabeller` | read/write pair relation; interactive UI excluded from non-interactive run | contract inventory; shared-core implementation open |
-| updateLabel | `SparkLabelUpdater` | deterministic label merge/update | contract inventory; shared-core implementation open |
+| findTrainingData | `SparkTrainingDataFinder` | candidate-pair relation and persistence | Classic shared-core implementation verified locally; upstream parity and Connect open |
+| label | `SparkLabeller` | read/write pair relation; interactive UI excluded from non-interactive run | Classic shared-core deterministic threshold adaptation verified locally; upstream parity and Connect open |
+| updateLabel | `SparkLabelUpdater` | deterministic label merge/update | Classic shared-core implementation verified locally; upstream parity and Connect open |
 | train | `SparkTrainer` | feature construction and model persistence | contract inventory; shared-core implementation open |
 | match | `SparkMatcher` | scoring, thresholding, clustering, output | contract inventory; shared-core implementation open |
 | link | `SparkLinker` | cross-source candidate generation and scoring | contract inventory; shared-core implementation open |
