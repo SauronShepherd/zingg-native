@@ -1,6 +1,7 @@
 $ErrorActionPreference = 'Stop'
 if (-not $env:SPARK_HOME) { throw 'Set SPARK_HOME to a Spark 4.1 distribution.' }
-if ($IsWindows -and (-not $env:HADOOP_HOME -or -not (Test-Path (Join-Path $env:HADOOP_HOME 'bin\winutils.exe')))) {
+$windowsHost = ($env:OS -eq 'Windows_NT') -or ($IsWindows -eq $true)
+if ($windowsHost -and (-not $env:HADOOP_HOME -or -not (Test-Path (Join-Path $env:HADOOP_HOME 'bin\winutils.exe')))) {
   throw 'Windows Spark Connect startup requires HADOOP_HOME\bin\winutils.exe. Configure a Hadoop Windows utility directory before starting the server.'
 }
 $repo = Split-Path -Parent $PSScriptRoot
