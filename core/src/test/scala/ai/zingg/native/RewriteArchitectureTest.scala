@@ -24,4 +24,10 @@ class RewriteArchitectureTest {
     assertThrows(classOf[NativeRewriteUnsupportedException], () => NativePlanGuard.requireCompatible(report, context))
     assertTrue(report.unsupported.nonEmpty)
   }
+
+  @Test def defaultRegistryContainsOnlyStablePublicRules(): Unit = {
+    assertEquals(
+      Set("similarity.exact", "similarity.jaccard", "similarity.jaro", "preprocess.trim", "preprocess.case_normalize"),
+      NativeRewriteRegistry.default.operationIds.toSet)
+  }
 }

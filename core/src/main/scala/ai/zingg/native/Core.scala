@@ -85,6 +85,22 @@ object Core {
     df.withColumn(output, SimilarityRegistry.resolve(operationId, NativeMode.SAFE)(col(left), col(right), ctx))
   }
 
+  /** Execute a registered public-expression rewrite with an explicit policy. */
+  def rewrite(
+      df: DataFrame,
+      operationId: String,
+      left: String,
+      right: Option[String],
+      output: String,
+      context: RewriteContext,
+      registry: RewriteRegistry = NativeRewriteRegistry.default): DataFrame = {
+    val operation = NativeOperation.resolve(operationId)
+    val rule = registry.resolve(operation)
+    val rightColumn = right.map(name => col(name))
+    val value = rule(col(left), rightColumn, context)
+    if (context.mode == NativeExecutionMode.OFF) df else df.withColumn(output, value)
+  }
+
   /** Apply upstream-compatible declarative string preprocessing to selected fields. */
   def preprocess(df: DataFrame, operationId: String, columns: Seq[String]): DataFrame = {
     require(columns.nonEmpty, "columns must contain at least one field")
