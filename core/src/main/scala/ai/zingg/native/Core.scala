@@ -162,11 +162,12 @@ object Core {
     ).alias("left")
     val right = df.select(
       col(idColumn).cast("string").alias("_right_id"),
-      col("z_cluster").alias("_right_cluster")
+      col("z_cluster").alias("_right_cluster"),
+      col("z_isMatch").cast("int").alias("z_isMatch")
     ).alias("right")
     left.join(right, col("left._left_cluster") <=> col("right._right_cluster") &&
       col("left._left_id") < col("right._right_id"))
-      .filter(col("left.z_isMatch").isin(0, 1))
+      .filter(col("left.z_isMatch").isin(0, 1) && col("right.z_isMatch").isin(0, 1))
       .select(
         org.apache.spark.sql.functions.sha2(org.apache.spark.sql.functions.concat_ws("|", col("left._left_id"), col("right._right_id")), 256).alias("z_cluster"),
         col("left._left_id").alias(s"z_left_$idColumn"),

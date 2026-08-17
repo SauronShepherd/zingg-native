@@ -63,10 +63,12 @@ def main() -> None:
             for i in range(5)
             for side in ("left", "right")
         )
+        labeled_values += ", ('p-unlabeled', 'p0', NULL)"
         labeled_records = spark.sql(
             f"SELECT * FROM VALUES {labeled_values} AS t(record_id, z_cluster, z_isMatch)"
         )
         training_pairs = zingg.build_training_pairs(labeled_records, "record_id")
+        assert training_pairs.filter("z_left_record_id = 'p-unlabeled' OR z_right_record_id = 'p-unlabeled'").count() == 0
         training_evidence = zingg.inspect_training_evidence(training_pairs)
         assert training_evidence == {"positive_pairs": 5, "negative_pairs": 5, "sufficient": True}
         evidence = {
