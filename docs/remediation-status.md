@@ -19,4 +19,5 @@ implementation or target-runtime proof is still missing.
 | Databricks Dedicated + Photon execution | Out of scope | Project target is Serverless only | No Photon claim |
 | Databricks Serverless/managed Connect | Unsupported by current managed path | Job `177009162619307`, task `1075870166806203` rejected plugin config with `CONFIG_NOT_AVAILABLE` | No managed-plugin claim; requires a Databricks-supported extension mechanism |
 | Databricks Serverless shared-core JAR task | Verified narrow slice | Job `295665184144562`, run `847651604040137` | Exact/Jaccard/Jaro plus findTrainingData/label/updateLabel and UC-volume persistence executed on Spark 4.1.0; Connect plugin remains open |
+| Databricks Serverless Asset Bundle deployment | Verified narrow slice | Bundle job `190949869955356`, run `953664091738695` | Parameterized bundle deployed and ran the same shared-core slice on Serverless; managed Connect remains open |
 | Full Zingg phase/model parity | Open | `docs/phase-map.md` | Training, matching, linking, clustering remain unimplemented in shared core |
