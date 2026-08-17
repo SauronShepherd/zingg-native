@@ -40,3 +40,11 @@ Classic phase methods also accept `output_path` and persist through the shared
 Scala gateway using Parquet. On Windows, running a local persistence check
 requires a Hadoop Windows utility (`HADOOP_HOME\bin\winutils.exe`); Serverless
 and Linux environments do not have that Windows prerequisite.
+
+To produce release integrity hashes after building all artifacts:
+
+```powershell
+python scripts/artifact-checksums.py
+```
+
+CI publishes the same three-line SHA-256 manifest as a workflow artifact.

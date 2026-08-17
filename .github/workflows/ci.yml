@@ -41,6 +41,13 @@ jobs:
           test -f core/target/zingg-native-core_2.13-0.2.0-SNAPSHOT.jar
           test -f connect/target/zingg-native-connect_2.13-0.2.0-SNAPSHOT.jar
           python scripts/verify-artifacts.py
+          python scripts/artifact-checksums.py | tee artifact-sha256.txt
+          test $(wc -l < artifact-sha256.txt) -eq 3
+      - name: Upload artifact checksums
+        uses: actions/upload-artifact@v4
+        with:
+          name: zingg-native-sha256
+          path: artifact-sha256.txt
       - name: Install wheel in a clean environment
         run: |
           wheel=$(ls dist/zingg_native-*.whl | tail -n 1)
