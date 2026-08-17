@@ -5,10 +5,15 @@ keeps the workspace artifact directory and Unity Catalog output volume out of
 the job definition itself:
 
 ```powershell
+./scripts/publish-databricks-serverless.ps1
 databricks bundle validate -t sda
 databricks bundle deploy -t sda
 databricks bundle run -t sda zingg_native_serverless_core_e2e
 ```
+
+The publish step is required before deployment: the bundle references the
+paired workspace JARs, and publishing them first prevents a successful job
+from accidentally executing stale artifacts.
 
 Override `artifact_root` and `output_volume` for another workspace or volume.
 The bundle creates a new job; the existing numeric job and its authoritative
