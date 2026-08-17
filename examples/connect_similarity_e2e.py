@@ -29,7 +29,15 @@ def main() -> None:
             "left_value", "right_value"
         ).collect()
         assert jaccard[0][2] == 1.0, jaccard
-        print({"exact": [tuple(row) for row in exact], "jaccard": [tuple(row) for row in jaccard]})
+        normalized = zingg.preprocess(
+            spark.sql("SELECT '  Alice  ' AS name"), "TRIM", ["name"]
+        ).collect()
+        assert normalized[0][0] == "Alice", normalized
+        lowered = zingg.preprocess(
+            spark.sql("SELECT 'Alice' AS name"), "CASE_NORMALIZE", ["name"]
+        ).collect()
+        assert lowered[0][0] == "alice", lowered
+        print({"exact": [tuple(row) for row in exact], "jaccard": [tuple(row) for row in jaccard], "preprocess": [tuple(row) for row in normalized + lowered]})
     finally:
         spark.stop()
 

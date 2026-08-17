@@ -80,3 +80,13 @@ class ConnectBackend:
             arguments.append(df[options["right"]]._expr)
         expression = _ZinggNativeExpression(operation, arguments)
         return df.withColumn(options.get("output", "z_exact"), Column(expression))
+
+    def preprocess(self, df: Any, operation: str, columns: list[str]) -> Any:
+        if not columns:
+            raise ValueError("columns must contain at least one field")
+        result = df
+        from pyspark.sql.connect.column import Column
+        for column in columns:
+            expression = _ZinggNativeExpression(operation, [result[column]._expr])
+            result = result.withColumn(column, Column(expression))
+        return result

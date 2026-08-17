@@ -78,3 +78,11 @@ def test_connect_accepts_shared_case_normalize_operation():
     source = (Path(__file__).parents[1] / "connect/src/main/scala/ai/zingg/native/connect/ZinggNativeExpressionPlugin.scala").read_text()
     assert 'case "CASE_NORMALIZE"' in source
     assert '"TRIM"' in source
+
+
+def test_facade_allows_preprocessing_on_configured_connect_backend():
+    from zingg_native import Zingg
+
+    z = object.__new__(Zingg)
+    z.backend = type("ConnectBackend", (), {})()
+    assert "ConnectBackend" in (Path(__file__).parents[1] / "python/src/zingg_native/zingg.py").read_text()

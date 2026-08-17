@@ -68,9 +68,9 @@ class Zingg:
 
     def preprocess(self, df: Any, operation: str, columns: list[str]) -> Any:
         """Apply shared-core TRIM or CASE_NORMALIZE preprocessing on Classic."""
-        if type(self.backend).__name__ != "ClassicBackend":
+        if type(self.backend).__name__ not in {"ClassicBackend", "ConnectBackend"}:
             raise UnsupportedOperationError(
-                "preprocess is not implemented by this transport; the shared-core preprocessing path currently supports Classic only."
+                "preprocess is not implemented by this transport; use Classic or a configured Connect plugin."
             )
         return self.backend.preprocess(df, operation, columns)  # type: ignore[attr-defined]
 
