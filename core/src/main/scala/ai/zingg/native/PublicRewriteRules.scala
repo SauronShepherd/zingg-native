@@ -1,7 +1,7 @@
 package ai.zingg.native
 
 import org.apache.spark.sql.Column
-import org.apache.spark.sql.functions.{lower, trim}
+import org.apache.spark.sql.functions.{length, lower, substring, trim, when}
 
 /** Public Spark-expression rewrite rules shared by all supported runtimes. */
 object PublicRewriteRules {
@@ -30,7 +30,25 @@ object PublicRewriteRules {
     def apply(left: Column, right: Option[Column], context: RewriteContext): Column = lower(left.cast("string"))
   }
 
-  val all: Seq[RewriteRule] = Seq(Exact, Jaccard, Jaro, Trim, CaseNormalize)
+  abstract class PrefixRule(val id: String, val operation: NativeOperation, width: Int) extends RewriteRule {
+    def apply(left: Column, right: Option[Column], context: RewriteContext): Column =
+      when(left.isNull, left).otherwise(substring(left.cast("string"), 1, width))
+  }
+  object First1Chars extends PrefixRule("rewrite.blocking.first1Chars", NativeOperation.First1Chars, 1)
+  object First2Chars extends PrefixRule("rewrite.blocking.first2Chars", NativeOperation.First2Chars, 2)
+  object First3Chars extends PrefixRule("rewrite.blocking.first3Chars", NativeOperation.First3Chars, 3)
+  object First4Chars extends PrefixRule("rewrite.blocking.first4Chars", NativeOperation.First4Chars, 4)
+
+  abstract class SuffixRule(val id: String, val operation: NativeOperation, width: Int) extends RewriteRule {
+    def apply(left: Column, right: Option[Column], context: RewriteContext): Column =
+      when(left.isNull, left).otherwise(substring(left.cast("string"), -width, width))
+  }
+  object Last1Chars extends SuffixRule("rewrite.blocking.last1Chars", NativeOperation.Last1Chars, 1)
+  object Last2Chars extends SuffixRule("rewrite.blocking.last2Chars", NativeOperation.Last2Chars, 2)
+  object Last3Chars extends SuffixRule("rewrite.blocking.last3Chars", NativeOperation.Last3Chars, 3)
+
+  val all: Seq[RewriteRule] = Seq(Exact, Jaccard, Jaro, Trim, CaseNormalize,
+    First1Chars, First2Chars, First3Chars, First4Chars, Last1Chars, Last2Chars, Last3Chars)
 }
 
 object NativeRewriteRegistry {

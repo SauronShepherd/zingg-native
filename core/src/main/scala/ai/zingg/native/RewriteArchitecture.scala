@@ -34,9 +34,17 @@ object NativeOperation {
   case object StopWords extends NativeOperation { val id = "preprocess.stopwords" }
   case object VectorExtraction extends NativeOperation { val id = "model.vector_extraction" }
   case object GraphLink extends NativeOperation { val id = "link.connected_components" }
+  case object First1Chars extends NativeOperation { val id = "blocking.first1Chars" }
+  case object First2Chars extends NativeOperation { val id = "blocking.first2Chars" }
+  case object First3Chars extends NativeOperation { val id = "blocking.first3Chars" }
+  case object First4Chars extends NativeOperation { val id = "blocking.first4Chars" }
+  case object Last1Chars extends NativeOperation { val id = "blocking.last1Chars" }
+  case object Last2Chars extends NativeOperation { val id = "blocking.last2Chars" }
+  case object Last3Chars extends NativeOperation { val id = "blocking.last3Chars" }
 
   val all: Seq[NativeOperation] = Seq(ExactSimilarity, JaccardSimilarity, JaroSimilarity, Trim, CaseNormalize,
-    Hash, BlockingTree, StopWords, VectorExtraction, GraphLink)
+    Hash, BlockingTree, StopWords, VectorExtraction, GraphLink, First1Chars, First2Chars, First3Chars,
+    First4Chars, Last1Chars, Last2Chars, Last3Chars)
   private val byId = all.map(op => op.id -> op).toMap
   def resolve(id: String): NativeOperation = byId.getOrElse(id, throw new IllegalArgumentException(s"Unknown native operation: $id"))
 }
