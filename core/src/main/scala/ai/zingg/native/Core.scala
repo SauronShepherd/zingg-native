@@ -3,6 +3,8 @@ package ai.zingg.native
 import org.apache.spark.sql.{Column, DataFrame, SparkSession}
 import org.apache.spark.sql.types.{DoubleType, StringType}
 import org.apache.spark.sql.functions.{array, array_intersect, array_union, col, concat, element_at, floor, greatest, least, length, lit, lower, regexp_extract_all, sequence, size, struct, transform, trim, when, zip_with, aggregate}
+import org.apache.spark.ml.feature.VectorAssembler
+import org.apache.spark.ml.classification.{LogisticRegression, LogisticRegressionModel}
 
 sealed trait NativeMode
 object NativeMode { case object SAFE extends NativeMode; case object EXPERIMENTAL extends NativeMode }
@@ -188,6 +190,27 @@ object Core {
       df.filter(col("z_isMatch") === lit(1)).count(),
       df.filter(col("z_isMatch") === lit(0)).count()
     )
+  }
+
+  /** Fit the upstream-compatible binary model through public Spark ML APIs. */
+  def trainModel(df: DataFrame, featureColumns: Seq[String], labelColumn: String = "z_isMatch",
+                 modelPath: Option[String] = None): LogisticRegressionModel = {
+    require(featureColumns.nonEmpty, "featureColumns must not be empty")
+    val missing = (featureColumns :+ labelColumn).distinct.filterNot(df.columns.contains)
+    require(missing.isEmpty, s"model training relation is missing columns: ${missing.mkString(", ")}")
+    val assembler = new VectorAssembler().setInputCols(featureColumns.toArray).setOutputCol("z_features")
+    val assembled = assembler.transform(df).withColumn("z_label", col(labelColumn).cast("double"))
+    val model = new LogisticRegression().setFeaturesCol("z_features").setLabelCol("z_label").fit(assembled)
+    modelPath.foreach(model.write.overwrite().save)
+    model
+  }
+
+  /** Score candidate rows with a persisted or in-memory public Spark ML model. */
+  def matchModel(df: DataFrame, model: LogisticRegressionModel, featureColumns: Seq[String]): DataFrame = {
+    require(featureColumns.nonEmpty, "featureColumns must not be empty")
+    val assembler = new VectorAssembler().setInputCols(featureColumns.toArray).setOutputCol("z_features")
+    model.transform(assembler.transform(df))
+      .withColumn("z_score", col("probability").getItem(1))
   }
 
   /** Persist a phase relation without collecting it on the driver. */
