@@ -14,6 +14,8 @@
 - Unverified Python phase shortcuts are prototype-only.
 - Versioned model and blocking-tree artifact contracts are defined and exposed
   through the capability handshake; no trainer parity is claimed.
+- Training-evidence inspection and the five/five upstream minimum are executed
+  in the Serverless E2E; model fitting is still not implemented.
 - Python and Scala unit suites pass locally.
 - Python Ruff/Mypy gates and artifact SHA-256 generation are wired into CI and
   pass locally.
