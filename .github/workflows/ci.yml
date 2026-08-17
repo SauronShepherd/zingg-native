@@ -40,15 +40,7 @@ jobs:
           python -m build --wheel
           test -f core/target/zingg-native-core_2.13-0.2.0-SNAPSHOT.jar
           test -f connect/target/zingg-native-connect_2.13-0.2.0-SNAPSHOT.jar
-          wheel=$(ls dist/zingg_native-*.whl | tail -n 1)
-          python - <<'PY'
-          import glob, zipfile
-          wheel = glob.glob('dist/zingg_native-*.whl')[-1]
-          names = zipfile.ZipFile(wheel).namelist()
-          assert 'zingg_native/backend/classic.py' in names
-          assert 'zingg_native/backend/connect.py' in names
-          assert not any('pyspark' in name or 'spark-core' in name for name in names)
-          PY
+          python scripts/verify-artifacts.py
       - name: Install wheel in a clean environment
         run: |
           wheel=$(ls dist/zingg_native-*.whl | tail -n 1)
