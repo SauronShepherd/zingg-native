@@ -21,6 +21,10 @@ With the server listening on port 15002, run
 `python examples/connect_similarity_e2e.py` to reproduce the verified Exact
 and Jaccard transport checks.
 
+Install the client-side prerequisites separately with `pip install
+"zingg-native[connect]"` in the Spark 4.1 Connect environment. Keep this
+environment separate from the Classic `pyspark` test environment.
+
 On Windows, configure `HADOOP_HOME` with `bin\winutils.exe` before running the
 launcher. The script checks this prerequisite explicitly; Linux/WSL hosts do
 not require that Windows utility.

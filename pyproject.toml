@@ -20,6 +20,13 @@ dev = [
   "mypy>=1.11",
   "build>=1.2",
 ]
+connect = [
+  "pandas>=2.2",
+  "pyarrow>=15",
+  "grpcio>=1.67",
+  "grpcio-status>=1.48.1",
+  "zstandard>=0.25",
+]
 
 [tool.setuptools.packages.find]
 where = ["python/src"]
