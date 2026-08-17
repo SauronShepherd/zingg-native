@@ -32,6 +32,11 @@ object ServerlessCoreE2E {
       val model = Core.trainModel(modelRows, Seq("z_name", "z_city"), modelPath = modelPath)
       val scored = Core.matchModel(modelRows.drop("z_isMatch"), model, Seq("z_name", "z_city"))
       require(scored.select("z_score").count() == 10, "model scoring did not produce all rows")
+      modelPath.foreach { path =>
+        val reloaded = Core.loadModel(path)
+        require(Core.matchModel(modelRows.drop("z_isMatch"), reloaded, Seq("z_name", "z_city")).count() == 10,
+          "persisted model could not be reloaded and scored")
+      }
       val linked = Core.linkComponents(trainingPairs, "z_left_record_id", "z_right_record_id")
       require(linked.count() == 20, "link phase did not return all graph vertices")
       save(linked, "link")

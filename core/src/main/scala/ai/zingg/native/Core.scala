@@ -205,6 +205,12 @@ object Core {
     model
   }
 
+  /** Load a persisted Spark ML model without requiring driver-side Python state. */
+  def loadModel(modelPath: String): LogisticRegressionModel = {
+    require(modelPath != null && modelPath.nonEmpty, "modelPath must not be empty")
+    LogisticRegressionModel.load(modelPath)
+  }
+
   /** Score candidate rows with a persisted or in-memory public Spark ML model. */
   def matchModel(df: DataFrame, model: LogisticRegressionModel, featureColumns: Seq[String]): DataFrame = {
     require(featureColumns.nonEmpty, "featureColumns must not be empty")
