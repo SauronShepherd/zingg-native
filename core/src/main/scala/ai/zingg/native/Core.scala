@@ -130,4 +130,14 @@ object Core {
     require(df.columns.contains("z_score"), "candidate relation must contain z_score")
     df.withColumn("z_isMatch", org.apache.spark.sql.functions.when(col("z_score") >= lit(threshold), lit(1)).otherwise(lit(0)))
   }
+
+  /** Merge explicit labels into a candidate relation without collecting rows. */
+  def updateLabel(pairs: DataFrame, labels: DataFrame): DataFrame = {
+    require(pairs.columns.contains("z_cluster"), "candidate relation must contain z_cluster")
+    require(labels.columns.toSet.subsetOf(Set("z_cluster", "z_isMatch")) && labels.columns.contains("z_isMatch"),
+      "labels must contain z_cluster and z_isMatch")
+    pairs.drop("z_isMatch")
+      .join(labels.select(col("z_cluster"), col("z_isMatch").cast("int")), Seq("z_cluster"), "left")
+      .withColumn("z_isMatch", org.apache.spark.sql.functions.coalesce(col("z_isMatch"), lit(2)))
+  }
 }

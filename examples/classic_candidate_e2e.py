@@ -36,7 +36,10 @@ def main() -> None:
         labeled = zingg.label(pairs, match_threshold=0.5)
         labeled_rows = [tuple(row) for row in labeled.collect()]
         assert labeled_rows[0][-1] == 1, labeled_rows
-        print({"status": zingg.status(), "rows": rows, "labeled": labeled_rows})
+        explicit = spark.sql("SELECT 'missing' AS z_cluster, 0 AS z_isMatch")
+        updated_rows = [tuple(row) for row in zingg.update_label(pairs, explicit).collect()]
+        assert updated_rows[0][-1] == 2, updated_rows
+        print({"status": zingg.status(), "rows": rows, "labeled": labeled_rows, "updated": updated_rows})
     finally:
         spark.stop()
 

@@ -180,9 +180,15 @@ class Zingg:
             raise ValueError("candidate relation must contain z_exact or z_jaro")
         return df.withColumn(output, sum(F.col(name) for name in available) / F.lit(float(len(available))))
 
-    @_prototype_phase
     def update_label(self, pairs: Any, labels: Any, output_path: str | None = None) -> Any:
         """Merge explicit ``(z_cluster, z_isMatch)`` labels into pairs."""
+        if type(self.backend).__name__ == "ClassicBackend":
+            return self.backend.update_label(pairs, labels)
+        if type(self.backend).__name__ != "PrototypeExpressionBackend":
+            raise UnsupportedOperationError(
+                "update_label is not implemented by this transport; "
+                "the shared-core phase currently supports Classic only."
+            )
         from pyspark.sql import functions as F
         required = {"z_cluster", "z_isMatch"}
         if not required.issubset(set(labels.columns)):

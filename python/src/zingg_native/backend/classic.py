@@ -46,3 +46,8 @@ class ClassicBackend:
         jdf = self._gateway.label(df._jdf, float(threshold))
         from pyspark.sql import DataFrame
         return DataFrame(jdf, self.spark)
+
+    def update_label(self, pairs: Any, labels: Any) -> Any:
+        jdf = self._gateway.updateLabel(pairs._jdf, labels._jdf)
+        from pyspark.sql import DataFrame
+        return DataFrame(jdf, self.spark)
