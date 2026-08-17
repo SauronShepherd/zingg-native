@@ -143,8 +143,7 @@ object Core {
 
   /** Persist a phase relation without collecting it on the driver. */
   def persist(df: DataFrame, outputPath: String): DataFrame = {
-    require(outputPath != null && outputPath.nonEmpty, "outputPath must be non-empty")
-    df.write.mode("overwrite").parquet(outputPath)
+    df.write.mode("overwrite").parquet(ArtifactSchema.validatePath(outputPath))
     df
   }
 }

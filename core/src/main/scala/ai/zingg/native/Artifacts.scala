@@ -38,4 +38,13 @@ final case class ModelArtifact(
 
 object ArtifactSchema {
   val currentVersion: Int = 1
+
+  /** Reject ambiguous paths before handing them to a Spark writer. */
+  def validatePath(path: String): String = {
+    require(path != null && path.nonEmpty, "artifact path must be non-empty")
+    require(!path.exists(_.isControl), "artifact path must not contain control characters")
+    val segments = path.replace('\\', '/').split('/').toSeq
+    require(!segments.contains(".."), "artifact path must not contain parent traversal")
+    path
+  }
 }

@@ -30,4 +30,12 @@ class ArtifactContractTest {
       ModelArtifact(1, "UPSTREAM_MODEL", "dbfs:/model", "sha256:model", Seq("name"), 5, 4, tree)
     )
   }
+
+  @Test
+  def rejectsUnsafeArtifactPaths(): Unit = {
+    assertThrows(classOf[IllegalArgumentException], () => ArtifactSchema.validatePath("dbfs:/out/../escape"))
+    assertThrows(classOf[IllegalArgumentException], () => ArtifactSchema.validatePath("dbfs:/out/\nnext"))
+    assert(ArtifactSchema.validatePath("/Volumes/catalog/schema/volume/run") != null)
+    assert(ArtifactSchema.validatePath("s3://bucket/prefix") == "s3://bucket/prefix")
+  }
 }
