@@ -31,6 +31,11 @@ Spark 4.1 is the default target. The optional Spark 4.0 profile is tested with:
 .tools\apache-maven-3.9.11\bin\mvn.cmd -Pspark40 clean test
 ```
 
+The wheel is importable without PySpark because its public metadata and facade
+imports are lazy. Spark operations still require the target Spark 4 runtime;
+the CI clean-wheel check therefore installs `pyspark==4.1.0` alongside the
+wheel before exercising a Spark-backed API.
+
 Keep Databricks Connect in a separate environment from OSS PySpark. The
 Connect server plugin and the Classic core JAR are compiled by Maven and must
 be tested against the Spark API version declared by the selected runtime.
