@@ -54,6 +54,7 @@ class _ZinggNativeExpression(Expression):
 
 class ConnectBackend:
     name = "connect-plugin"
+    protocol_version = "1"
 
     def __init__(self, spark: Any):
         self.spark = spark
@@ -67,6 +68,15 @@ class ConnectBackend:
                 "The zingg-native Spark Connect server plugin is not installed. "
                 "Client-side Databricks Serverless wheel execution is not a substitute."
             )
+
+    def capabilities(self) -> dict[str, Any]:
+        return {
+            "protocol_version": self.protocol_version,
+            "operations": ["EXACT_SIMILARITY", "JACCARD_SIMILARITY"],
+            "preprocessing": ["CASE_NORMALIZE", "TRIM"],
+            "jaro": "open",
+            "phase_support": "open",
+        }
 
     def transform(self, df: Any, operation: str, **options: Any) -> Any:
         if operation not in {"EXACT_SIMILARITY", "JACCARD_SIMILARITY", "CASE_NORMALIZE", "TRIM"}:
