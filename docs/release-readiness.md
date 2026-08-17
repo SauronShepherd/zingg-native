@@ -16,8 +16,8 @@
 
 ## Open mandatory gates
 
-- Self-managed Spark Connect server E2E with the installed plugin.
-- Connect parity for Jaccard and Jaro.
+- Self-managed Spark Connect Jaro and phase E2E with the installed plugin.
+- Connect parity for Jaro and the shared phase subset.
 - Databricks Dedicated + Photon compute with the core JAR installed.
 - Photon execution evidence through Classic/Py4J, not a wheel-only Serverless run.
 - Full upstream Zingg 0.7 phase/model parity.
