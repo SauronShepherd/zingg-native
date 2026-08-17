@@ -1,0 +1,34 @@
+{
+  "generatedAt": "2026-08-17",
+  "profile": "sda",
+  "target": "Databricks Serverless",
+  "runtime": "Spark 4.1.0",
+  "sharedCoreJarTask": {
+    "jobId": "295665184144562",
+    "runId": "923271170978947",
+    "taskRunId": "879126116901332",
+    "result": "SUCCESS",
+    "output": "ZINGG_NATIVE_SERVERLESS_CORE_E2E PASS similarities=exact,jaccard,jaro phases=findTrainingData,label,updateLabel spark=4.1.0",
+    "verified": [
+      "EXACT_SIMILARITY",
+      "JACCARD_SIMILARITY",
+      "JARO_SIMILARITY",
+      "findTrainingData",
+      "label",
+      "updateLabel"
+    ]
+  },
+  "managedConnectFeasibility": {
+    "jobId": "177009162619307",
+    "runId": "813057979287661",
+    "taskRunId": "1075870166806203",
+    "result": "FAILED_BEFORE_NATIVE_EXECUTION",
+    "error": "CONFIG_NOT_AVAILABLE: Configuration zingg.native.connect.plugin.loaded is not available",
+    "claim": "Managed Serverless Connect plugin activation is unsupported on the tested path"
+  },
+  "notClaimed": [
+    "managed Connect ExpressionPlugin execution",
+    "full upstream train/match/link/model parity",
+    "Dedicated or Photon execution"
+  ]
+}
