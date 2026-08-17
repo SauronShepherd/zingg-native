@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from zingg_native.backend.connect import _ZinggNativeExpression
 
 
@@ -59,3 +61,19 @@ def test_connect_rejects_unimplemented_jaro_operation():
         assert "JARO_SIMILARITY" in str(exc)
     else:
         raise AssertionError("Connect must reject unsupported Jaro")
+
+
+def test_connect_accepts_shared_case_normalize_operation():
+    from zingg_native.backend.connect import ConnectBackend
+
+    class Conf:
+        def get(self, key, default):
+            return "true"
+
+    class Spark:
+        conf = Conf()
+
+    backend = ConnectBackend(Spark())
+    assert backend.name == "connect-plugin"
+    source = (Path(__file__).parents[1] / "connect/src/main/scala/ai/zingg/native/connect/ZinggNativeExpressionPlugin.scala").read_text()
+    assert 'case "CASE_NORMALIZE"' in source

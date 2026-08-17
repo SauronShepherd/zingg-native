@@ -95,6 +95,14 @@ object CatalystSimilarity {
   }
 }
 
+/** Catalyst expression boundary for Connect operations that have public nodes. */
+object CatalystPreprocess {
+  def apply(operationId: String, input: Expression): Expression = operationId match {
+    case "CASE_NORMALIZE" => Lower(Cast(input, StringType))
+    case other => throw new IllegalArgumentException(s"Catalyst Connect preprocessing not implemented: $other")
+  }
+}
+
 object Core {
   val libraryVersion = "0.2.0-SNAPSHOT"
   val protocolVersion = "1"

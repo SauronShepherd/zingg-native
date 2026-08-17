@@ -7,7 +7,7 @@ import org.apache.spark.sql.connect.plugin.ExpressionPlugin
 import org.apache.spark.connect.proto.{Expression => ConnectExpression}
 import org.sparkproject.connect.protobuf.CodedInputStream
 import org.sparkproject.connect.protobuf.Any
-import ai.zingg.native.CatalystSimilarity
+import ai.zingg.native.{CatalystPreprocess, CatalystSimilarity}
 import java.util.Optional
 
 /**
@@ -37,9 +37,10 @@ final class ZinggNativeExpressionPlugin extends ExpressionPlugin {
       }
     }
     if (version != 1) throw new IllegalArgumentException(s"Unsupported zingg-native Connect protocol version: $version")
-    if (args.size != 2) throw new IllegalArgumentException(s"$operation requires exactly two child expressions")
+    val expectedArgs = if (operation == "CASE_NORMALIZE") 1 else 2
+    if (args.size != expectedArgs) throw new IllegalArgumentException(s"$operation requires exactly $expectedArgs child expressions")
     val left = planner.transformExpression(args(0))
-    val right = planner.transformExpression(args(1))
+    val right = if (expectedArgs == 2) planner.transformExpression(args(1)) else left
     operation match {
       case "EXACT_SIMILARITY" =>
         val one = Literal(1.0)
@@ -47,6 +48,8 @@ final class ZinggNativeExpressionPlugin extends ExpressionPlugin {
         Optional.of[Expression](If(Or(IsNull(left), IsNull(right)), one, If(EqualTo(left, right), one, zero)))
       case "JACCARD_SIMILARITY" =>
         Optional.of[Expression](CatalystSimilarity(operation, left, right))
+      case "CASE_NORMALIZE" =>
+        Optional.of[Expression](CatalystPreprocess(operation, left))
       case other => throw new IllegalArgumentException(s"Unknown zingg-native Connect operation: $other")
     }
   }

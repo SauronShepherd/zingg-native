@@ -69,14 +69,14 @@ class ConnectBackend:
             )
 
     def transform(self, df: Any, operation: str, **options: Any) -> Any:
-        if operation not in {"EXACT_SIMILARITY", "JACCARD_SIMILARITY"}:
+        if operation not in {"EXACT_SIMILARITY", "JACCARD_SIMILARITY", "CASE_NORMALIZE"}:
             raise NotImplementedError(
                 f"Connect server plugin does not certify operation {operation}"
             )
         from pyspark.sql.connect.column import Column
 
-        expression = _ZinggNativeExpression(
-            operation,
-            [df[options["left"]]._expr, df[options["right"]]._expr],
-        )
+        arguments = [df[options["left"]]._expr]
+        if operation != "CASE_NORMALIZE":
+            arguments.append(df[options["right"]]._expr)
+        expression = _ZinggNativeExpression(operation, arguments)
         return df.withColumn(options.get("output", "z_exact"), Column(expression))
