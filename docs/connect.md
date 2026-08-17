@@ -7,6 +7,10 @@ Spark expressions; the server plugin parses those children through
 `SparkConnectPlanner` and constructs standard Catalyst expressions. Jaro is
 still pending a Catalyst-native Connect expression implementation.
 
+Local Spark 4.1 Connect E2E has been verified for Jaccard through the installed
+plugin (WSL-hosted server, Windows client): `New York` versus `new-york`
+returned `1.0`. Exact and Jaro Connect E2E remain open.
+
 For self-managed Spark Connect, build the artifacts and run
 `scripts/start-connect-server.ps1` with `SPARK_HOME` pointing at a Spark 4.1
 distribution. Configure the same plugin class through

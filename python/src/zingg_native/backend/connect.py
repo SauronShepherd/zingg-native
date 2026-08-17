@@ -22,12 +22,16 @@ def _bytes_field(number: int, value: bytes) -> bytes:
     return _varint((number << 3) | 2) + _varint(len(value)) + value
 
 
-class _ZinggNativeExpression:
+from pyspark.sql.connect.expressions import Expression
+
+
+class _ZinggNativeExpression(Expression):
     """Spark Connect expression envelope; arithmetic remains in the JVM core."""
 
     _type_url = "type.googleapis.com/ai.zingg.native.connect.v1.ZinggNativeExpression"
 
     def __init__(self, operation: str, arguments: Sequence[Any]):
+        super().__init__()
         self.operation = operation
         self.arguments = arguments
 

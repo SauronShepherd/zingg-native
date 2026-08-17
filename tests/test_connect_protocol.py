@@ -20,3 +20,9 @@ def test_connect_payload_is_versioned_and_contains_children():
     assert b"EXACT_SIMILARITY" in plan.extension.value
     assert plan.extension.value.count(b"left") == 1
     assert plan.extension.value.count(b"right") == 1
+
+
+def test_connect_expression_uses_spark_41_expression_base():
+    from pyspark.sql.connect.expressions import Expression
+
+    assert isinstance(_ZinggNativeExpression("EXACT_SIMILARITY", []), Expression)

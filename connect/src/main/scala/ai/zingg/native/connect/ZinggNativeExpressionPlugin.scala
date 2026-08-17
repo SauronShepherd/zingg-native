@@ -6,6 +6,7 @@ import org.apache.spark.sql.connect.planner.SparkConnectPlanner
 import org.apache.spark.sql.connect.plugin.ExpressionPlugin
 import org.apache.spark.connect.proto.{Expression => ConnectExpression}
 import org.sparkproject.connect.protobuf.CodedInputStream
+import org.sparkproject.connect.protobuf.Any
 import ai.zingg.native.CatalystSimilarity
 import java.util.Optional
 
@@ -17,7 +18,10 @@ import java.util.Optional
 final class ZinggNativeExpressionPlugin extends ExpressionPlugin {
   override def transform(payload: Array[Byte], planner: SparkConnectPlanner): Optional[Expression] = {
     if (payload == null || payload.isEmpty) return Optional.empty()
-    val in = CodedInputStream.newInstance(payload)
+    // Spark passes the complete Connect extension Any to ExpressionPlugin;
+    // the versioned zingg-native envelope is stored in Any.value.
+    val envelope = Any.parseFrom(payload)
+    val in = CodedInputStream.newInstance(envelope.getValue.toByteArray)
     var version = 0
     var operation = ""
     val args = scala.collection.mutable.ArrayBuffer.empty[ConnectExpression]
