@@ -1,0 +1,44 @@
+version: 1
+upstream: zingg-0.7.0
+reference: reference/zingg-0.7.0.lock
+operations:
+  - id: similarity.udf
+    phase: feature-generation
+    source: spark/core/src/main/java/zingg/spark/core/similarity/SparkBaseTransformer.java
+    construct: callUDF/UDF2
+    status: open
+  - id: hash.udf
+    phase: blocking
+    source: spark/core/src/main/java/zingg/spark/core/hash/SparkHashFunction.java
+    construct: callUDF/UDF1
+    status: open
+  - id: hash.registration
+    phase: blocking
+    source: spark/core/src/main/java/zingg/spark/core/util/SparkHashUtil.java
+    construct: UDF registration
+    status: open
+  - id: blocking-tree.map
+    phase: findTrainingData
+    source: spark/core/src/main/java/zingg/spark/core/util/SparkBlockingTreeUtil.java
+    construct: Dataset.map/Encoders.row
+    status: open
+  - id: block-function.map
+    phase: findTrainingData
+    source: spark/core/src/main/java/zingg/spark/core/block/SparkBlockFunction.java
+    construct: MapFunction<Row,Row>
+    status: open
+  - id: stopwords.udf
+    phase: preprocessing
+    source: spark/core/src/main/java/zingg/spark/core/preprocess/stopwords/SparkStopWordsRemover.java
+    construct: callUDF/UDF2
+    status: open
+  - id: vector-extractor.udf
+    phase: train/match
+    source: spark/core/src/main/java/zingg/spark/core/model/VectorValueExtractor.java
+    construct: callUDF/UDF1
+    status: open
+  - id: spark-context
+    phase: runtime
+    source: spark/core/src/main/java/zingg/spark/core/context/ZinggSparkContext.java
+    construct: JavaSparkContext
+    status: open
