@@ -27,8 +27,16 @@ object NativeOperation {
   case object JaroSimilarity extends NativeOperation { val id = "similarity.jaro" }
   case object Trim extends NativeOperation { val id = "preprocess.trim" }
   case object CaseNormalize extends NativeOperation { val id = "preprocess.case_normalize" }
+  // Inventoried upstream boundaries. They are intentionally unresolved until
+  // a semantic oracle proves a public-expression replacement.
+  case object Hash extends NativeOperation { val id = "blocking.hash" }
+  case object BlockingTree extends NativeOperation { val id = "blocking.tree" }
+  case object StopWords extends NativeOperation { val id = "preprocess.stopwords" }
+  case object VectorExtraction extends NativeOperation { val id = "model.vector_extraction" }
+  case object GraphLink extends NativeOperation { val id = "link.connected_components" }
 
-  val all: Seq[NativeOperation] = Seq(ExactSimilarity, JaccardSimilarity, JaroSimilarity, Trim, CaseNormalize)
+  val all: Seq[NativeOperation] = Seq(ExactSimilarity, JaccardSimilarity, JaroSimilarity, Trim, CaseNormalize,
+    Hash, BlockingTree, StopWords, VectorExtraction, GraphLink)
   private val byId = all.map(op => op.id -> op).toMap
   def resolve(id: String): NativeOperation = byId.getOrElse(id, throw new IllegalArgumentException(s"Unknown native operation: $id"))
 }

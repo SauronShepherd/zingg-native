@@ -9,7 +9,9 @@
   ],
   "requiredOperations": [
     "similarity.exact", "similarity.jaccard", "similarity.jaro",
-    "preprocess.trim", "preprocess.case_normalize"
+    "preprocess.trim", "preprocess.case_normalize", "blocking.hash",
+    "blocking.tree", "preprocess.stopwords", "model.vector_extraction",
+    "link.connected_components"
   ],
   "activation": {"systemProperty": "zingg.native.mode", "environmentVariable": "ZINGG_NATIVE_MODE"}
 }
