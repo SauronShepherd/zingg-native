@@ -23,6 +23,9 @@ jobs:
         run: python -m ruff check python/src tests
       - name: Type-check Python
         run: python -m mypy python/src
+      - name: Verify architecture boundaries
+        shell: pwsh
+        run: ./scripts/check-architecture.ps1
       - name: Test Python
         run: python -m pytest -q
 

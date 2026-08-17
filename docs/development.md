@@ -48,3 +48,14 @@ python scripts/artifact-checksums.py
 ```
 
 CI publishes the same three-line SHA-256 manifest as a workflow artifact.
+# Development gates
+
+Run the architecture boundary check before submitting changes:
+
+```powershell
+./scripts/check-architecture.ps1
+```
+
+It rejects private Spark JVM handles outside the approved transport modules and
+ensures the Python similarity module remains explicitly marked as a comparison
+prototype. CI runs the same check on every Python build.
