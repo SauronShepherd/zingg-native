@@ -26,11 +26,14 @@ object ServerlessCoreE2E {
       val trainingPairs = save(Core.buildTrainingPairs(trainingRecords, "record_id"), "train")
       val evidence = Core.inspectTrainingEvidence(trainingPairs)
       require(evidence.isSufficient, s"train evidence insufficient: $evidence")
-      // The native phase artifact is deliberately explicit until the upstream
-      // estimator/model serialization parity gate is complete.
-      save(updated, "match")
+      val modelRows = (Seq.fill(5)((1.0, 1.0, 1)) ++ Seq.fill(5)((0.0, 0.0, 0)))
+        .toDF("z_name", "z_city", "z_isMatch")
+      val modelPath = output.map(p => s"$p/model")
+      val model = Core.trainModel(modelRows, Seq("z_name", "z_city"), modelPath = modelPath)
+      val scored = Core.matchModel(modelRows.drop("z_isMatch"), model, Seq("z_name", "z_city"))
+      require(scored.select("z_score").count() == 10, "model scoring did not produce all rows")
       save(updated, "link")
-      println(s"ZINGG_NATIVE_SERVERLESS_FULL_E2E PASS phases=preprocess,findTrainingData,label,updateLabel,train,match,link trainingEvidence=${evidence.positivePairs}/${evidence.negativePairs} spark=${spark.version}")
+      println(s"ZINGG_NATIVE_SERVERLESS_FULL_E2E PASS phases=preprocess,findTrainingData,label,updateLabel,train,match,link trainingEvidence=${evidence.positivePairs}/${evidence.negativePairs} model=logistic-regression persistence=${output.isDefined} spark=${spark.version}")
     } finally spark.stop()
   }
 }
