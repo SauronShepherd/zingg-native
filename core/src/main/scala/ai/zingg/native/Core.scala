@@ -108,8 +108,8 @@ object Core {
     require(keys.nonEmpty, "keys must contain at least one column")
     val missing = (keys :+ idColumn).distinct.filterNot(df.columns.contains)
     require(missing.isEmpty, s"Unknown training-data columns: ${missing.mkString(", ")}")
-    val left = df.select(col(idColumn).alias("_left_id"), keys.map(k => col(k).alias(s"_left_$k")): _*).alias("left")
-    val right = df.select(col(idColumn).alias("_right_id"), keys.map(k => col(k).alias(s"_right_$k")): _*).alias("right")
+    val left = df.select((Seq(col(idColumn).alias("_left_id")) ++ keys.map(k => col(k).alias(s"_left_$k"))): _*).alias("left")
+    val right = df.select((Seq(col(idColumn).alias("_right_id")) ++ keys.map(k => col(k).alias(s"_right_$k"))): _*).alias("right")
     val shared = keys.map { k =>
       val l = col(s"left._left_$k")
       val r = col(s"right._right_$k")
@@ -120,7 +120,7 @@ object Core {
     val scores = keys.map(k => ExactSimilarity(col(s"left._left_$k"), col(s"right._right_$k"), ctx).alias(s"z_$k"))
     val pairId = org.apache.spark.sql.functions.sha2(org.apache.spark.sql.functions.concat_ws("|", col("left._left_id"), col("right._right_id")), 256)
     left.join(right, ordered && shared)
-      .select(pairId.alias("z_cluster"), col("left._left_id").alias(s"z_left_$idColumn"), col("right._right_id").alias(s"z_right_$idColumn"), scores: _*)
+      .select((Seq(pairId.alias("z_cluster"), col("left._left_id").alias(s"z_left_$idColumn"), col("right._right_id").alias(s"z_right_$idColumn")) ++ scores): _*)
       .withColumn("z_score", keys.map(k => col(s"z_$k")).reduce(_ + _) / lit(keys.size.toDouble))
       .withColumn("z_isMatch", lit(null).cast("int"))
   }
