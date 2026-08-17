@@ -18,9 +18,11 @@
 
 - Self-managed Spark Connect Jaro and phase E2E with the installed plugin.
 - Connect parity for Jaro and the shared phase subset.
-- Databricks Serverless managed Connect plugin installation and execution.
+- Databricks Serverless managed Connect plugin installation and execution;
+  the tested notebook path is currently unsupported (`CONFIG_NOT_AVAILABLE`).
 - Full upstream Zingg 0.7 phase/model parity.
 - CI execution and artifact-install integration tests.
 
-Databricks Serverless is not claimed until managed server-plugin installation
-is proven. Dedicated/Photon validation is intentionally out of scope.
+Databricks Serverless shared-core JAR execution is verified, but managed
+Connect is not claimed because the tested plugin path is unsupported.
+Dedicated/Photon validation is intentionally out of scope.

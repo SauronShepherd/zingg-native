@@ -43,6 +43,7 @@ For the verified WSL setup, the server was launched with Spark 4.1's
 On Java 21, add
 `--add-opens=java.base/java.nio=ALL-UNNAMED` for Arrow result serialization.
 
-Databricks Serverless and Databricks Connect are not claimed until the server
-plugin can be installed on the actual managed server and the same payload is
-executed there.
+Databricks Serverless managed Connect is currently unsupported on the tested
+path: the real feasibility job was rejected with
+`CONFIG_NOT_AVAILABLE` when setting the plugin activation configuration.
+Self-managed Spark Connect remains the reproducible plugin deployment path.
