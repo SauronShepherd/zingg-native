@@ -32,6 +32,13 @@ class ClassicBackend:
         from pyspark.sql import DataFrame
         return DataFrame(jdf, self.spark)
 
+    def capabilities(self) -> dict[str, Any]:
+        return {
+            "metadata": self._gateway.capabilityMetadata(),
+            "operations": list(self._gateway.supportedOperations()),
+            "phases": list(self._gateway.supportedPhases()),
+        }
+
     def find_training_data(self, df: Any, keys: list[str], id_column: str) -> Any:
         if not keys:
             raise ValueError("keys must contain at least one column")

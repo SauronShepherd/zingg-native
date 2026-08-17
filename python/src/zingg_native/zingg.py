@@ -37,7 +37,7 @@ class Zingg:
 
     def status(self) -> dict[str, Any]:
         """Return diagnostics without using them as a correctness switch."""
-        return {
+        result = {
             "library_version": "0.2.0-SNAPSHOT",
             "protocol_version": self.config.protocol_version,
             "backend": getattr(self.backend, "name", type(self.backend).__name__),
@@ -46,6 +46,10 @@ class Zingg:
             "engine": self.runtime.engine,
             "native_execution_observed": self.runtime.native_execution,
         }
+        capabilities = getattr(self.backend, "capabilities", None)
+        if capabilities is not None:
+            result["capabilities"] = capabilities()
+        return result
 
     def transform(self, df: Any, operation: str, **options: Any) -> Any:
         return self.backend.transform(df, operation, **options)

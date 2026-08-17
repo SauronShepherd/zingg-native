@@ -28,7 +28,9 @@ def main() -> None:
             """
         )
         zingg = Zingg(spark=spark)
-        assert zingg.status()["backend"] == "classic-py4j"
+        status = zingg.status()
+        assert status["backend"] == "classic-py4j"
+        assert status["capabilities"]["phases"] == ["findTrainingData", "label", "updateLabel"]
         pairs = zingg.find_training_data(source, ["name", "city"], "record_id")
         rows = [tuple(row) for row in pairs.collect()]
         assert len(rows) == 1, rows
@@ -39,7 +41,7 @@ def main() -> None:
         explicit = spark.sql("SELECT 'missing' AS z_cluster, 0 AS z_isMatch")
         updated_rows = [tuple(row) for row in zingg.update_label(pairs, explicit).collect()]
         assert updated_rows[0][-1] == 2, updated_rows
-        print({"status": zingg.status(), "rows": rows, "labeled": labeled_rows, "updated": updated_rows})
+        print({"status": status, "rows": rows, "labeled": labeled_rows, "updated": updated_rows})
     finally:
         spark.stop()
 
