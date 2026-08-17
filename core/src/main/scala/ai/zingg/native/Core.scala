@@ -1,7 +1,7 @@
 package ai.zingg.native
 
 import org.apache.spark.sql.{Column, DataFrame, SparkSession}
-import org.apache.spark.sql.catalyst.expressions.{ArrayIntersect, ArrayUnion, Cast, EqualTo, Expression, If, IsNull, Length, Literal, Lower, RegExpExtractAll, Size, Divide, Or}
+import org.apache.spark.sql.catalyst.expressions.{ArrayIntersect, ArrayUnion, Cast, EqualTo, Expression, If, IsNull, Length, Literal, Lower, RegExpExtractAll, Size, Divide, Or, StringTrim}
 import org.apache.spark.sql.types.{DoubleType, StringType}
 import org.apache.spark.sql.functions.{array, array_intersect, array_union, col, concat, element_at, floor, greatest, least, length, lit, lower, regexp_extract_all, sequence, size, struct, transform, trim, when, zip_with, aggregate}
 
@@ -99,6 +99,7 @@ object CatalystSimilarity {
 object CatalystPreprocess {
   def apply(operationId: String, input: Expression): Expression = operationId match {
     case "CASE_NORMALIZE" => Lower(Cast(input, StringType))
+    case "TRIM" => StringTrim(input)
     case other => throw new IllegalArgumentException(s"Catalyst Connect preprocessing not implemented: $other")
   }
 }
