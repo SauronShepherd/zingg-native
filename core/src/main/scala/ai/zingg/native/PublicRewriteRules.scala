@@ -96,10 +96,25 @@ object PublicRewriteRules {
   object TrimInt2 extends TrimIntRule("rewrite.blocking.trimLast2DigitsInt", NativeOperation.TrimLastDigitsInt2, 2)
   object TrimInt3 extends TrimIntRule("rewrite.blocking.trimLast3DigitsInt", NativeOperation.TrimLastDigitsInt3, 3)
 
+  abstract class RangeRule(val id: String, val operation: NativeOperation, lower: Int, upper: Int) extends RewriteRule {
+    def apply(left: Column, right: Option[Column], context: RewriteContext): Column =
+      when(left.isNotNull && left >= lower && left < upper, org.apache.spark.sql.functions.lit(1)).otherwise(org.apache.spark.sql.functions.lit(0))
+  }
+  object RangeDbl0To10 extends RangeRule("rewrite.blocking.rangeBetween0And10Dbl", NativeOperation.RangeDbl0To10, 0, 10)
+  object RangeDbl10To100 extends RangeRule("rewrite.blocking.rangeBetween10And100Dbl", NativeOperation.RangeDbl10To100, 10, 100)
+  object RangeDbl100To1000 extends RangeRule("rewrite.blocking.rangeBetween100And1000Dbl", NativeOperation.RangeDbl100To1000, 100, 1000)
+  object RangeDbl1000To10000 extends RangeRule("rewrite.blocking.rangeBetween1000And10000Dbl", NativeOperation.RangeDbl1000To10000, 1000, 10000)
+  object RangeInt0To10 extends RangeRule("rewrite.blocking.rangeBetween0And10Int", NativeOperation.RangeInt0To10, 0, 10)
+  object RangeInt10To100 extends RangeRule("rewrite.blocking.rangeBetween10And100Int", NativeOperation.RangeInt10To100, 10, 100)
+  object RangeInt100To1000 extends RangeRule("rewrite.blocking.rangeBetween100And1000Int", NativeOperation.RangeInt100To1000, 100, 1000)
+  object RangeInt1000To10000 extends RangeRule("rewrite.blocking.rangeBetween1000And10000Int", NativeOperation.RangeInt1000To10000, 1000, 10000)
+
   val all: Seq[RewriteRule] = Seq(Exact, Jaccard, Jaro, Trim, CaseNormalize,
     First1Chars, First2Chars, First3Chars, First4Chars, Last1Chars, Last2Chars, Last3Chars,
     LastWord, IsNullOrEmpty, IdentityString, IdentityInteger, IdentityLong, LessThanZero, Round,
-    TruncateDouble1, TruncateDouble2, TruncateDouble3, TrimInt1, TrimInt2, TrimInt3)
+    TruncateDouble1, TruncateDouble2, TruncateDouble3, TrimInt1, TrimInt2, TrimInt3,
+    RangeDbl0To10, RangeDbl10To100, RangeDbl100To1000, RangeDbl1000To10000,
+    RangeInt0To10, RangeInt10To100, RangeInt100To1000, RangeInt1000To10000)
 }
 
 object NativeRewriteRegistry {

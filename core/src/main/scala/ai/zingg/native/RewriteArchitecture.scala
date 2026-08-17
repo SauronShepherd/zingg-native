@@ -54,12 +54,22 @@ object NativeOperation {
   case object TrimLastDigitsInt1 extends NativeOperation { val id = "blocking.trimLast1DigitsInt" }
   case object TrimLastDigitsInt2 extends NativeOperation { val id = "blocking.trimLast2DigitsInt" }
   case object TrimLastDigitsInt3 extends NativeOperation { val id = "blocking.trimLast3DigitsInt" }
+  case object RangeDbl0To10 extends NativeOperation { val id = "blocking.rangeBetween0And10Dbl" }
+  case object RangeDbl10To100 extends NativeOperation { val id = "blocking.rangeBetween10And100Dbl" }
+  case object RangeDbl100To1000 extends NativeOperation { val id = "blocking.rangeBetween100And1000Dbl" }
+  case object RangeDbl1000To10000 extends NativeOperation { val id = "blocking.rangeBetween1000And10000Dbl" }
+  case object RangeInt0To10 extends NativeOperation { val id = "blocking.rangeBetween0And10Int" }
+  case object RangeInt10To100 extends NativeOperation { val id = "blocking.rangeBetween10And100Int" }
+  case object RangeInt100To1000 extends NativeOperation { val id = "blocking.rangeBetween100And1000Int" }
+  case object RangeInt1000To10000 extends NativeOperation { val id = "blocking.rangeBetween1000And10000Int" }
 
   val all: Seq[NativeOperation] = Seq(ExactSimilarity, JaccardSimilarity, JaroSimilarity, Trim, CaseNormalize,
     Hash, BlockingTree, StopWords, VectorExtraction, GraphLink, First1Chars, First2Chars, First3Chars,
     First4Chars, Last1Chars, Last2Chars, Last3Chars, LastWord, IsNullOrEmpty,
     IdentityString, IdentityInteger, IdentityLong, LessThanZero, Round, TruncateDouble1, TruncateDouble2,
-    TruncateDouble3, TrimLastDigitsInt1, TrimLastDigitsInt2, TrimLastDigitsInt3)
+    TruncateDouble3, TrimLastDigitsInt1, TrimLastDigitsInt2, TrimLastDigitsInt3, RangeDbl0To10,
+    RangeDbl10To100, RangeDbl100To1000, RangeDbl1000To10000, RangeInt0To10, RangeInt10To100,
+    RangeInt100To1000, RangeInt1000To10000)
   private val byId = all.map(op => op.id -> op).toMap
   def resolve(id: String): NativeOperation = byId.getOrElse(id, throw new IllegalArgumentException(s"Unknown native operation: $id"))
 }

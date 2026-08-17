@@ -34,7 +34,10 @@ class RewriteArchitectureTest {
         "blocking.identityInteger", "blocking.identityLong", "blocking.lessThanZero",
         "blocking.round", "blocking.truncateDoubleTo1Places", "blocking.truncateDoubleTo2Places",
         "blocking.truncateDoubleTo3Places", "blocking.trimLast1DigitsInt", "blocking.trimLast2DigitsInt",
-        "blocking.trimLast3DigitsInt"),
+        "blocking.trimLast3DigitsInt", "blocking.rangeBetween0And10Dbl", "blocking.rangeBetween10And100Dbl",
+        "blocking.rangeBetween100And1000Dbl", "blocking.rangeBetween1000And10000Dbl",
+        "blocking.rangeBetween0And10Int", "blocking.rangeBetween10And100Int",
+        "blocking.rangeBetween100And1000Int", "blocking.rangeBetween1000And10000Int"),
       NativeRewriteRegistry.default.operationIds.toSet)
   }
 }
