@@ -14,4 +14,10 @@
     <dependency><groupId>org.scala-lang</groupId><artifactId>scala-library</artifactId><version>${scala.version}</version></dependency>
     <dependency><groupId>org.apache.spark</groupId><artifactId>spark-sql_2.13</artifactId><version>${spark.version}</version></dependency>
   </dependencies></dependencyManagement>
+  <profiles>
+    <profile>
+      <id>spark40</id>
+      <properties><spark.version>4.0.0</spark.version></properties>
+    </profile>
+  </profiles>
 </project>

@@ -25,6 +25,12 @@ previously installed wheel with the same package name.
 The build script uses `MAVEN_HOME` when configured, then the repository's
 ignored `.tools/apache-maven-3.9.11` runtime, and finally `mvn` from `PATH`.
 
+Spark 4.1 is the default target. The optional Spark 4.0 profile is tested with:
+
+```powershell
+.tools\apache-maven-3.9.11\bin\mvn.cmd -Pspark40 clean test
+```
+
 Keep Databricks Connect in a separate environment from OSS PySpark. The
 Connect server plugin and the Classic core JAR are compiled by Maven and must
 be tested against the Spark API version declared by the selected runtime.
