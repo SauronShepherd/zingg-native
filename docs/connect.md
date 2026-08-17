@@ -47,3 +47,7 @@ Databricks Serverless managed Connect is currently unsupported on the tested
 path: the real feasibility job was rejected with
 `CONFIG_NOT_AVAILABLE` when setting the plugin activation configuration.
 Self-managed Spark Connect remains the reproducible plugin deployment path.
+
+The protocol also defines versioned `ModelArtifact` and
+`BlockingTreeArtifact` references. They are compatibility envelopes only; the
+native trainer and matcher do not yet consume or produce them.
