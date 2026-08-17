@@ -35,3 +35,11 @@ def test_serverless_evidence_records_success_and_non_claims():
     assert evidence["managedConnectFeasibility"]["result"] == "FAILED_BEFORE_NATIVE_EXECUTION"
     assert evidence["storageBoundary"]["error"] == "DBFS_DISABLED"
     assert "managed Connect ExpressionPlugin execution" in evidence["notClaimed"]
+
+
+def test_bundle_declares_dedicated_photon_gate():
+    root = Path(__file__).parents[1]
+    bundle = (root / "resources" / "serverless-core-e2e.yml").read_text(encoding="utf-8")
+    assert "zingg_native_dedicated_photon_e2e" in bundle
+    assert "runtime_engine: PHOTON" in bundle
+    assert "spark_version: 15.4.x-scala2.13" in bundle

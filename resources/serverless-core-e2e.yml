@@ -18,3 +18,23 @@ resources:
             environment_version: "5"
             java_dependencies:
               - ${var.artifact_root}/zingg-native-core_2.13-0.2.0-SNAPSHOT.jar
+
+    zingg_native_dedicated_photon_e2e:
+      name: zingg-native-dedicated-photon-e2e
+      description: Dedicated Photon native-core execution gate; runtime evidence required before release claims
+      max_concurrent_runs: 1
+      job_clusters:
+        - job_cluster_key: photon
+          new_cluster:
+            spark_version: 15.4.x-scala2.13
+            runtime_engine: PHOTON
+            node_type_id: i3.xlarge
+            num_workers: 1
+      tasks:
+        - task_key: dedicated_photon_core_e2e
+          spark_jar_task:
+            main_class_name: ai.zingg.serverless.ServerlessCoreE2E
+            parameters:
+              - --output-path
+              - ${var.output_volume}/dedicated-photon-run
+          job_cluster_key: photon
