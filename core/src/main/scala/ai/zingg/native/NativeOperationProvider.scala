@@ -54,8 +54,15 @@ final class NativeOperationProvider private (val spark: SparkSession, val contex
 
 object NativeOperationProvider {
   def fromSpark(spark: SparkSession, phase: String): NativeOperationProvider = {
-    val mode = NativeExecutionMode.parse(spark.conf.get("zingg.native.mode", "OFF"))
-    val correlationId = spark.conf.get("zingg.native.run.id", "")
+    // Serverless-safe activation: use a supported application argument or
+    // environment variable, never an arbitrary Spark configuration key.
+    val modeValue = sys.props.get("zingg.native.mode")
+      .orElse(sys.env.get("ZINGG_NATIVE_MODE"))
+      .getOrElse("OFF")
+    val correlationId = sys.props.get("zingg.native.run.id")
+      .orElse(sys.env.get("ZINGG_NATIVE_RUN_ID"))
+      .getOrElse("")
+    val mode = NativeExecutionMode.parse(modeValue)
     new NativeOperationProvider(
       spark,
       RewriteContext(spark, mode, RuntimeDescriptor(spark.version, "2.13"), phase, correlationId))

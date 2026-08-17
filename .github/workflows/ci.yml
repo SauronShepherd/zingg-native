@@ -29,6 +29,9 @@ jobs:
       - name: Verify pinned upstream operation inventory
         shell: pwsh
         run: ./scripts/check-upstream-inventory.ps1
+      - name: Verify Zingg phase contract
+        shell: pwsh
+        run: ./scripts/check-phase-contract.ps1
       - name: Test Python
         run: python -m pytest -q
 

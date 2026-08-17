@@ -1,0 +1,15 @@
+{
+  "version": "0.7.0",
+  "phases": [
+    {"id": "findTrainingData", "input": "records", "output": "labeled training pairs", "artifact": "training data"},
+    {"id": "label", "input": "records and labels", "output": "labeled records", "artifact": "labels"},
+    {"id": "train", "input": "labeled training pairs", "output": "trained model", "artifact": "model"},
+    {"id": "match", "input": "records and model", "output": "candidate matches", "artifact": "match output"},
+    {"id": "link", "input": "candidate matches", "output": "linked entities", "artifact": "link output"}
+  ],
+  "requiredOperations": [
+    "similarity.exact", "similarity.jaccard", "similarity.jaro",
+    "preprocess.trim", "preprocess.case_normalize"
+  ],
+  "activation": {"systemProperty": "zingg.native.mode", "environmentVariable": "ZINGG_NATIVE_MODE"}
+}
