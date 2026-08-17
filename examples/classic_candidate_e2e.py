@@ -31,6 +31,16 @@ def main() -> None:
         status = zingg.status()
         assert status["backend"] == "classic-py4j"
         assert status["capabilities"]["phases"] == ["findTrainingData", "label", "updateLabel"]
+        jaccard_rows = zingg.jaccard(
+            spark.sql("SELECT 'New York' AS left_value, 'new-york' AS right_value"),
+            "left_value", "right_value", "z_jaccard"
+        ).select("z_jaccard").collect()
+        jaro_rows = zingg.jaro(
+            spark.sql("SELECT 'MARTHA' AS left_value, 'MARHTA' AS right_value"),
+            "left_value", "right_value", "z_jaro"
+        ).select("z_jaro").collect()
+        assert abs(jaccard_rows[0][0] - 1.0) < 1e-12
+        assert abs(jaro_rows[0][0] - 0.9444444444444445) < 1e-12
         pairs = zingg.find_training_data(source, ["name", "city"], "record_id")
         rows = [tuple(row) for row in pairs.collect()]
         assert len(rows) == 1, rows
@@ -41,7 +51,7 @@ def main() -> None:
         explicit = spark.sql("SELECT 'missing' AS z_cluster, 0 AS z_isMatch")
         updated_rows = [tuple(row) for row in zingg.update_label(pairs, explicit).collect()]
         assert updated_rows[0][-1] == 2, updated_rows
-        print({"status": status, "rows": rows, "labeled": labeled_rows, "updated": updated_rows})
+        print({"status": status, "similarities": {"jaccard": [tuple(row) for row in jaccard_rows], "jaro": [tuple(row) for row in jaro_rows]}, "rows": rows, "labeled": labeled_rows, "updated": updated_rows})
     finally:
         spark.stop()
 
