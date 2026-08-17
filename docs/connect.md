@@ -29,6 +29,20 @@ On Windows, configure `HADOOP_HOME` with `bin\winutils.exe` before running the
 launcher. The script checks this prerequisite explicitly; Linux/WSL hosts do
 not require that Windows utility.
 
+For the verified WSL setup, the server was launched with Spark 4.1's
+`org.apache.spark.deploy.SparkSubmit` and:
+
+```text
+--master local[2]
+--class org.apache.spark.sql.connect.service.SparkConnectServer
+--conf spark.connect.grpc.binding.port=15002
+--conf spark.connect.extensions.expression.classes=ai.zingg.native.connect.ZinggNativeExpressionPlugin
+--conf spark.jars=<core-jar>,<connect-jar>
+```
+
+On Java 21, add
+`--add-opens=java.base/java.nio=ALL-UNNAMED` for Arrow result serialization.
+
 Databricks Serverless and Databricks Connect are not claimed until the server
 plugin can be installed on the actual managed server and the same payload is
 executed there.
