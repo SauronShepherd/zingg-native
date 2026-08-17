@@ -29,6 +29,8 @@ def test_serverless_evidence_records_success_and_non_claims():
     assert "JARO_SIMILARITY" in evidence["sharedCoreJarTask"]["verified"]
     assert "persistence:UnityCatalogVolume" in evidence["sharedCoreJarTask"]["verified"]
     assert evidence["storageBoundary"]["result"] == "SUPPORTED_VOLUME_VERIFIED"
+    assert evidence["assetBundleTask"]["result"] == "SUCCESS"
+    assert "ServerlessAssetBundleDeployment" in evidence["assetBundleTask"]["verified"]
     assert evidence["managedConnectFeasibility"]["result"] == "FAILED_BEFORE_NATIVE_EXECUTION"
     assert evidence["storageBoundary"]["error"] == "DBFS_DISABLED"
     assert "managed Connect ExpressionPlugin execution" in evidence["notClaimed"]
