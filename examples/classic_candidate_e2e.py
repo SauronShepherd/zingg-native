@@ -1,6 +1,11 @@
 """Run the shared-core candidate phase through the real Classic/Py4J boundary."""
 
 import os
+import socketserver
+
+if not hasattr(socketserver, "UnixStreamServer"):
+    # Spark 4.1's Windows client imports this Unix-only symbol during startup.
+    socketserver.UnixStreamServer = socketserver.TCPServer  # type: ignore[attr-defined]
 
 from pyspark.sql import SparkSession
 
