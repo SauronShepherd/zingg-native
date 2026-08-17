@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import pytest
 from zingg_native.backend.connect import _ZinggNativeExpression
 
 
@@ -45,8 +46,6 @@ def test_proto_declares_versioned_artifact_references():
 
 
 def test_connect_rejects_unimplemented_jaro_operation():
-    import pytest
-
     from zingg_native.backend.connect import ConnectBackend
 
     class Conf:
