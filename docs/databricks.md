@@ -11,6 +11,16 @@ runs exercised Python-built Spark expressions through Spark Connect; they did
 not install or execute this repository's Connect server plugin and therefore
 cannot prove the shared-core architecture.
 
+A real Serverless JAR-task run now verifies the shared Scala core path:
+
+- job `295665184144562`, run `288631594018270`;
+- Serverless Spark `4.1.0`, task output
+  `ZINGG_NATIVE_SERVERLESS_CORE_E2E PASS rows=2 spark=4.1.0`;
+- reproducible definition: `databricks-serverless-core-e2e.json`.
+
+This is shared-core JAR evidence only. It is not evidence that the managed
+Spark Connect `ExpressionPlugin` is installed or active.
+
 The repository's historical `databricks-e2e-job*.json` definitions are retained
 only for provenance and are explicitly marked `DISABLED` and
 `prototype-only`; they must not be submitted as native release tests.

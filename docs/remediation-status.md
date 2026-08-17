@@ -17,4 +17,5 @@ implementation or target-runtime proof is still missing.
 | Databricks artifact presence | Verified | `sda` workspace imports and SHA-256 checks | Presence is not execution evidence |
 | Databricks Dedicated + Photon execution | Out of scope | Project target is Serverless only | No Photon claim |
 | Databricks Serverless/managed Connect | Open pending feasibility gate | No proven server-plugin installation path | No Serverless claim |
+| Databricks Serverless shared-core JAR task | Verified narrow slice | Job `295665184144562`, run `288631594018270` | Core JAR executed on Spark 4.1.0; Connect plugin remains open |
 | Full Zingg phase/model parity | Open | `docs/phase-map.md` | Training, matching, linking, clustering remain unimplemented in shared core |
