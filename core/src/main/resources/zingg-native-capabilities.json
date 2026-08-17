@@ -9,12 +9,16 @@
     "EXACT_SIMILARITY": {"semantic": "certified", "nativeExecution": "standard-expression"},
     "JACCARD_SIMILARITY": {"semantic": "certified", "nativeExecution": "standard-expression"},
     "JARO_SIMILARITY": {"semantic": "certified", "nativeExecution": "fallback-unless-verified"}
+    ,"TRIM": {"semantic": "certified-upstream-preprocessor", "nativeExecution": "standard-expression"}
+    ,"CASE_NORMALIZE": {"semantic": "certified-upstream-preprocessor", "nativeExecution": "standard-expression"}
   },
   "phaseParity": "not-certified",
   "connectExact": "verified-self-managed-spark-4.1",
   "connectJaccard": "verified-self-managed-spark-4.1",
+  "connectTrim": "implemented-self-managed-spark-4.1-e2e-pending",
+  "connectCaseNormalize": "implemented-self-managed-spark-4.1-e2e-pending",
   "connectJaro": "open",
   "databricksDedicatedPhoton": "out-of-scope-serverless-only",
-  "databricksServerlessSharedCoreJarTask": "verified-exact-jaccard-jaro-and-three-phases-spark-4.1.0",
+  "databricksServerlessSharedCoreJarTask": "verified-exact-jaccard-jaro-preprocessing-and-three-phases-spark-4.1.0",
   "databricksServerless": "shared-core-jar-verified-managed-connect-plugin-unsupported-current-path"
 }

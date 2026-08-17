@@ -10,6 +10,7 @@ implementation or target-runtime proof is still missing.
 | Classic/Py4J transport | Verified | `core/.../ClassicGateway.scala`, `python/.../classic.py`, `examples/classic_candidate_e2e.py` | Real local DataFrame execution |
 | Connect protocol/plugin | Verified | `connect/src/main/protobuf/`, `ZinggNativeExpressionPlugin.scala`, `examples/connect_similarity_e2e.py` | Exact/Jaccard local Spark 4.1 E2E |
 | Exact/Jaccard/Jaro shared similarities | Verified | `core/src/main/scala/.../Core.scala`, Scala/Python tests | Jaro Connect remains open |
+| Shared declarative preprocessing | Verified Classic + Serverless | `Core.preprocess`, Classic gateway, Serverless Bundle run `168088194011842` | TRIM and CASE_NORMALIZE execute as standard Spark expressions; Connect transport implementation awaits live server E2E |
 | Classic declarative phases | Verified subset | `Core.findTrainingData`, `Core.label`, `Core.updateLabel` | Local Classic E2E; upstream parity not certified |
 | Versioned model/blocking artifact contracts | Verified contract | `core/.../Artifacts.scala`, capability manifest, `ArtifactContractTest` | Schema and five-positive/five-negative validation exist; fitting/persistence remain open |
 | Training evidence readiness | Verified prerequisite | `Core.inspectTrainingEvidence`, Classic gateway, Serverless Bundle run `168088194011842` | Five-positive/five-negative count executed on Spark 4.1.0; model fitting remains open |
