@@ -51,6 +51,31 @@ def test_classic_boundary_rejects_unknown_operations_before_gateway_call():
         backend.preprocess(None, "NOPE", ["name"])
 
 
+def test_classic_handshake_rejects_incompatible_library():
+    from zingg_native.backend.classic import ClassicBackend
+
+    class Gateway:
+        def protocolVersion(self):
+            return "1"
+
+        def libraryVersion(self):
+            return "0.1.0"
+
+    class JVM:
+        class ai:
+            class zingg:
+                class native:
+                    class gateway:
+                        ClassicGateway = Gateway
+
+    class Spark:
+        _jvm = JVM()
+        version = "4.1.0"
+
+    with pytest.raises(BackendUnavailableError, match="library version"):
+        ClassicBackend(Spark())
+
+
 def test_unverified_phases_are_not_exposed_by_safe_transport():
     z = object.__new__(Zingg)
     z.backend = type("ClassicBackend", (), {})()

@@ -7,6 +7,8 @@ from ..errors import BackendUnavailableError
 
 class ClassicBackend:
     name = "classic-py4j"
+    expected_protocol = "1"
+    expected_library_prefix = "0.2.0"
 
     def __init__(self, spark: Any):
         self.spark = spark
@@ -18,8 +20,17 @@ class ClassicBackend:
                 "The shared zingg-native Scala core is not loaded in this Spark JVM; "
                 "install the core JAR before using backend='classic'."
             ) from exc
-        if gateway.protocolVersion() != "1":
-            raise BackendUnavailableError(f"Unsupported zingg-native protocol: {gateway.protocolVersion()}")
+        protocol = str(gateway.protocolVersion())
+        if protocol != self.expected_protocol:
+            raise BackendUnavailableError(f"Unsupported zingg-native protocol: {protocol}")
+        library = str(gateway.libraryVersion())
+        if not library.startswith(self.expected_library_prefix):
+            raise BackendUnavailableError(f"Unsupported zingg-native library version: {library}")
+        spark_version = str(getattr(spark, "version", "unknown"))
+        if spark_version != "unknown" and not spark_version.startswith("4."):
+            raise BackendUnavailableError(
+                f"Unsupported Spark runtime {spark_version}; this build requires Spark 4.x"
+            )
 
     def transform(self, df: Any, operation: str, **options: Any) -> Any:
         if operation not in {"EXACT_SIMILARITY", "JACCARD_SIMILARITY", "JARO_SIMILARITY"}:
