@@ -9,6 +9,9 @@
     "JARO_SIMILARITY": {"semantic": "certified", "nativeExecution": "fallback-unless-verified"}
   },
   "phaseParity": "not-certified",
+  "connectExact": "verified-self-managed-spark-4.1",
+  "connectJaccard": "verified-self-managed-spark-4.1",
+  "connectJaro": "open",
   "databricksDedicatedPhoton": "not-verified",
   "databricksServerless": "not-supported-until-server-plugin-proven"
 }
