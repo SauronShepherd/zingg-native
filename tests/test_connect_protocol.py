@@ -45,6 +45,8 @@ def test_proto_declares_versioned_artifact_references():
 
 
 def test_connect_rejects_unimplemented_jaro_operation():
+    import pytest
+
     from zingg_native.backend.connect import ConnectBackend
 
     class Conf:
@@ -55,12 +57,8 @@ def test_connect_rejects_unimplemented_jaro_operation():
         conf = Conf()
 
     backend = ConnectBackend(Spark())
-    try:
+    with pytest.raises(NotImplementedError, match="JARO_SIMILARITY"):
         backend.transform(None, "JARO_SIMILARITY", left="left", right="right")
-    except NotImplementedError as exc:
-        assert "JARO_SIMILARITY" in str(exc)
-    else:
-        raise AssertionError("Connect must reject unsupported Jaro")
 
 
 def test_connect_accepts_shared_case_normalize_operation():

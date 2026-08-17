@@ -9,9 +9,8 @@ still pending a Catalyst-native Connect expression implementation.
 
 Local Spark 4.1 Connect E2E has been verified for Exact, Jaccard, TRIM, and
 CASE_NORMALIZE through the installed plugin (WSL-hosted server, Windows
-client). The checks covered `New York` versus `new-york` (`1.0`), `x/x`,
-`x/y` (`1.0`, `0.0`), and string preprocessing. Jaro Connect E2E remains
-open.
+client). The checks cover `New York` versus `new-york` (`1.0`), `x/x`, `x/y`
+(`1.0`, `0.0`), and string preprocessing. Jaro Connect remains open.
 
 For self-managed Spark Connect, build the artifacts and run
 `scripts/start-connect-server.ps1` with `SPARK_HOME` pointing at a Spark 4.1
