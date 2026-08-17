@@ -1,6 +1,6 @@
 package ai.zingg.native.gateway
 
-import ai.zingg.native.Core
+import ai.zingg.native.{ArtifactSchema, Core}
 import org.apache.spark.sql.DataFrame
 import scala.jdk.CollectionConverters._
 
@@ -8,6 +8,8 @@ import scala.jdk.CollectionConverters._
 class ClassicGateway {
   def libraryVersion: String = Core.libraryVersion
   def protocolVersion: String = Core.protocolVersion
+  def modelArtifactSchemaVersion: Int = ArtifactSchema.currentVersion
+  def blockingTreeArtifactSchemaVersion: Int = ArtifactSchema.currentVersion
   def capabilityMetadata: String = "shared-core;EXACT_SIMILARITY;JACCARD_SIMILARITY;JARO_SIMILARITY;CLASSIC_FIND_TRAINING_DATA;CLASSIC_LABEL;CLASSIC_UPDATE_LABEL;phase-parity-not-certified"
   def sparkVersion(df: DataFrame): String = df.sparkSession.version
   def supportedOperations: Array[String] = Array("EXACT_SIMILARITY", "JACCARD_SIMILARITY", "JARO_SIMILARITY")

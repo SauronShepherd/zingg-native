@@ -23,4 +23,10 @@ class CoreRegistryTest {
     val phases = new gateway.ClassicGateway().supportedPhases.toSet
     assertEquals(Set("findTrainingData", "label", "updateLabel"), phases)
   }
+
+  @Test def gatewayExposesArtifactSchemaVersions(): Unit = {
+    val g = new gateway.ClassicGateway()
+    assertEquals(1, g.modelArtifactSchemaVersion)
+    assertEquals(1, g.blockingTreeArtifactSchemaVersion)
+  }
 }

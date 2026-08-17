@@ -23,7 +23,8 @@ schemas, then provide declarative Spark feature construction and persistence.
 The shared core now defines versioned `ModelArtifact` and
 `BlockingTreeArtifact` contracts in `Artifacts.scala`. Their schema versions
 are also exposed by the capability manifest; these contracts are validated but
-do not persist or fit a model.
+do not persist or fit a model. The Classic gateway exposes the same schema
+versions for Py4J compatibility checks.
 
 Current status: `train` remains unsupported in the SAFE API. The old Python
 threshold model is retained only behind the explicitly selected prototype
