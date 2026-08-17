@@ -88,3 +88,14 @@ jobs:
           else
             mvn -B -P${{ matrix.spark-profile }} test
           fi
+
+  semantic-reference:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare pinned Zingg 0.7 reference
+        shell: pwsh
+        run: ./scripts/prepare-reference.ps1
+      - name: Verify reference is clean and pinned
+        shell: pwsh
+        run: ./scripts/check-reference.ps1
