@@ -15,6 +15,6 @@ implementation or target-runtime proof is still missing.
 | Artifact reproducibility | Verified | `scripts/check-artifacts.ps1`, CI workflow | Wheel excludes Spark runtime |
 | Upstream semantic reference | Verified | `reference/zingg-0.7.0.lock`, `reference/upstream-zingg/` | Pinned 0.7.0 source checkout |
 | Databricks artifact presence | Verified | `sda` workspace imports and SHA-256 checks | Presence is not execution evidence |
-| Databricks Dedicated + Photon execution | Open | Workspace has no available cluster/worker environment | No Photon claim |
-| Databricks Serverless/managed Connect | Unsupported pending feasibility gate | No proven server-plugin installation path | No Serverless claim |
+| Databricks Dedicated + Photon execution | Out of scope | Project target is Serverless only | No Photon claim |
+| Databricks Serverless/managed Connect | Open pending feasibility gate | No proven server-plugin installation path | No Serverless claim |
 | Full Zingg phase/model parity | Open | `docs/phase-map.md` | Training, matching, linking, clustering remain unimplemented in shared core |

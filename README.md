@@ -22,7 +22,8 @@ scored = z.exact(df, "first_name", "second_name")
 
 Earlier wheel-only Databricks Serverless runs validated expression feasibility
 only. They do not validate the required shared Scala core or Connect server
-plugin, so Databricks Serverless is not currently supported or claimable.
+plugin, so Databricks Serverless remains unclaimed until the managed plugin
+path is proven.
 Fabric validation is deferred.
 
 See [release-readiness.md](docs/release-readiness.md) for the evidence-based

@@ -1,8 +1,10 @@
 # Databricks support boundary
 
-The supported architecture target is Databricks Runtime 18 LTS / Spark 4.1 /
-Scala 2.13 on Dedicated compute with Photon, where a compute-scoped core JAR
-can be loaded into the driver JVM and the Classic/Py4J gateway can be used.
+The Databricks target for this project is Databricks Serverless. Serverless
+exposes Spark through Spark Connect, so the release path requires the native
+Connect server plugin to be installed and loaded in the managed environment.
+Dedicated/Photon validation is out of scope for this project unless explicitly
+requested again.
 
 Databricks Serverless remains unclaimed. The previous wheel-only Serverless
 runs exercised Python-built Spark expressions through Spark Connect; they did
@@ -18,5 +20,8 @@ Required evidence before a Databricks release claim:
 - core and Connect JARs installed on the target compute;
 - gateway/plugin handshake reports protocol v1 and the expected core version;
 - the same Exact/Jaccard outputs are observed through the claimed transport;
-- Photon plan evidence is captured for each operation claimed native;
-- unsupported Serverless/plugin deployment is recorded rather than inferred.
+- Serverless plugin installation and loading are demonstrated on the actual
+  managed environment;
+- the same Exact/Jaccard outputs are observed through that managed Connect
+  transport;
+- unsupported plugin deployment is recorded rather than inferred.

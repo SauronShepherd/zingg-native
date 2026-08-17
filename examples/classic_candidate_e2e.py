@@ -1,6 +1,7 @@
 """Run the shared-core candidate phase through the real Classic/Py4J boundary."""
 
 import os
+import json
 import socketserver
 
 if not hasattr(socketserver, "UnixStreamServer"):
@@ -56,7 +57,22 @@ def main() -> None:
         explicit = spark.sql("SELECT 'missing' AS z_cluster, 0 AS z_isMatch")
         updated_rows = [tuple(row) for row in zingg.update_label(pairs, explicit).collect()]
         assert updated_rows[0][-1] == 2, updated_rows
-        print({"status": status, "similarities": {"jaccard": [tuple(row) for row in jaccard_rows], "jaro": [tuple(row) for row in jaro_rows]}, "rows": rows, "labeled": labeled_rows, "updated": updated_rows})
+        evidence = {
+            "status": status,
+            "similarities": {
+                "jaccard": [tuple(row) for row in jaccard_rows],
+                "jaro": [tuple(row) for row in jaro_rows],
+            },
+            "rows": rows,
+            "labeled": labeled_rows,
+            "updated": updated_rows,
+        }
+        encoded = json.dumps(evidence, sort_keys=True)
+        evidence_path = os.environ.get("ZINGG_NATIVE_EVIDENCE_PATH")
+        if evidence_path:
+            with open(evidence_path, "w", encoding="utf-8") as handle:
+                handle.write(encoded + "\n")
+        print(encoded)
     finally:
         spark.stop()
 

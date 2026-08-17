@@ -5,8 +5,8 @@
 | Runtime / transport | Exact | Jaccard | Jaro | Evidence |
 |---|---:|---:|---:|---|
 | Local Spark 4.0 Classic + Scala core JAR | PASS | PASS | PASS | Real Py4J execution; Jaro matches SecondString vectors |
-| Databricks Dedicated + Photon | NOT VERIFIED | NOT VERIFIED | NOT VERIFIED | No worker environment is available in the `sda` workspace |
-| Databricks Serverless / managed Connect | NOT SUPPORTED | NOT SUPPORTED | NOT SUPPORTED | Custom server plugin installation is not proven |
+| Databricks Dedicated + Photon | OUT OF SCOPE | OUT OF SCOPE | OUT OF SCOPE | Serverless-only project target |
+| Databricks Serverless / managed Connect | NOT VERIFIED | NOT VERIFIED | NOT VERIFIED | Custom server plugin installation is not proven |
 | Self-managed Spark Connect 4.1 | PASS | PASS | OPEN | Exact and Jaccard executed through local Spark 4.1 plugin; Jaro remains open |
 | Fabric Runtime 2 / Gluten+Velox | DEFERRED | DEFERRED | DEFERRED | Outside current scope |
 

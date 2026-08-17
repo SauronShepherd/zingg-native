@@ -18,11 +18,9 @@
 
 - Self-managed Spark Connect Jaro and phase E2E with the installed plugin.
 - Connect parity for Jaro and the shared phase subset.
-- Databricks Dedicated + Photon compute with the core JAR installed.
-- Photon execution evidence through Classic/Py4J, not a wheel-only Serverless run.
+- Databricks Serverless managed Connect plugin installation and execution.
 - Full upstream Zingg 0.7 phase/model parity.
 - CI execution and artifact-install integration tests.
 
-The `sda` workspace currently has no associated worker environments, so a
-Dedicated Photon cluster cannot be created there. Databricks Serverless is not
-claimed until managed server-plugin installation is proven.
+Databricks Serverless is not claimed until managed server-plugin installation
+is proven. Dedicated/Photon validation is intentionally out of scope.
