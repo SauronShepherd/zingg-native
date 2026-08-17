@@ -30,11 +30,15 @@ object ServerlessCoreE2E {
         s"unexpected jaro result: ${jaroRows(0)}")
 
       val records = Seq(
-        ("a", "Alice", "Madrid"),
+        ("a", " Alice ", "Madrid"),
         ("b", "alice", "madrid"),
-        ("c", "Bob", "Madrid")
+        ("c", "Bob", "Barcelona")
       ).toDF("record_id", "name", "city")
-      val pairs = Core.findTrainingData(records, "record_id", Seq("name", "city"))
+      val normalized = Core.preprocess(records, "TRIM", Seq("name", "city"))
+      val caseNormalized = Core.preprocess(normalized, "CASE_NORMALIZE", Seq("name", "city"))
+      require(caseNormalized.filter("name = 'alice' AND city = 'madrid'").count() == 2,
+        "shared preprocessing did not trim and normalize string fields")
+      val pairs = Core.findTrainingData(caseNormalized, "record_id", Seq("name", "city"))
       val pairRows = pairs.collect()
       require(pairRows.length == 1, s"expected one candidate pair, got ${pairRows.length}")
       val outputPath = args.sliding(2, 1).collectFirst {
@@ -58,7 +62,7 @@ object ServerlessCoreE2E {
       val evidence = Core.inspectTrainingEvidence(evidenceRows)
       require(evidence.isSufficient, s"training evidence should be sufficient: $evidence")
       val storage = outputPath.map(path => s" storage=$path").getOrElse("")
-      println(s"ZINGG_NATIVE_SERVERLESS_CORE_E2E PASS similarities=exact,jaccard,jaro phases=findTrainingData,label,updateLabel trainingEvidence=${evidence.positivePairs}/${evidence.negativePairs} persistence=${outputPath.isDefined} spark=${spark.version}$storage")
+      println(s"ZINGG_NATIVE_SERVERLESS_CORE_E2E PASS similarities=exact,jaccard,jaro phases=preprocess,findTrainingData,label,updateLabel trainingEvidence=${evidence.positivePairs}/${evidence.negativePairs} persistence=${outputPath.isDefined} spark=${spark.version}$storage")
     } finally {
       spark.stop()
     }

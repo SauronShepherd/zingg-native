@@ -66,6 +66,14 @@ class Zingg:
         """Add the native equivalent of Zingg 0.7's Jaro-backed score."""
         return self.transform(df, "JARO_SIMILARITY", left=left, right=right, output=output)
 
+    def preprocess(self, df: Any, operation: str, columns: list[str]) -> Any:
+        """Apply shared-core TRIM or CASE_NORMALIZE preprocessing on Classic."""
+        if type(self.backend).__name__ != "ClassicBackend":
+            raise UnsupportedOperationError(
+                "preprocess is not implemented by this transport; the shared-core preprocessing path currently supports Classic only."
+            )
+        return self.backend.preprocess(df, operation, columns)  # type: ignore[attr-defined]
+
     @_prototype_phase
     def exact_match(self, df: Any, keys: list[str], cluster_column: str = "z_cluster") -> Any:
         """Deterministically cluster records sharing all supplied exact keys.

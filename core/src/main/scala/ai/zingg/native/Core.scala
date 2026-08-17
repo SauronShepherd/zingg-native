@@ -3,7 +3,7 @@ package ai.zingg.native
 import org.apache.spark.sql.{Column, DataFrame, SparkSession}
 import org.apache.spark.sql.catalyst.expressions.{ArrayIntersect, ArrayUnion, Cast, EqualTo, Expression, If, IsNull, Length, Literal, Lower, RegExpExtractAll, Size, Divide, Or}
 import org.apache.spark.sql.types.{DoubleType, StringType}
-import org.apache.spark.sql.functions.{array, array_intersect, array_union, col, concat, element_at, floor, greatest, least, length, lit, lower, regexp_extract_all, sequence, size, struct, transform, when, zip_with, aggregate}
+import org.apache.spark.sql.functions.{array, array_intersect, array_union, col, concat, element_at, floor, greatest, least, length, lit, lower, regexp_extract_all, sequence, size, struct, transform, trim, when, zip_with, aggregate}
 
 sealed trait NativeMode
 object NativeMode { case object SAFE extends NativeMode; case object EXPERIMENTAL extends NativeMode }
@@ -101,6 +101,18 @@ object Core {
   def transform(df: DataFrame, operationId: String, left: String, right: String, output: String): DataFrame = {
     val ctx = NativeContext(df.sparkSession, NativeMode.SAFE, RuntimeDescriptor(df.sparkSession.version, "2.13"))
     df.withColumn(output, SimilarityRegistry.resolve(operationId, NativeMode.SAFE)(col(left), col(right), ctx))
+  }
+
+  /** Apply upstream-compatible declarative string preprocessing to selected fields. */
+  def preprocess(df: DataFrame, operationId: String, columns: Seq[String]): DataFrame = {
+    require(columns.nonEmpty, "columns must contain at least one field")
+    val missing = columns.distinct.filterNot(df.columns.contains)
+    require(missing.isEmpty, s"Unknown preprocessing columns: ${missing.mkString(", ")}")
+    operationId match {
+      case "TRIM" => columns.foldLeft(df)((current, field) => current.withColumn(field, trim(col(field))))
+      case "CASE_NORMALIZE" => columns.foldLeft(df)((current, field) => current.withColumn(field, lower(col(field).cast(StringType))))
+      case other => throw new IllegalArgumentException(s"Unknown preprocessing operation: $other")
+    }
   }
 
   /** Declarative exact-key candidate generation for the first native phase. */

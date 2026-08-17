@@ -53,6 +53,16 @@ class ClassicBackend:
         from pyspark.sql import DataFrame
         return DataFrame(jdf, self.spark)
 
+    def preprocess(self, df: Any, operation: str, columns: list[str]) -> Any:
+        if not columns:
+            raise ValueError("columns must contain at least one field")
+        java_columns = self.spark._jvm.java.util.ArrayList()
+        for column in columns:
+            java_columns.add(column)
+        jdf = self._gateway.preprocess(df._jdf, operation, java_columns)
+        from pyspark.sql import DataFrame
+        return DataFrame(jdf, self.spark)
+
     def label(self, df: Any, threshold: float, output_path: str | None = None) -> Any:
         jdf = self._gateway.label(df._jdf, float(threshold))
         if output_path:
