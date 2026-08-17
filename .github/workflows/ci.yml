@@ -68,6 +68,8 @@ jobs:
           assert Zingg
           print("clean wheel import passed")
           PY
+          export ZINGG_NATIVE_CORE_JAR="$GITHUB_WORKSPACE/core/target/zingg-native-core_2.13-0.2.0-SNAPSHOT.jar"
+          python examples/classic_candidate_e2e.py
 
   jvm-compatibility:
     runs-on: ubuntu-latest

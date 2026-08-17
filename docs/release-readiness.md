@@ -24,6 +24,8 @@
 - Python and Scala unit suites pass locally.
 - Python Ruff/Mypy gates and artifact SHA-256 generation are wired into CI and
   pass locally.
+- The CI clean-wheel job now executes the real Classic/Py4J candidate-phase E2E
+  after installing the wheel, with the separately built shared-core JAR.
 
 ## Open mandatory gates
 
