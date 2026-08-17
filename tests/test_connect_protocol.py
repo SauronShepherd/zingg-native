@@ -33,6 +33,15 @@ def test_connect_expression_uses_spark_41_expression_base():
     assert isinstance(_ZinggNativeExpression("EXACT_SIMILARITY", []), Expression)
 
 
+def test_proto_declares_versioned_artifact_references():
+    from pathlib import Path
+
+    proto = (Path(__file__).parents[1] / "connect/src/main/protobuf/zingg_native.proto").read_text()
+    assert "message BlockingTreeArtifact" in proto
+    assert "message ModelArtifact" in proto
+    assert "uint32 schema_version = 1" in proto
+
+
 def test_connect_rejects_unimplemented_jaro_operation():
     from zingg_native.backend.connect import ConnectBackend
 

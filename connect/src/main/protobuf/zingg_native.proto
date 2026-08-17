@@ -9,3 +9,22 @@ message ZinggNativeExpression {
   repeated spark.connect.Expression arguments = 3;
   bytes options = 4;
 }
+
+// Transport-neutral artifact references. These messages describe persisted
+// artifacts; they do not encode model internals or claim train/match parity.
+message BlockingTreeArtifact {
+  uint32 schema_version = 1;
+  string artifact_path = 2;
+  string checksum = 3;
+}
+
+message ModelArtifact {
+  uint32 schema_version = 1;
+  string model_type = 2;
+  string artifact_path = 3;
+  string checksum = 4;
+  repeated string feature_columns = 5;
+  uint64 positive_pairs = 6;
+  uint64 negative_pairs = 7;
+  BlockingTreeArtifact blocking_tree = 8;
+}
