@@ -28,6 +28,23 @@ def test_unverified_phases_are_not_exposed_by_safe_transport():
         z.exact_match(None, ["key"])
 
 
+@pytest.mark.parametrize(
+    "method,args",
+    [
+        ("train", (None, ["key"])),
+        ("match_pairs", (None, {})),
+        ("link_pairs", (None, {})),
+        ("cluster_pairs", (None,)),
+        ("generate_docs", ({},)),
+    ],
+)
+def test_all_unverified_phases_are_guarded(method, args):
+    z = object.__new__(Zingg)
+    z.backend = type("ClassicBackend", (), {})()
+    with pytest.raises(UnsupportedOperationError, match="not certified"):
+        getattr(z, method)(*args)
+
+
 def test_candidate_phase_dispatches_only_to_shared_classic_backend():
     z = object.__new__(Zingg)
     z.backend = type("ConnectBackend", (), {})()
