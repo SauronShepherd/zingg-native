@@ -213,6 +213,31 @@ object Core {
       .withColumn("z_score", col("probability").getItem(1))
   }
 
+  /** Native DataFrame connected components for the final link phase. */
+  def linkComponents(edges: DataFrame, leftColumn: String, rightColumn: String,
+                     maxIterations: Int = 32): DataFrame = {
+    require(maxIterations > 0, "maxIterations must be positive")
+    val missing = Seq(leftColumn, rightColumn).distinct.filterNot(edges.columns.contains)
+    require(missing.isEmpty, s"link relation is missing columns: ${missing.mkString(", ")}")
+    val undirected = edges.select(col(leftColumn).cast("string").alias("src"), col(rightColumn).cast("string").alias("dst"))
+      .unionByName(edges.select(col(rightColumn).cast("string").alias("src"), col(leftColumn).cast("string").alias("dst")))
+      .distinct()
+    var vertices = undirected.select(col("src").alias("id")).unionByName(undirected.select(col("dst").alias("id")))
+      .distinct().withColumn("z_cluster", col("id"))
+    var iteration = 0
+    var changed = true
+    while (iteration < maxIterations && changed) {
+      val propagated = vertices.join(undirected, vertices("id") === undirected("src"))
+        .select(undirected("dst").alias("id"), vertices("z_cluster"))
+        .groupBy("id").agg(org.apache.spark.sql.functions.min("z_cluster").alias("z_cluster"))
+      val updated = vertices.unionByName(propagated).groupBy("id").agg(org.apache.spark.sql.functions.min("z_cluster").alias("z_cluster"))
+      changed = updated.join(vertices, Seq("id")).where(updated("z_cluster") =!= vertices("z_cluster")).limit(1).count() > 0
+      vertices = updated
+      iteration += 1
+    }
+    vertices
+  }
+
   /** Persist a phase relation without collecting it on the driver. */
   def persist(df: DataFrame, outputPath: String): DataFrame = {
     df.write.mode("overwrite").parquet(ArtifactSchema.validatePath(outputPath))

@@ -32,7 +32,9 @@ object ServerlessCoreE2E {
       val model = Core.trainModel(modelRows, Seq("z_name", "z_city"), modelPath = modelPath)
       val scored = Core.matchModel(modelRows.drop("z_isMatch"), model, Seq("z_name", "z_city"))
       require(scored.select("z_score").count() == 10, "model scoring did not produce all rows")
-      save(updated, "link")
+      val linked = Core.linkComponents(trainingPairs, "z_left_record_id", "z_right_record_id")
+      require(linked.count() == 20, "link phase did not return all graph vertices")
+      save(linked, "link")
       println(s"ZINGG_NATIVE_SERVERLESS_FULL_E2E PASS phases=preprocess,findTrainingData,label,updateLabel,train,match,link trainingEvidence=${evidence.positivePairs}/${evidence.negativePairs} model=logistic-regression persistence=${output.isDefined} spark=${spark.version}")
     } finally spark.stop()
   }
