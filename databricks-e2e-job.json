@@ -1,5 +1,7 @@
 {
-  "name": "zingg-native-serverless-e2e",
+  "name": "DISABLED-prototype-zingg-native-serverless-e2e",
+  "description": "DISABLED: historical wheel-only prototype; not native architecture evidence and not a release workflow.",
+  "tags": {"status": "disabled", "evidence": "prototype-only"},
   "max_concurrent_runs": 1,
   "tasks": [
     {

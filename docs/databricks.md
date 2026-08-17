@@ -9,6 +9,10 @@ runs exercised Python-built Spark expressions through Spark Connect; they did
 not install or execute this repository's Connect server plugin and therefore
 cannot prove the shared-core architecture.
 
+The repository's historical `databricks-e2e-job*.json` definitions are retained
+only for provenance and are explicitly marked `DISABLED` and
+`prototype-only`; they must not be submitted as native release tests.
+
 Required evidence before a Databricks release claim:
 
 - core and Connect JARs installed on the target compute;
