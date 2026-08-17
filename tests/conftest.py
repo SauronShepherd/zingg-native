@@ -1,7 +1,8 @@
-import pytest
-import sys
 import os
 import socketserver
+import sys
+
+import pytest
 
 # Spark 4.1's Windows client imports this Unix-only symbol during startup.
 # The tests use a local TCP Spark session, so the standard TCP implementation

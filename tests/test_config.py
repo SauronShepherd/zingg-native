@@ -1,5 +1,4 @@
 import pytest
-
 from zingg_native import NativeConfig
 
 

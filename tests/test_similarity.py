@@ -1,5 +1,5 @@
-from zingg_native.similarity import jaccard_similarity, jaro_similarity
 from zingg_native import Zingg
+from zingg_native.similarity import jaccard_similarity, jaro_similarity
 
 
 def test_jaccard_matches_upstream_token_semantics(spark):
@@ -17,7 +17,7 @@ def test_jaccard_matches_upstream_token_semantics(spark):
     """)
     actual = [r[0] for r in df.select(jaccard_similarity("left", "right")).collect()]
     expected = [r[2] for r in rows]
-    assert all(abs(a - e) < 1e-12 for a, e in zip(actual, expected))
+    assert all(abs(a - e) < 1e-12 for a, e in zip(actual, expected, strict=True))
 
 
 def test_jaccard_is_exposed_through_native_facade(spark):
@@ -37,4 +37,4 @@ def test_jaro_matches_secondstring_oracle_vectors(spark):
     """)
     actual = [r[0] for r in df.select(jaro_similarity("left", "right")).collect()]
     expected = [r[2] for r in df.collect()]
-    assert all(abs(a - e) < 1e-12 for a, e in zip(actual, expected))
+    assert all(abs(a - e) < 1e-12 for a, e in zip(actual, expected, strict=True))

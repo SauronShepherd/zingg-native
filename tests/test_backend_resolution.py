@@ -1,9 +1,7 @@
 import pytest
-
-from zingg_native.backend.base import PrototypeExpressionBackend, resolve_backend
-from zingg_native.errors import BackendUnavailableError
-from zingg_native.errors import UnsupportedOperationError
 from zingg_native import Zingg
+from zingg_native.backend.base import PrototypeExpressionBackend, resolve_backend
+from zingg_native.errors import BackendUnavailableError, UnsupportedOperationError
 
 
 class FakeSpark:

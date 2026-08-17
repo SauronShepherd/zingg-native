@@ -4,7 +4,8 @@ The server plugin must be installed on the Spark Connect server. A client-side
 wheel or JAR is not sufficient and is intentionally rejected here.
 """
 
-from typing import Any, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 from ..errors import BackendUnavailableError
 
@@ -59,7 +60,7 @@ class ConnectBackend:
         supported = False
         try:
             supported = bool(spark.conf.get("zingg.native.connect.plugin.loaded", "false"))
-        except Exception:
+        except Exception:  # noqa: S110 - missing Spark conf means plugin is unavailable
             pass
         if not supported:
             raise BackendUnavailableError(

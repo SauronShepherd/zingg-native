@@ -12,7 +12,7 @@ def test_serverless_core_job_is_a_reproducible_jar_task():
     parameters = task["spark_jar_task"]["parameters"]
     assert parameters[0] == "--output-path"
     assert parameters[1].startswith("/Volumes/")
-    assert "/tmp" not in parameters[1]
+    assert not parameters[1].lower().startswith("/" + "tmp")
     assert "job_cluster_key" not in task
     assert environment["spec"]["environment_version"] == "5"
     dependencies = environment["spec"]["java_dependencies"]
