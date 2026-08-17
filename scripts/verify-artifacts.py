@@ -34,6 +34,8 @@ def main() -> None:
         capabilities = json.loads(jar.read("zingg-native-capabilities.json"))
         if capabilities["sparkLine"] != "4.1" or capabilities["scalaBinaryVersion"] != "2.13":
             fail("core capability manifest is not pinned to Spark 4.1 / Scala 2.13")
+        if capabilities["modelArtifactSchemaVersion"] != 1 or capabilities["blockingTreeArtifactSchemaVersion"] != 1:
+            fail("artifact schema versions are not pinned to version 1")
 
     with zipfile.ZipFile(connect) as jar:
         names = set(jar.namelist())
