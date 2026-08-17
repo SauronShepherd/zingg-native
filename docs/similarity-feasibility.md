@@ -6,16 +6,16 @@ different approximate metric is not an acceptable fallback.
 
 | Upstream function | Reference implementation | Native status | Evidence |
 |---|---|---|---|
-| Exact | null-or-equal score | Implemented | Databricks Serverless environment 4 E2E; Photon plan |
-| Jaccard | SecondString `Jaccard` + `SimpleTokenizer` | Implemented | Databricks parity cases and local parity test |
-| Jaro-Winkler | SecondString `Jaro` implementation used by `SJaroWinkler` | Implemented as native Spark SQL expression; Photon fallback | Databricks oracle vectors PASS; Photon reports `aggregate` higher-order expression unsupported |
+| Exact | null-or-equal score | Implemented in shared Scala core | Local Classic/Py4J execution and semantic tests; Databricks not verified |
+| Jaccard | SecondString `Jaccard` + `SimpleTokenizer` | Implemented in shared Scala core | Local Classic/Py4J execution and Unicode parity tests; Databricks not verified |
+| Jaro | SecondString `Jaro` implementation used by Zingg 0.7 | Implemented as native Spark SQL expression; Photon fallback | Local Classic semantic vectors; Photon/Databricks execution not verified |
 | Affine Gap | SecondString `SAffineGap` / Monge-Elkan | Pending feasibility spike | Upstream source inventoried; no equivalent native expression claimed |
 
 Affine Gap is intentionally not exposed as an implemented native function.
 Registering it as an alias for Levenshtein, Jaro, or another approximate score
 would violate the Zingg semantic contract. Jaro is exposed as Spark SQL, but
-its Photon fallback is explicit because the required higher-order aggregate is
-not supported by the observed Photon planner.
+its potential Photon fallback is explicit because the required higher-order
+aggregate has not been verified on the target Photon runtime.
 
 ## Extracted 0.7 oracle vectors
 
