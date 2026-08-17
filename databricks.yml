@@ -1,0 +1,18 @@
+bundle:
+  name: zingg-native
+
+include:
+  - resources/*.yml
+
+variables:
+  artifact_root:
+    description: Workspace directory containing the paired Scala JARs
+    default: /Workspace/Users/angel.alvarez@sdggroup.com/zingg-native/remediation
+  output_volume:
+    description: Unity Catalog Volume used by the Serverless E2E task
+    default: /Volumes/sda_dev/sandbox/zingg_native_e2e
+
+targets:
+  sda:
+    mode: development
+    default: true
