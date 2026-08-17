@@ -28,3 +28,22 @@ def test_connect_expression_uses_spark_41_expression_base():
     Expression = pytest.importorskip("pyspark.sql.connect.expressions").Expression
 
     assert isinstance(_ZinggNativeExpression("EXACT_SIMILARITY", []), Expression)
+
+
+def test_connect_rejects_unimplemented_jaro_operation():
+    from zingg_native.backend.connect import ConnectBackend
+
+    class Conf:
+        def get(self, key, default):
+            return "true"
+
+    class Spark:
+        conf = Conf()
+
+    backend = ConnectBackend(Spark())
+    try:
+        backend.transform(None, "JARO_SIMILARITY", left="left", right="right")
+    except NotImplementedError as exc:
+        assert "JARO_SIMILARITY" in str(exc)
+    else:
+        raise AssertionError("Connect must reject unsupported Jaro")
