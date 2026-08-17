@@ -23,8 +23,8 @@ object JaccardSimilarity extends NativeSimilarity {
   val id = "JACCARD_SIMILARITY"
   def apply(left: Column, right: Column, context: NativeContext): Column = {
     val empty = left.isNull || right.isNull || left === lit("") || right === lit("")
-    val l = regexp_extract_all(lower(left.cast("string")), lit("[a-z0-9]+"), lit(0))
-    val r = regexp_extract_all(lower(right.cast("string")), lit("[a-z0-9]+"), lit(0))
+    val l = regexp_extract_all(lower(left.cast("string")), lit("[\\p{L}\\p{N}]+"), lit(0))
+    val r = regexp_extract_all(lower(right.cast("string")), lit("[\\p{L}\\p{N}]+"), lit(0))
     when(empty, lit(1.0)).otherwise(size(array_intersect(l, r)).cast("double") / size(array_union(l, r)))
   }
 }
@@ -85,8 +85,8 @@ object CatalystSimilarity {
       val one = Literal(1.0)
       If(Or(IsNull(left), IsNull(right)), one, If(EqualTo(left, right), one, Literal(0.0)))
     case "JACCARD_SIMILARITY" =>
-      val l = RegExpExtractAll(Lower(Cast(left, StringType)), Literal("[a-z0-9]+"), Literal(0))
-      val r = RegExpExtractAll(Lower(Cast(right, StringType)), Literal("[a-z0-9]+"), Literal(0))
+      val l = RegExpExtractAll(Lower(Cast(left, StringType)), Literal("[\\p{L}\\p{N}]+"), Literal(0))
+      val r = RegExpExtractAll(Lower(Cast(right, StringType)), Literal("[\\p{L}\\p{N}]+"), Literal(0))
       val empty = Or(IsNull(left), Or(IsNull(right), Or(EqualTo(left, Literal("")), EqualTo(right, Literal("")))))
       val intersection = Size(ArrayIntersect(l, r))
       val union = Size(ArrayUnion(l, r))
