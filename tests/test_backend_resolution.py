@@ -33,3 +33,12 @@ def test_candidate_phase_dispatches_only_to_shared_classic_backend():
     z.backend = type("ConnectBackend", (), {})()
     with pytest.raises(UnsupportedOperationError, match="shared-core phase"):
         z.find_training_data(None, ["key"], "id")
+
+
+def test_classic_phase_rejects_unimplemented_persistence_options():
+    z = object.__new__(Zingg)
+    z.backend = type("ClassicBackend", (), {"find_training_data": lambda *_: None})()
+    with pytest.raises(UnsupportedOperationError, match="output_path"):
+        z.find_training_data(None, ["key"], "id", output_path="dbfs:/pairs")
+    with pytest.raises(UnsupportedOperationError, match="include_all_pairs"):
+        z.find_training_data(None, ["key"], "id", include_all_pairs=True)
