@@ -9,6 +9,10 @@ def test_serverless_core_job_is_a_reproducible_jar_task():
     environment = spec["environments"][0]
     assert task["environment_key"] == "serverless"
     assert task["spark_jar_task"]["main_class_name"] == "ai.zingg.serverless.ServerlessCoreE2E"
+    parameters = task["spark_jar_task"]["parameters"]
+    assert parameters[0] == "--output-path"
+    assert parameters[1].startswith("/Volumes/")
+    assert "/tmp" not in parameters[1]
     assert "job_cluster_key" not in task
     assert environment["spec"]["environment_version"] == "5"
     dependencies = environment["spec"]["java_dependencies"]
@@ -23,6 +27,8 @@ def test_serverless_evidence_records_success_and_non_claims():
     )
     assert evidence["sharedCoreJarTask"]["result"] == "SUCCESS"
     assert "JARO_SIMILARITY" in evidence["sharedCoreJarTask"]["verified"]
+    assert "persistence:UnityCatalogVolume" in evidence["sharedCoreJarTask"]["verified"]
+    assert evidence["storageBoundary"]["result"] == "SUPPORTED_VOLUME_VERIFIED"
     assert evidence["managedConnectFeasibility"]["result"] == "FAILED_BEFORE_NATIVE_EXECUTION"
     assert evidence["storageBoundary"]["error"] == "DBFS_DISABLED"
     assert "managed Connect ExpressionPlugin execution" in evidence["notClaimed"]
