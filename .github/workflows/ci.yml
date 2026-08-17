@@ -32,6 +32,9 @@ jobs:
       - name: Verify Zingg phase contract
         shell: pwsh
         run: ./scripts/check-phase-contract.ps1
+      - name: Verify Photon evidence contract
+        shell: pwsh
+        run: ./scripts/check-photon-evidence.ps1
       - name: Test Python
         run: python -m pytest -q
 

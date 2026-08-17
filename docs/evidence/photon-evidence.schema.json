@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Zingg Native Photon Evidence",
+  "type": "object",
+  "required": ["schemaVersion", "target", "result", "environment", "run", "plan", "rewrites", "fallbacks"],
+  "properties": {
+    "schemaVersion": {"const": "1"},
+    "target": {"enum": ["Dedicated Photon", "Serverless"]},
+    "result": {"enum": ["UNVERIFIED", "PASS", "FAIL"]},
+    "environment": {"type": "object", "required": ["sparkVersion", "runtimeVersion", "scalaVersion", "jdkVersion"]},
+    "run": {"type": "object", "required": ["workspaceId", "jobId", "runId", "taskRunId"]},
+    "plan": {"type": "object", "required": ["profileId", "operatorSummary", "evidenceSource"]},
+    "rewrites": {"type": "array", "items": {"type": "string"}},
+    "fallbacks": {"type": "array", "items": {"type": "string"}},
+    "claim": {"type": "string"}
+  }
+}
