@@ -20,8 +20,8 @@ implementation or target-runtime proof is still missing.
 | Python lint/type gates | Verified locally and wired to CI | Ruff, Mypy, `.github/workflows/ci.yml` | Ruff and Mypy pass on the current source tree |
 | Upstream semantic reference | Verified | `reference/zingg-0.7.0.lock`, `reference/upstream-zingg/` | Pinned 0.7.0 source checkout |
 | Databricks artifact presence | Verified | `sda` workspace imports and SHA-256 checks | Presence is not execution evidence |
-| Databricks Dedicated + Photon execution | Out of scope | Project target is Serverless only | No Photon claim |
-| Databricks Serverless/managed Connect | Unsupported by current managed path | Job `177009162619307`, task `1075870166806203` rejected plugin config with `CONFIG_NOT_AVAILABLE` | No managed-plugin claim; requires a Databricks-supported extension mechanism |
+| Databricks Dedicated + Photon execution | Required / open | New target plan requires real Dedicated Photon evidence | No Photon claim yet |
+| Databricks Serverless public-API JAR path | Required / open | Historical shared-core run `807529510025681` is narrow evidence only | No full-workflow or Photon claim yet |
 | Databricks Serverless shared-core JAR task | Verified narrow slice | Job `295665184144562`, run `847651604040137` | Exact/Jaccard/Jaro plus findTrainingData/label/updateLabel and UC-volume persistence executed on Spark 4.1.0; Connect plugin remains open |
 | Databricks Serverless Asset Bundle deployment | Verified expanded slice | Bundle job `190949869955356`, run `807529510025681` | Automated publish, deploy, and run sequence completed with shared preprocessing and labeled-pair expansion on Serverless; managed Connect remains open |
 | Full Zingg phase/model parity | Open | `docs/phase-map.md` | Training, matching, linking, clustering remain unimplemented in shared core |

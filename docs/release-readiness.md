@@ -29,12 +29,13 @@
 
 ## Open mandatory gates
 
+- Real Zingg 0.7 workflow integration through the native rewrite hook.
+- Dedicated Photon E2E with supported runtime evidence.
+- Serverless real Zingg E2E using only supported public Spark APIs.
 - Self-managed Spark Connect Jaro and phase E2E with the installed plugin.
 - Connect parity for Jaro and the shared phase subset.
-- Databricks Serverless managed Connect plugin installation and execution;
-  the tested notebook path is currently unsupported (`CONFIG_NOT_AVAILABLE`).
 - Full upstream Zingg 0.7 phase/model parity.
 
-Databricks Serverless shared-core JAR execution is verified, but managed
-Connect is not claimed because the tested plugin path is unsupported.
-Dedicated/Photon validation is intentionally out of scope.
+Databricks Serverless shared-core JAR execution is verified only for the
+narrow historical slice; it is not full Zingg parity or Photon evidence.
+Dedicated/Photon is a mandatory target and remains unverified.

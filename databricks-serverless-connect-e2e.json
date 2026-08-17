@@ -1,6 +1,6 @@
 {
   "name": "zingg-native-serverless-connect-e2e",
-  "description": "Managed Serverless Connect plugin feasibility test; expected to fail until the custom plugin deployment path is supported.",
+  "description": "RETIRED historical test: plugin-dependent Serverless path is not part of the target architecture. Do not submit as a release test.",
   "format": "MULTI_TASK",
   "max_concurrent_runs": 1,
   "tasks": [
