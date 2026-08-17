@@ -14,4 +14,5 @@ class ClassicGateway {
   def transform(df: DataFrame, operationId: String, left: String, right: String, output: String): DataFrame = Core.transform(df, operationId, left, right, output)
   def findTrainingData(df: DataFrame, idColumn: String, keys: java.util.List[String]): DataFrame =
     Core.findTrainingData(df, idColumn, keys.asScala.toSeq)
+  def label(df: DataFrame, threshold: Double): DataFrame = Core.label(df, threshold)
 }

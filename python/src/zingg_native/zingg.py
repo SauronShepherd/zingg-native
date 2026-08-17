@@ -143,9 +143,15 @@ class Zingg:
             F.when(left == right, F.lit(1.0)).otherwise(F.lit(0.0))
         )
 
-    @_prototype_phase
     def label(self, pairs: Any, match_threshold: float = 1.0, output_path: str | None = None) -> Any:
         """Apply deterministic non-interactive labels to candidate pairs."""
+        if type(self.backend).__name__ == "ClassicBackend":
+            return self.backend.label(pairs, match_threshold)
+        if type(self.backend).__name__ != "PrototypeExpressionBackend":
+            raise UnsupportedOperationError(
+                "label is not implemented by this transport; "
+                "the shared-core phase currently supports Classic only."
+            )
         from pyspark.sql import functions as F
         labeled = pairs.withColumn(
             "z_isMatch",

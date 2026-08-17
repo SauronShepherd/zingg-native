@@ -33,7 +33,10 @@ def main() -> None:
         rows = [tuple(row) for row in pairs.collect()]
         assert len(rows) == 1, rows
         assert rows[0][1:] == ("a", "c", 0.0, 1.0, 0.5, None), rows
-        print({"status": zingg.status(), "rows": rows})
+        labeled = zingg.label(pairs, match_threshold=0.5)
+        labeled_rows = [tuple(row) for row in labeled.collect()]
+        assert labeled_rows[0][-1] == 1, labeled_rows
+        print({"status": zingg.status(), "rows": rows, "labeled": labeled_rows})
     finally:
         spark.stop()
 

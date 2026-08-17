@@ -124,4 +124,10 @@ object Core {
       .withColumn("z_score", keys.map(k => col(s"z_$k")).reduce(_ + _) / lit(keys.size.toDouble))
       .withColumn("z_isMatch", lit(null).cast("int"))
   }
+
+  /** Apply a deterministic non-interactive label to a candidate relation. */
+  def label(df: DataFrame, threshold: Double): DataFrame = {
+    require(df.columns.contains("z_score"), "candidate relation must contain z_score")
+    df.withColumn("z_isMatch", org.apache.spark.sql.functions.when(col("z_score") >= lit(threshold), lit(1)).otherwise(lit(0)))
+  }
 }

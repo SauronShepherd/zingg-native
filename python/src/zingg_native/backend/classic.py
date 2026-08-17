@@ -41,3 +41,8 @@ class ClassicBackend:
         jdf = self._gateway.findTrainingData(df._jdf, id_column, java_keys)
         from pyspark.sql import DataFrame
         return DataFrame(jdf, self.spark)
+
+    def label(self, df: Any, threshold: float) -> Any:
+        jdf = self._gateway.label(df._jdf, float(threshold))
+        from pyspark.sql import DataFrame
+        return DataFrame(jdf, self.spark)
