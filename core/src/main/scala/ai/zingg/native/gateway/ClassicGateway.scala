@@ -17,4 +17,5 @@ class ClassicGateway {
     Core.findTrainingData(df, idColumn, keys.asScala.toSeq)
   def label(df: DataFrame, threshold: Double): DataFrame = Core.label(df, threshold)
   def updateLabel(pairs: DataFrame, labels: DataFrame): DataFrame = Core.updateLabel(pairs, labels)
+  def persist(df: DataFrame, outputPath: String): DataFrame = Core.persist(df, outputPath)
 }

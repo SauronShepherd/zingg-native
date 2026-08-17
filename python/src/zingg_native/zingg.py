@@ -99,16 +99,12 @@ class Zingg:
         available only when explicitly selecting ``backend='expressions'``.
         """
         if type(self.backend).__name__ == "ClassicBackend":
-            if output_path is not None:
-                raise UnsupportedOperationError(
-                    "Classic shared-core find_training_data does not yet implement output_path persistence."
-                )
             if include_all_pairs:
                 raise UnsupportedOperationError(
                     "Classic shared-core find_training_data implements shared-key candidates only; "
                     "include_all_pairs is not supported."
                 )
-            return self.backend.find_training_data(df, keys, id_column)
+            return self.backend.find_training_data(df, keys, id_column, output_path)
         if type(self.backend).__name__ != "PrototypeExpressionBackend":
             raise UnsupportedOperationError(
                 "find_training_data is not implemented by this transport; "
@@ -159,11 +155,7 @@ class Zingg:
     def label(self, pairs: Any, match_threshold: float = 1.0, output_path: str | None = None) -> Any:
         """Apply deterministic non-interactive labels to candidate pairs."""
         if type(self.backend).__name__ == "ClassicBackend":
-            if output_path is not None:
-                raise UnsupportedOperationError(
-                    "Classic shared-core label does not yet implement output_path persistence."
-                )
-            return self.backend.label(pairs, match_threshold)
+            return self.backend.label(pairs, match_threshold, output_path)
         if type(self.backend).__name__ != "PrototypeExpressionBackend":
             raise UnsupportedOperationError(
                 "label is not implemented by this transport; "
@@ -200,11 +192,7 @@ class Zingg:
     def update_label(self, pairs: Any, labels: Any, output_path: str | None = None) -> Any:
         """Merge explicit ``(z_cluster, z_isMatch)`` labels into pairs."""
         if type(self.backend).__name__ == "ClassicBackend":
-            if output_path is not None:
-                raise UnsupportedOperationError(
-                    "Classic shared-core update_label does not yet implement output_path persistence."
-                )
-            return self.backend.update_label(pairs, labels)
+            return self.backend.update_label(pairs, labels, output_path)
         if type(self.backend).__name__ != "PrototypeExpressionBackend":
             raise UnsupportedOperationError(
                 "update_label is not implemented by this transport; "

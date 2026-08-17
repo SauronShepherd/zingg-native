@@ -39,22 +39,28 @@ class ClassicBackend:
             "phases": list(self._gateway.supportedPhases()),
         }
 
-    def find_training_data(self, df: Any, keys: list[str], id_column: str) -> Any:
+    def find_training_data(self, df: Any, keys: list[str], id_column: str, output_path: str | None = None) -> Any:
         if not keys:
             raise ValueError("keys must contain at least one column")
         java_keys = self.spark._jvm.java.util.ArrayList()
         for key in keys:
             java_keys.add(key)
         jdf = self._gateway.findTrainingData(df._jdf, id_column, java_keys)
+        if output_path:
+            jdf = self._gateway.persist(jdf, output_path)
         from pyspark.sql import DataFrame
         return DataFrame(jdf, self.spark)
 
-    def label(self, df: Any, threshold: float) -> Any:
+    def label(self, df: Any, threshold: float, output_path: str | None = None) -> Any:
         jdf = self._gateway.label(df._jdf, float(threshold))
+        if output_path:
+            jdf = self._gateway.persist(jdf, output_path)
         from pyspark.sql import DataFrame
         return DataFrame(jdf, self.spark)
 
-    def update_label(self, pairs: Any, labels: Any) -> Any:
+    def update_label(self, pairs: Any, labels: Any, output_path: str | None = None) -> Any:
         jdf = self._gateway.updateLabel(pairs._jdf, labels._jdf)
+        if output_path:
+            jdf = self._gateway.persist(jdf, output_path)
         from pyspark.sql import DataFrame
         return DataFrame(jdf, self.spark)

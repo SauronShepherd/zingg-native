@@ -140,4 +140,11 @@ object Core {
       .join(labels.select(col("z_cluster"), col("z_isMatch").cast("int")), Seq("z_cluster"), "left")
       .withColumn("z_isMatch", org.apache.spark.sql.functions.coalesce(col("z_isMatch"), lit(2)))
   }
+
+  /** Persist a phase relation without collecting it on the driver. */
+  def persist(df: DataFrame, outputPath: String): DataFrame = {
+    require(outputPath != null && outputPath.nonEmpty, "outputPath must be non-empty")
+    df.write.mode("overwrite").parquet(outputPath)
+    df
+  }
 }

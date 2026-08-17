@@ -35,10 +35,13 @@ def test_candidate_phase_dispatches_only_to_shared_classic_backend():
         z.find_training_data(None, ["key"], "id")
 
 
-def test_classic_phase_rejects_unimplemented_persistence_options():
+def test_classic_phase_supports_persistence_but_rejects_all_pairs_shortcut():
     z = object.__new__(Zingg)
-    z.backend = type("ClassicBackend", (), {"find_training_data": lambda *_: None})()
-    with pytest.raises(UnsupportedOperationError, match="output_path"):
-        z.find_training_data(None, ["key"], "id", output_path="dbfs:/pairs")
+    calls = []
+    z.backend = type("ClassicBackend", (), {
+        "find_training_data": lambda self, *args: calls.append(args) or "persisted"
+    })()
+    assert z.find_training_data(None, ["key"], "id", output_path="dbfs:/pairs") == "persisted"
+    assert calls[-1][-1] == "dbfs:/pairs"
     with pytest.raises(UnsupportedOperationError, match="include_all_pairs"):
         z.find_training_data(None, ["key"], "id", include_all_pairs=True)
