@@ -20,6 +20,20 @@ class ClassicGateway {
   def findTrainingData(df: DataFrame, idColumn: String, keys: java.util.List[String]): DataFrame =
     Core.findTrainingData(df, idColumn, keys.asScala.toSeq)
   def buildTrainingPairs(df: DataFrame, idColumn: String): DataFrame = Core.buildTrainingPairs(df, idColumn)
+  /** Explicitly experimental MLlib fit; never part of SAFE capability claims. */
+  def fitExperimentalModel(
+      df: DataFrame,
+      featureColumns: java.util.List[String],
+      modelPath: String,
+      modelChecksum: String,
+      blockingTreePath: String,
+      blockingTreeChecksum: String
+  ): String = {
+    val tree = ai.zingg.native.BlockingTreeArtifact(1, blockingTreePath, blockingTreeChecksum)
+    val artifact = ai.zingg.native.ExperimentalModelTrainer.fit(
+      df, featureColumns.asScala.toSeq, modelPath, modelChecksum, tree)
+    s"{\"schemaVersion\":${artifact.schemaVersion},\"modelType\":\"${artifact.modelType}\",\"artifactPath\":\"${artifact.artifactPath}\",\"positivePairs\":${artifact.positivePairs},\"negativePairs\":${artifact.negativePairs}}"
+  }
   def label(df: DataFrame, threshold: Double): DataFrame = Core.label(df, threshold)
   def updateLabel(pairs: DataFrame, labels: DataFrame): DataFrame = Core.updateLabel(pairs, labels)
   def inspectTrainingEvidence(df: DataFrame): Array[Long] = {

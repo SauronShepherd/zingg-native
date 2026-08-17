@@ -189,6 +189,20 @@ class Zingg:
             )
         return self.backend.build_training_pairs(labeled, id_column)  # type: ignore[attr-defined]
 
+    def fit_experimental_model(
+        self, labeled: Any, feature_columns: list[str], model_path: str,
+        model_checksum: str, blocking_tree_path: str, blocking_tree_checksum: str,
+    ) -> dict[str, Any]:
+        """Fit the non-SAFE Spark MLlib experiment through Classic shared Scala."""
+        if type(self.backend).__name__ != "ClassicBackend":
+            raise UnsupportedOperationError(
+                "experimental model fitting currently requires the Classic shared-core transport."
+            )
+        return self.backend.fit_experimental_model(  # type: ignore[attr-defined]
+            labeled, feature_columns, model_path, model_checksum,
+            blocking_tree_path, blocking_tree_checksum,
+        )
+
     @_prototype_phase
     def score_features(self, df: Any, output: str = "z_score") -> Any:
         """Score a pre-built candidate relation with its native feature column.

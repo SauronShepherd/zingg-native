@@ -90,3 +90,21 @@ class ClassicBackend:
             "negative_pairs": negative,
             "sufficient": positive >= 5 and negative >= 5,
         }
+
+    def fit_experimental_model(
+        self,
+        df: Any,
+        feature_columns: list[str],
+        model_path: str,
+        model_checksum: str,
+        blocking_tree_path: str,
+        blocking_tree_checksum: str,
+    ) -> dict[str, Any]:
+        java_columns = self.spark._jvm.java.util.ArrayList()
+        for column in feature_columns:
+            java_columns.add(column)
+        import json
+        return json.loads(self._gateway.fitExperimentalModel(
+            df._jdf, java_columns, model_path, model_checksum,
+            blocking_tree_path, blocking_tree_checksum,
+        ))
