@@ -10,8 +10,8 @@ release architecture.
 ## Current slice
 
 The certified shared-core similarity slice is Exact, Jaccard, and Jaro through
-Classic/Py4J. Connect currently has an Exact protocol/plugin build path only;
-its server execution is not yet claimed.
+Classic/Py4J. Self-managed Connect has verified Exact/Jaccard protocol/plugin
+execution; Connect Jaro remains open.
 
 ```python
 from zingg_native import Zingg
@@ -20,10 +20,13 @@ z = Zingg(spark=spark)
 scored = z.exact(df, "first_name", "second_name")
 ```
 
-Earlier wheel-only Databricks Serverless runs validated expression feasibility
-only. They do not validate the required shared Scala core or Connect server
-plugin, so Databricks Serverless remains unclaimed until the managed plugin
-path is proven.
+Databricks Serverless shared-core JAR tasks and a parameterized Asset Bundle
+have executed the certified similarity slice, three declarative phases, and
+Unity Catalog Volume persistence on Spark 4.1.0. This does not prove that the
+managed Connect server plugin can be activated; that path remains unsupported
+on the tested environment. Reproduce the run with
+[the Serverless runbook](docs/serverless-runbook.md) or
+[the Asset Bundle guide](docs/bundle.md).
 Fabric validation is deferred.
 
 See [release-readiness.md](docs/release-readiness.md) for the evidence-based
