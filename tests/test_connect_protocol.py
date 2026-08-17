@@ -23,6 +23,8 @@ def test_connect_payload_is_versioned_and_contains_children():
 
 
 def test_connect_expression_uses_spark_41_expression_base():
-    from pyspark.sql.connect.expressions import Expression
+    import pytest
+
+    Expression = pytest.importorskip("pyspark.sql.connect.expressions").Expression
 
     assert isinstance(_ZinggNativeExpression("EXACT_SIMILARITY", []), Expression)

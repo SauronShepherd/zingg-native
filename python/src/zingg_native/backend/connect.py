@@ -22,7 +22,12 @@ def _bytes_field(number: int, value: bytes) -> bytes:
     return _varint((number << 3) | 2) + _varint(len(value)) + value
 
 
-from pyspark.sql.connect.expressions import Expression
+try:
+    from pyspark.sql.connect.expressions import Expression
+except Exception:  # Optional Connect dependencies are loaded only in Connect environments.
+    class Expression:  # type: ignore[no-redef]
+        def __init__(self) -> None:
+            pass
 
 
 class _ZinggNativeExpression(Expression):
