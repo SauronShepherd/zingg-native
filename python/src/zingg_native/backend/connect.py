@@ -84,6 +84,10 @@ class ConnectBackend:
     def preprocess(self, df: Any, operation: str, columns: list[str]) -> Any:
         if not columns:
             raise ValueError("columns must contain at least one field")
+        if operation not in {"CASE_NORMALIZE", "TRIM"}:
+            raise NotImplementedError(
+                f"Connect server plugin does not certify preprocessing operation {operation}"
+            )
         result = df
         from pyspark.sql.connect.column import Column
         for column in columns:

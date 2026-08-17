@@ -80,6 +80,23 @@ def test_connect_accepts_shared_case_normalize_operation():
     assert '"TRIM"' in source
 
 
+def test_connect_rejects_unknown_preprocessing_before_serialization():
+    from zingg_native.backend.connect import ConnectBackend
+
+    class Conf:
+        def get(self, key, default):
+            return "true"
+
+    class Spark:
+        conf = Conf()
+
+    backend = ConnectBackend(Spark())
+    import pytest
+
+    with pytest.raises(NotImplementedError, match="preprocessing operation NOPE"):
+        backend.preprocess(None, "NOPE", ["name"])
+
+
 def test_facade_allows_preprocessing_on_configured_connect_backend():
     from zingg_native import Zingg
 
