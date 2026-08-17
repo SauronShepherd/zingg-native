@@ -5,17 +5,18 @@
   "runtime": "Spark 4.1.0",
   "sharedCoreJarTask": {
     "jobId": "295665184144562",
-    "runId": "262883055838342",
-    "taskRunId": "521586028731649",
+    "runId": "867272086732660",
+    "taskRunId": "813341240961372",
     "result": "SUCCESS",
-    "output": "ZINGG_NATIVE_SERVERLESS_CORE_E2E PASS similarities=exact,jaccard,jaro phases=findTrainingData,label,updateLabel spark=4.1.0",
+    "output": "ZINGG_NATIVE_SERVERLESS_CORE_E2E PASS similarities=exact,jaccard,jaro phases=findTrainingData,label,updateLabel persistence=true spark=4.1.0 storage=/Volumes/sda_dev/sandbox/zingg_native_e2e/run",
     "verified": [
       "EXACT_SIMILARITY",
       "JACCARD_SIMILARITY",
       "JARO_SIMILARITY",
       "findTrainingData",
       "label",
-      "updateLabel"
+      "updateLabel",
+      "persistence:UnityCatalogVolume"
     ]
   },
   "managedConnectFeasibility": {
@@ -27,10 +28,13 @@
     "claim": "Managed Serverless Connect plugin activation is unsupported on the tested path"
   },
   "storageBoundary": {
-    "result": "REJECTED",
-    "pathTested": "/tmp",
+    "result": "SUPPORTED_VOLUME_VERIFIED",
+    "pathTested": "/Volumes/sda_dev/sandbox/zingg_native_e2e/run",
+    "volume": "sda_dev.sandbox.zingg_native_e2e",
+    "verified": "candidate, labeled, and updated relations persisted and reloaded with one row each",
+    "fallbackResult": "REJECTED",
     "error": "DBFS_DISABLED",
-    "claim": "Serverless persistence requires a supported Unity Catalog Volume or external storage location"
+    "claim": "Serverless persistence is verified on a Unity Catalog Volume; DBFS /tmp remains unsupported"
   },
   "notClaimed": [
     "managed Connect ExpressionPlugin execution",

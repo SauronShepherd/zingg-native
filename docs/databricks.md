@@ -13,19 +13,19 @@ cannot prove the shared-core architecture.
 
 A real Serverless JAR-task run now verifies the shared Scala core path:
 
-- job `295665184144562`, latest verified run `262883055838342`;
+- job `295665184144562`, latest verified run `867272086732660`;
 - Serverless Spark `4.1.0`, task output
-  `ZINGG_NATIVE_SERVERLESS_CORE_E2E PASS similarities=exact,jaccard,jaro phases=findTrainingData,label,updateLabel spark=4.1.0`;
+  `ZINGG_NATIVE_SERVERLESS_CORE_E2E PASS similarities=exact,jaccard,jaro phases=findTrainingData,label,updateLabel persistence=true spark=4.1.0 storage=/Volumes/sda_dev/sandbox/zingg_native_e2e/run`;
 - reproducible definition: `databricks-serverless-core-e2e.json`.
 
-The corresponding task run is `521586028731649`. This is shared-core JAR
+The corresponding task run is `813341240961372`. This is shared-core JAR
 evidence only. It is not evidence that the managed
 Spark Connect `ExpressionPlugin` is installed or active.
 
-The shared gateway supports phase persistence, but Serverless persistence must
-target a supported Unity Catalog Volume or external storage location. A test
-write to `/tmp` was rejected with `DBFS_DISABLED`; `/tmp` is not a valid
-Serverless evidence path.
+The phase outputs were persisted and reloaded from the managed Unity Catalog
+volume `/Volumes/sda_dev/sandbox/zingg_native_e2e/run`. A separate test write
+to `/tmp` was rejected with `DBFS_DISABLED`; `/tmp` is not a valid Serverless
+evidence path.
 
 The managed Connect feasibility test was also executed as Serverless job
 `177009162619307`, run `813057979287661`, task run `1075870166806203`. It was
