@@ -62,9 +62,22 @@ object PublicRewriteRules {
       left.isNull || length(left.cast("string")) === 0
   }
 
+  abstract class IdentityRule(val id: String, val operation: NativeOperation) extends RewriteRule {
+    def apply(left: Column, right: Option[Column], context: RewriteContext): Column = left
+  }
+  object IdentityString extends IdentityRule("rewrite.blocking.identityString", NativeOperation.IdentityString)
+  object IdentityInteger extends IdentityRule("rewrite.blocking.identityInteger", NativeOperation.IdentityInteger)
+  object IdentityLong extends IdentityRule("rewrite.blocking.identityLong", NativeOperation.IdentityLong)
+
+  object LessThanZero extends RewriteRule {
+    val id = "rewrite.blocking.lessThanZero"
+    val operation = NativeOperation.LessThanZero
+    def apply(left: Column, right: Option[Column], context: RewriteContext): Column = left < 0
+  }
+
   val all: Seq[RewriteRule] = Seq(Exact, Jaccard, Jaro, Trim, CaseNormalize,
     First1Chars, First2Chars, First3Chars, First4Chars, Last1Chars, Last2Chars, Last3Chars,
-    LastWord, IsNullOrEmpty)
+    LastWord, IsNullOrEmpty, IdentityString, IdentityInteger, IdentityLong, LessThanZero)
 }
 
 object NativeRewriteRegistry {

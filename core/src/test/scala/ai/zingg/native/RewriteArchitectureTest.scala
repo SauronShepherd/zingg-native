@@ -30,7 +30,8 @@ class RewriteArchitectureTest {
       Set("similarity.exact", "similarity.jaccard", "similarity.jaro", "preprocess.trim", "preprocess.case_normalize",
         "blocking.first1Chars", "blocking.first2Chars", "blocking.first3Chars", "blocking.first4Chars",
         "blocking.last1Chars", "blocking.last2Chars", "blocking.last3Chars",
-        "blocking.lastWord", "blocking.isNullOrEmpty"),
+        "blocking.lastWord", "blocking.isNullOrEmpty", "blocking.identityString",
+        "blocking.identityInteger", "blocking.identityLong", "blocking.lessThanZero"),
       NativeRewriteRegistry.default.operationIds.toSet)
   }
 }
