@@ -31,11 +31,18 @@ def test_unverified_phases_are_not_exposed_by_safe_transport():
 @pytest.mark.parametrize(
     "method,args",
     [
+        ("exact_match", (None, ["key"])),
+        ("score_features", (None,)),
         ("train", (None, ["key"])),
         ("match_pairs", (None, {})),
         ("link_pairs", (None, {})),
         ("cluster_pairs", (None,)),
+        ("fuzzy_match", (None, {})),
+        ("link_sources", (None, None, {})),
+        ("match", (None, {})),
+        ("link", (None, {})),
         ("generate_docs", ({},)),
+        ("execute", ()),
     ],
 )
 def test_all_unverified_phases_are_guarded(method, args):
