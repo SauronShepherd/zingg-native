@@ -11,6 +11,7 @@ implementation or target-runtime proof is still missing.
 | Connect protocol/plugin | Verified | `connect/src/main/protobuf/`, `ZinggNativeExpressionPlugin.scala`, `examples/connect_similarity_e2e.py` | Exact/Jaccard local Spark 4.1 E2E |
 | Exact/Jaccard/Jaro shared similarities | Verified | `core/src/main/scala/.../Core.scala`, Scala/Python tests | Jaro Connect remains open |
 | Classic declarative phases | Verified subset | `Core.findTrainingData`, `Core.label`, `Core.updateLabel` | Local Classic E2E; upstream parity not certified |
+| Versioned model/blocking artifact contracts | Verified contract | `core/.../Artifacts.scala`, capability manifest, `ArtifactContractTest` | Schema and five-positive/five-negative validation exist; fitting/persistence remain open |
 | Python prototype isolation | Verified | `backend/base.py`, `_prototype_phase` guards, boundary tests | Prototype requires explicit `backend="expressions"` |
 | Artifact reproducibility | Verified | `scripts/check-artifacts.ps1`, CI workflow | Wheel excludes Spark runtime |
 | Upstream semantic reference | Verified | `reference/zingg-0.7.0.lock`, `reference/upstream-zingg/` | Pinned 0.7.0 source checkout |
