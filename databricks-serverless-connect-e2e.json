@@ -1,0 +1,27 @@
+{
+  "name": "zingg-native-serverless-connect-e2e",
+  "description": "Managed Serverless Connect plugin feasibility test; expected to fail until the custom plugin deployment path is supported.",
+  "format": "MULTI_TASK",
+  "max_concurrent_runs": 1,
+  "tasks": [
+    {
+      "task_key": "managed_connect_e2e",
+      "notebook_task": {
+        "notebook_path": "/Workspace/Users/angel.alvarez@sdggroup.com/zingg-native/remediation/databricks_serverless_connect_e2e.py",
+        "source": "WORKSPACE"
+      },
+      "environment_key": "serverless"
+    }
+  ],
+  "environments": [
+    {
+      "environment_key": "serverless",
+      "spec": {
+        "environment_version": "5",
+        "dependencies": [
+          "/Workspace/Users/angel.alvarez@sdggroup.com/zingg-native/remediation/zingg_native-0.2.0.dev0-py3-none-any.whl"
+        ]
+      }
+    }
+  ]
+}

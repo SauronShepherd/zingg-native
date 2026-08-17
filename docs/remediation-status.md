@@ -16,6 +16,6 @@ implementation or target-runtime proof is still missing.
 | Upstream semantic reference | Verified | `reference/zingg-0.7.0.lock`, `reference/upstream-zingg/` | Pinned 0.7.0 source checkout |
 | Databricks artifact presence | Verified | `sda` workspace imports and SHA-256 checks | Presence is not execution evidence |
 | Databricks Dedicated + Photon execution | Out of scope | Project target is Serverless only | No Photon claim |
-| Databricks Serverless/managed Connect | Open pending feasibility gate | No proven server-plugin installation path | No Serverless claim |
+| Databricks Serverless/managed Connect | Unsupported by current managed path | Job `177009162619307`, task `1075870166806203` rejected plugin config with `CONFIG_NOT_AVAILABLE` | No managed-plugin claim; requires a Databricks-supported extension mechanism |
 | Databricks Serverless shared-core JAR task | Verified narrow slice | Job `295665184144562`, run `923271170978947` | Exact/Jaccard/Jaro plus findTrainingData/label/updateLabel executed on Spark 4.1.0; Connect plugin remains open |
 | Full Zingg phase/model parity | Open | `docs/phase-map.md` | Training, matching, linking, clustering remain unimplemented in shared core |

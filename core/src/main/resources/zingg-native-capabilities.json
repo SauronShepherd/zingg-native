@@ -14,5 +14,5 @@
   "connectJaro": "open",
   "databricksDedicatedPhoton": "not-verified",
   "databricksServerlessSharedCoreJarTask": "verified-exact-jaccard-jaro-and-three-phases-spark-4.1.0",
-  "databricksServerless": "not-supported-until-server-plugin-proven"
+  "databricksServerless": "shared-core-jar-verified-managed-connect-plugin-unsupported-current-path"
 }

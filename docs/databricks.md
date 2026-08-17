@@ -22,6 +22,13 @@ The corresponding task run is `879126116901332`. This is shared-core JAR
 evidence only. It is not evidence that the managed
 Spark Connect `ExpressionPlugin` is installed or active.
 
+The managed Connect feasibility test was also executed as Serverless job
+`177009162619307`, run `813057979287661`, task run `1075870166806203`. It was
+rejected before native execution with Databricks error
+`CONFIG_NOT_AVAILABLE: Configuration zingg.native.connect.plugin.loaded is not available`.
+This is direct evidence that the current Serverless notebook environment does
+not permit the plugin activation configuration required by this adapter.
+
 The repository's historical `databricks-e2e-job*.json` definitions are retained
 only for provenance and are explicitly marked `DISABLED` and
 `prototype-only`; they must not be submitted as native release tests.
