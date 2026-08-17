@@ -12,7 +12,7 @@ implementation or target-runtime proof is still missing.
 | Exact/Jaccard/Jaro shared similarities | Verified | `core/src/main/scala/.../Core.scala`, Scala/Python tests | Jaro Connect remains open |
 | Classic declarative phases | Verified subset | `Core.findTrainingData`, `Core.label`, `Core.updateLabel` | Local Classic E2E; upstream parity not certified |
 | Versioned model/blocking artifact contracts | Verified contract | `core/.../Artifacts.scala`, capability manifest, `ArtifactContractTest` | Schema and five-positive/five-negative validation exist; fitting/persistence remain open |
-| Training evidence readiness | Verified prerequisite | `Core.inspectTrainingEvidence`, Classic gateway, Serverless Bundle run `63231407646707` | Five-positive/five-negative count executed on Spark 4.1.0; model fitting remains open |
+| Training evidence readiness | Verified prerequisite | `Core.inspectTrainingEvidence`, Classic gateway, Serverless Bundle run `769411192277182` | Five-positive/five-negative count executed on Spark 4.1.0; model fitting remains open |
 | Experimental model fit seam | Implemented, not certified | `ExperimentalModelTrainer.scala` | Spark ML logistic regression over supplied features; upstream preprocessing/blocking parity remains open |
 | Python prototype isolation | Verified | `backend/base.py`, `_prototype_phase` guards, boundary tests | Prototype requires explicit `backend="expressions"` |
 | Artifact reproducibility | Verified | `scripts/verify-artifacts.py`, `scripts/artifact-checksums.py`, CI workflow | Wheel excludes Spark runtime; CI publishes SHA-256 manifest |
@@ -22,5 +22,5 @@ implementation or target-runtime proof is still missing.
 | Databricks Dedicated + Photon execution | Out of scope | Project target is Serverless only | No Photon claim |
 | Databricks Serverless/managed Connect | Unsupported by current managed path | Job `177009162619307`, task `1075870166806203` rejected plugin config with `CONFIG_NOT_AVAILABLE` | No managed-plugin claim; requires a Databricks-supported extension mechanism |
 | Databricks Serverless shared-core JAR task | Verified narrow slice | Job `295665184144562`, run `847651604040137` | Exact/Jaccard/Jaro plus findTrainingData/label/updateLabel and UC-volume persistence executed on Spark 4.1.0; Connect plugin remains open |
-| Databricks Serverless Asset Bundle deployment | Verified narrow slice | Bundle job `190949869955356`, run `953664091738695` | Parameterized bundle deployed and ran the same shared-core slice on Serverless; managed Connect remains open |
+| Databricks Serverless Asset Bundle deployment | Verified narrow slice | Bundle job `190949869955356`, run `769411192277182` | Current rebuilt JAR pair uploaded and the shared-core slice ran on Serverless; managed Connect remains open |
 | Full Zingg phase/model parity | Open | `docs/phase-map.md` | Training, matching, linking, clustering remain unimplemented in shared core |

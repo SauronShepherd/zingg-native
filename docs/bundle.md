@@ -18,10 +18,10 @@ run evidence remain documented separately in
 The bundle is deliberately a JAR task. It does not imply that Databricks
 managed Spark Connect can load the `ExpressionPlugin`.
 
-The first real deployment and run passed on 2026-08-17:
+The latest real deployment and run passed on 2026-08-17:
 
-- Bundle job `190949869955356`, latest run `63231407646707`;
-- task run `648244529054344`;
+- Bundle job `190949869955356`, latest run `769411192277182`;
+- task run `291692707314471`;
 - Spark 4.1.0 with all three similarities, the three shared phases, and
   five-positive/five-negative training-evidence readiness and Unity Catalog
   Volume persistence.

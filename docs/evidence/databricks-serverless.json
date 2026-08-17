@@ -22,8 +22,8 @@
   "assetBundleTask": {
     "bundleTarget": "sda",
     "jobId": "190949869955356",
-    "runId": "63231407646707",
-    "taskRunId": "648244529054344",
+    "runId": "769411192277182",
+    "taskRunId": "291692707314471",
     "result": "SUCCESS",
     "output": "ZINGG_NATIVE_SERVERLESS_CORE_E2E PASS similarities=exact,jaccard,jaro phases=findTrainingData,label,updateLabel trainingEvidence=5/5 persistence=true spark=4.1.0 storage=/Volumes/sda_dev/sandbox/zingg_native_e2e/bundle-run",
     "verified": [
