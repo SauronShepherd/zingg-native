@@ -11,11 +11,11 @@ runs exercised Python-built Spark expressions through Spark Connect; they did
 not install or execute this repository's Connect server plugin and therefore
 cannot prove the shared-core architecture.
 
-A real Serverless JAR-task run now verifies the shared Scala core path:
+A real Serverless JAR-task run verifies the shared Scala core path:
 
 - job `295665184144562`, latest verified run `847651604040137`;
-- Serverless Spark `4.1.0`, task output
-  `ZINGG_NATIVE_SERVERLESS_CORE_E2E PASS similarities=exact,jaccard,jaro phases=findTrainingData,label,updateLabel persistence=true spark=4.1.0 storage=/Volumes/sda_dev/sandbox/zingg_native_e2e/run`;
+- Serverless Spark `4.1.0`, Asset Bundle task output
+  `ZINGG_NATIVE_SERVERLESS_CORE_E2E PASS similarities=exact,jaccard,jaro phases=preprocess,findTrainingData,buildTrainingPairs,label,updateLabel trainingEvidence=5/5 persistence=true spark=4.1.0 storage=/Volumes/sda_dev/sandbox/zingg_native_e2e/bundle-run`;
 - reproducible definition: `databricks-serverless-core-e2e.json`.
 
 The corresponding task run is `1077678349754978`. This is shared-core JAR

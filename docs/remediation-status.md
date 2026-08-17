@@ -10,7 +10,7 @@ implementation or target-runtime proof is still missing.
 | Classic/Py4J transport | Verified | `core/.../ClassicGateway.scala`, `python/.../classic.py`, `examples/classic_candidate_e2e.py` | Real local DataFrame execution |
 | Connect protocol/plugin | Verified | `connect/src/main/protobuf/`, `ZinggNativeExpressionPlugin.scala`, `examples/connect_similarity_e2e.py` | Exact/Jaccard/TRIM/CASE_NORMALIZE local Spark 4.1 E2E |
 | Exact/Jaccard/Jaro shared similarities | Verified | `core/src/main/scala/.../Core.scala`, Scala/Python tests | Jaro Connect remains open |
-| Shared declarative preprocessing | Verified Classic + Connect + Serverless | `Core.preprocess`, both transports, Serverless Bundle run `168088194011842` | TRIM and CASE_NORMALIZE execute as standard Spark expressions |
+| Shared declarative preprocessing | Verified Classic + Connect + Serverless | `Core.preprocess`, both transports, Serverless Bundle run `807529510025681` | TRIM and CASE_NORMALIZE execute as standard Spark expressions |
 | Classic declarative phases | Verified subset | `Core.findTrainingData`, `Core.label`, `Core.updateLabel` | Local Classic E2E; upstream parity not certified |
 | Versioned model/blocking artifact contracts | Verified contract | `core/.../Artifacts.scala`, capability manifest, `ArtifactContractTest` | Schema and five-positive/five-negative validation exist; fitting/persistence remain open |
 | Training evidence readiness | Verified prerequisite | `Core.buildTrainingPairs`, `Core.inspectTrainingEvidence`, Serverless Bundle run `807529510025681` | Five-positive/five-negative pairs derived by labeled-record self-join on Spark 4.1.0; model fitting remains open |

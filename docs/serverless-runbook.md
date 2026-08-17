@@ -44,7 +44,7 @@ Retrieve the task output with `databricks jobs get-run-output <task-run-id>`.
 The required output begins:
 
 ```text
-ZINGG_NATIVE_SERVERLESS_CORE_E2E PASS similarities=exact,jaccard,jaro phases=findTrainingData,label,updateLabel persistence=true spark=4.1.0
+ZINGG_NATIVE_SERVERLESS_CORE_E2E PASS similarities=exact,jaccard,jaro phases=preprocess,findTrainingData,buildTrainingPairs,label,updateLabel trainingEvidence=5/5 persistence=true spark=4.1.0
 ```
 
 The authoritative recorded evidence is in
