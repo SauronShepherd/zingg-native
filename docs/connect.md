@@ -17,6 +17,10 @@ For self-managed Spark Connect, build the artifacts and run
 distribution. Configure the same plugin class through
 `spark.connect.extensions.expression.classes`.
 
+With the server listening on port 15002, run
+`python examples/connect_similarity_e2e.py` to reproduce the verified Exact
+and Jaccard transport checks.
+
 On Windows, configure `HADOOP_HOME` with `bin\winutils.exe` before running the
 launcher. The script checks this prerequisite explicitly; Linux/WSL hosts do
 not require that Windows utility.
