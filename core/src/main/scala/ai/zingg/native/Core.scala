@@ -134,7 +134,7 @@ object Core {
   /** Merge explicit labels into a candidate relation without collecting rows. */
   def updateLabel(pairs: DataFrame, labels: DataFrame): DataFrame = {
     require(pairs.columns.contains("z_cluster"), "candidate relation must contain z_cluster")
-    require(labels.columns.toSet.subsetOf(Set("z_cluster", "z_isMatch")) && labels.columns.contains("z_isMatch"),
+    require(Set("z_cluster", "z_isMatch").subsetOf(labels.columns.toSet),
       "labels must contain z_cluster and z_isMatch")
     pairs.drop("z_isMatch")
       .join(labels.select(col("z_cluster"), col("z_isMatch").cast("int")), Seq("z_cluster"), "left")
