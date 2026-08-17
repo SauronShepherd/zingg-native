@@ -36,6 +36,7 @@ class ClassicBackend:
 
     def capabilities(self) -> dict[str, Any]:
         return {
+            "protocol_version": str(self._gateway.protocolVersion()),
             "metadata": self._gateway.capabilityMetadata(),
             "operations": list(self._gateway.supportedOperations()),
             "phases": list(self._gateway.supportedPhases()),
