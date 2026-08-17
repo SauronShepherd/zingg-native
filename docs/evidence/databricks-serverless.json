@@ -26,6 +26,12 @@
     "error": "CONFIG_NOT_AVAILABLE: Configuration zingg.native.connect.plugin.loaded is not available",
     "claim": "Managed Serverless Connect plugin activation is unsupported on the tested path"
   },
+  "storageBoundary": {
+    "result": "REJECTED",
+    "pathTested": "/tmp",
+    "error": "DBFS_DISABLED",
+    "claim": "Serverless persistence requires a supported Unity Catalog Volume or external storage location"
+  },
   "notClaimed": [
     "managed Connect ExpressionPlugin execution",
     "full upstream train/match/link/model parity",

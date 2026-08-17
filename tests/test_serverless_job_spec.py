@@ -24,4 +24,5 @@ def test_serverless_evidence_records_success_and_non_claims():
     assert evidence["sharedCoreJarTask"]["result"] == "SUCCESS"
     assert "JARO_SIMILARITY" in evidence["sharedCoreJarTask"]["verified"]
     assert evidence["managedConnectFeasibility"]["result"] == "FAILED_BEFORE_NATIVE_EXECUTION"
+    assert evidence["storageBoundary"]["error"] == "DBFS_DISABLED"
     assert "managed Connect ExpressionPlugin execution" in evidence["notClaimed"]
