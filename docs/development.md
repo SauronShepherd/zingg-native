@@ -61,6 +61,12 @@ python scripts/artifact-checksums.py
 ```
 
 CI publishes the same three-line SHA-256 manifest as a workflow artifact.
+
+To remove ignored build and legacy wheel artifacts before a clean release audit:
+
+```powershell
+./scripts/clean-generated.ps1
+```
 # Development gates
 
 Run the architecture boundary check before submitting changes:
