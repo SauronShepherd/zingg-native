@@ -1,7 +1,7 @@
 package ai.zingg.native
 
 import org.apache.spark.sql.Column
-import org.apache.spark.sql.functions.{element_at, length, lower, regexp_extract, substring, trim, when}
+import org.apache.spark.sql.functions.{floor, length, lower, pow, regexp_extract, round, substring, trim, when}
 
 /** Public Spark-expression rewrite rules shared by all supported runtimes. */
 object PublicRewriteRules {
@@ -75,9 +75,31 @@ object PublicRewriteRules {
     def apply(left: Column, right: Option[Column], context: RewriteContext): Column = left < 0
   }
 
+  object Round extends RewriteRule {
+    val id = "rewrite.blocking.round"
+    val operation = NativeOperation.Round
+    def apply(left: Column, right: Option[Column], context: RewriteContext): Column = round(left)
+  }
+  abstract class TruncateDoubleRule(val id: String, val operation: NativeOperation, places: Int) extends RewriteRule {
+    def apply(left: Column, right: Option[Column], context: RewriteContext): Column = {
+      val scale = pow(org.apache.spark.sql.functions.lit(10), org.apache.spark.sql.functions.lit(places))
+      when(left.isNull, left).otherwise(floor(left * scale) / scale)
+    }
+  }
+  object TruncateDouble1 extends TruncateDoubleRule("rewrite.blocking.truncateDoubleTo1Places", NativeOperation.TruncateDouble1, 1)
+  object TruncateDouble2 extends TruncateDoubleRule("rewrite.blocking.truncateDoubleTo2Places", NativeOperation.TruncateDouble2, 2)
+  object TruncateDouble3 extends TruncateDoubleRule("rewrite.blocking.truncateDoubleTo3Places", NativeOperation.TruncateDouble3, 3)
+  abstract class TrimIntRule(val id: String, val operation: NativeOperation, digits: Int) extends RewriteRule {
+    def apply(left: Column, right: Option[Column], context: RewriteContext): Column = left / pow(org.apache.spark.sql.functions.lit(10), org.apache.spark.sql.functions.lit(digits))
+  }
+  object TrimInt1 extends TrimIntRule("rewrite.blocking.trimLast1DigitsInt", NativeOperation.TrimLastDigitsInt1, 1)
+  object TrimInt2 extends TrimIntRule("rewrite.blocking.trimLast2DigitsInt", NativeOperation.TrimLastDigitsInt2, 2)
+  object TrimInt3 extends TrimIntRule("rewrite.blocking.trimLast3DigitsInt", NativeOperation.TrimLastDigitsInt3, 3)
+
   val all: Seq[RewriteRule] = Seq(Exact, Jaccard, Jaro, Trim, CaseNormalize,
     First1Chars, First2Chars, First3Chars, First4Chars, Last1Chars, Last2Chars, Last3Chars,
-    LastWord, IsNullOrEmpty, IdentityString, IdentityInteger, IdentityLong, LessThanZero)
+    LastWord, IsNullOrEmpty, IdentityString, IdentityInteger, IdentityLong, LessThanZero, Round,
+    TruncateDouble1, TruncateDouble2, TruncateDouble3, TrimInt1, TrimInt2, TrimInt3)
 }
 
 object NativeRewriteRegistry {

@@ -47,11 +47,19 @@ object NativeOperation {
   case object IdentityInteger extends NativeOperation { val id = "blocking.identityInteger" }
   case object IdentityLong extends NativeOperation { val id = "blocking.identityLong" }
   case object LessThanZero extends NativeOperation { val id = "blocking.lessThanZero" }
+  case object Round extends NativeOperation { val id = "blocking.round" }
+  case object TruncateDouble1 extends NativeOperation { val id = "blocking.truncateDoubleTo1Places" }
+  case object TruncateDouble2 extends NativeOperation { val id = "blocking.truncateDoubleTo2Places" }
+  case object TruncateDouble3 extends NativeOperation { val id = "blocking.truncateDoubleTo3Places" }
+  case object TrimLastDigitsInt1 extends NativeOperation { val id = "blocking.trimLast1DigitsInt" }
+  case object TrimLastDigitsInt2 extends NativeOperation { val id = "blocking.trimLast2DigitsInt" }
+  case object TrimLastDigitsInt3 extends NativeOperation { val id = "blocking.trimLast3DigitsInt" }
 
   val all: Seq[NativeOperation] = Seq(ExactSimilarity, JaccardSimilarity, JaroSimilarity, Trim, CaseNormalize,
     Hash, BlockingTree, StopWords, VectorExtraction, GraphLink, First1Chars, First2Chars, First3Chars,
     First4Chars, Last1Chars, Last2Chars, Last3Chars, LastWord, IsNullOrEmpty,
-    IdentityString, IdentityInteger, IdentityLong, LessThanZero)
+    IdentityString, IdentityInteger, IdentityLong, LessThanZero, Round, TruncateDouble1, TruncateDouble2,
+    TruncateDouble3, TrimLastDigitsInt1, TrimLastDigitsInt2, TrimLastDigitsInt3)
   private val byId = all.map(op => op.id -> op).toMap
   def resolve(id: String): NativeOperation = byId.getOrElse(id, throw new IllegalArgumentException(s"Unknown native operation: $id"))
 }
