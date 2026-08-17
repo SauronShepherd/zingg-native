@@ -22,6 +22,23 @@ final class NativeOperationProvider private (val spark: SparkSession, val contex
     result.asInstanceOf[Dataset[Row]]
   }
 
+  /** Resolve the upstream SimFunction name without exposing JVM class names. */
+  def similarityByZinggName(
+      input: Dataset[Row],
+      zinggFunctionName: String,
+      leftColumn: String,
+      rightColumn: String,
+      outputColumn: String): Dataset[Row] = {
+    val normalized = Option(zinggFunctionName).getOrElse("").toLowerCase
+    val operation =
+      if (normalized.contains("jacc")) "similarity.jaccard"
+      else if (normalized.contains("jaro")) "similarity.jaro"
+      else if (normalized.contains("exact")) "similarity.exact"
+      else throw new NativeRewriteUnsupportedException(
+        s"No native similarity mapping for upstream function '$zinggFunctionName'")
+    similarity(input, operation, leftColumn, rightColumn, outputColumn)
+  }
+
   def preprocess(input: Dataset[Row], operationId: String, columns: Array[String]): Dataset[Row] = {
     val result = Core.preprocess(input.toDF(), operationId, columns.toSeq)
     result.asInstanceOf[Dataset[Row]]

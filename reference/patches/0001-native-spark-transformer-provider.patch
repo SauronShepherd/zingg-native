@@ -1,0 +1,22 @@
+diff --git a/spark/core/src/main/java/zingg/spark/core/similarity/SparkBaseTransformer.java b/spark/core/src/main/java/zingg/spark/core/similarity/SparkBaseTransformer.java
+--- a/spark/core/src/main/java/zingg/spark/core/similarity/SparkBaseTransformer.java
++++ b/spark/core/src/main/java/zingg/spark/core/similarity/SparkBaseTransformer.java
+@@ -12,6 +12,7 @@ import org.apache.spark.sql.types.StructType;
+ import zingg.common.client.util.ColName;
+ import org.apache.spark.sql.SparkSession;
++import ai.zingg.nativebridge.NativeOperationProvider;
+ 
+ 
+ public abstract class SparkBaseTransformer extends Transformer implements HasInputCol, HasOutputCol {
+@@ -49,6 +50,12 @@ public abstract class SparkBaseTransformer extends Transformer implements HasInputCol, HasOutputCol {
+ 	@Override	
+ 	public Dataset<Row> transform(Dataset<?> ds){
++        NativeOperationProvider nativeProvider = NativeOperationProvider.fromSpark(ds.sparkSession(), "feature-generation");
++        if (!"OFF".equals(nativeProvider.mode())) {
++            return nativeProvider.similarityByZinggName(
++                ds.toDF(), this.uid, getInputCol(), ColName.COL_PREFIX + getInputCol(), getOutputCol());
++        }
+ 		return ds.withColumn(getOutputCol(), 
+ 				functions.callUDF(this.uid, ds.col(getInputCol()), 
+ 					ds.col(ColName.COL_PREFIX + getInputCol())));
+ 	}

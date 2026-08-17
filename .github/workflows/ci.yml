@@ -26,6 +26,9 @@ jobs:
       - name: Verify architecture boundaries
         shell: pwsh
         run: ./scripts/check-architecture.ps1
+      - name: Verify pinned upstream operation inventory
+        shell: pwsh
+        run: ./scripts/check-upstream-inventory.ps1
       - name: Test Python
         run: python -m pytest -q
 
@@ -43,6 +46,7 @@ jobs:
       - name: Build release artifacts
         run: |
           mvn -B -DskipTests package
+          pwsh ./scripts/check-serverless-core.ps1
           python -m pip install build
           python -m build --wheel
           test -f core/target/zingg-native-core_2.13-0.2.0-SNAPSHOT.jar

@@ -1,0 +1,5 @@
+project=zingg
+version=0.7.0
+tag=v0.7.0
+checkout=reference/upstream-zingg
+lock=reference/zingg-0.7.0.lock
