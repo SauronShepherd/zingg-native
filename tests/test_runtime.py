@@ -1,5 +1,5 @@
-from zingg_native.runtime import detect_runtime
 from zingg_native.backend.base import resolve_backend
+from zingg_native.runtime import detect_runtime
 
 
 class ConnectSession:
