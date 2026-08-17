@@ -27,7 +27,11 @@ class PrototypeExpressionBackend:
 
 def resolve_backend(spark: Any, requested: str | None = None) -> ExecutionBackend:
     """Resolve an explicit transport; prototype expressions require opt-in."""
-    mode = requested or "classic"
+    if requested is None:
+        from ..runtime import detect_runtime
+        mode = detect_runtime(spark).api_mode
+    else:
+        mode = requested
     if mode == "classic":
         from .classic import ClassicBackend
         return ClassicBackend(spark)
