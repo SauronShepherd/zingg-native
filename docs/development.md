@@ -35,3 +35,8 @@ python .\examples\classic_candidate_e2e.py
 The example asserts the Classic handshake, native candidate relation schema,
 exact-key scores, and nullable training labels. It is local Classic evidence,
 not Databricks or Spark Connect evidence.
+
+Classic phase methods also accept `output_path` and persist through the shared
+Scala gateway using Parquet. On Windows, running a local persistence check
+requires a Hadoop Windows utility (`HADOOP_HOME\bin\winutils.exe`); Serverless
+and Linux environments do not have that Windows prerequisite.
