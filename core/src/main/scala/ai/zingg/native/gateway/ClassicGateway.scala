@@ -8,9 +8,10 @@ import scala.jdk.CollectionConverters._
 class ClassicGateway {
   def libraryVersion: String = Core.libraryVersion
   def protocolVersion: String = Core.protocolVersion
-  def capabilityMetadata: String = "shared-core;EXACT_SIMILARITY;JACCARD_SIMILARITY;JARO_SIMILARITY;phase-parity-not-certified"
+  def capabilityMetadata: String = "shared-core;EXACT_SIMILARITY;JACCARD_SIMILARITY;JARO_SIMILARITY;CLASSIC_FIND_TRAINING_DATA;CLASSIC_LABEL;CLASSIC_UPDATE_LABEL;phase-parity-not-certified"
   def sparkVersion(df: DataFrame): String = df.sparkSession.version
   def supportedOperations: Array[String] = Array("EXACT_SIMILARITY", "JACCARD_SIMILARITY", "JARO_SIMILARITY")
+  def supportedPhases: Array[String] = Array("findTrainingData", "label", "updateLabel")
   def transform(df: DataFrame, operationId: String, left: String, right: String, output: String): DataFrame = Core.transform(df, operationId, left, right, output)
   def findTrainingData(df: DataFrame, idColumn: String, keys: java.util.List[String]): DataFrame =
     Core.findTrainingData(df, idColumn, keys.asScala.toSeq)

@@ -18,4 +18,9 @@ class CoreRegistryTest {
     val expression = CatalystSimilarity("JACCARD_SIMILARITY", org.apache.spark.sql.catalyst.expressions.Literal("a"), org.apache.spark.sql.catalyst.expressions.Literal("b"))
     assertTrue(expression.isInstanceOf[org.apache.spark.sql.catalyst.expressions.If])
   }
+
+  @Test def gatewayAdvertisesOnlyVerifiedClassicPhases(): Unit = {
+    val phases = new gateway.ClassicGateway().supportedPhases.toSet
+    assertEquals(Set("findTrainingData", "label", "updateLabel"), phases)
+  }
 }
