@@ -20,6 +20,10 @@ Python dictionary and claim Zingg parity. The shared-core implementation must
 first define versioned, transport-independent model and blocking artifact
 schemas, then provide declarative Spark feature construction and persistence.
 
+The shared core now defines versioned `ModelArtifact` and
+`BlockingTreeArtifact` contracts in `Artifacts.scala`; these contracts are
+validated but do not persist or fit a model.
+
 Current status: `train` remains unsupported in the SAFE API. The old Python
 threshold model is retained only behind the explicitly selected prototype
 backend and is not evidence of upstream parity.
