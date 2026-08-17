@@ -10,6 +10,28 @@ class FakeSpark:
     _jvm = _JVM()
 
 
+def test_status_reports_runtime_and_transport_metadata():
+    z = object.__new__(Zingg)
+    z.config = type("Config", (), {"protocol_version": "1"})()
+    z.backend = type("ClassicBackend", (), {"name": "classic-py4j"})()
+    z.runtime = type("Runtime", (), {
+        "spark_version": "4.1.0",
+        "api_mode": "classic",
+        "engine": "spark",
+        "native_execution": False,
+    })()
+    result = z.status()
+    assert result == {
+        "library_version": "0.2.0-SNAPSHOT",
+        "protocol_version": "1",
+        "backend": "classic-py4j",
+        "spark_version": "4.1.0",
+        "api_mode": "classic",
+        "engine": "spark",
+        "native_execution_observed": False,
+    }
+
+
 def test_prototype_requires_explicit_opt_in():
     assert isinstance(resolve_backend(FakeSpark(), "expressions"), PrototypeExpressionBackend)
 
