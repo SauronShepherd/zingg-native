@@ -10,7 +10,7 @@ replacing their Spark-sensitive internals.
 
 | Phase | Upstream executor | Native boundary | Status |
 |---|---|---|---|
-| findTrainingData | `SparkTrainingDataFinder` | candidate-pair relation and persistence | Classic shared-core implementation verified locally; upstream parity and Connect open |
+| findTrainingData | `SparkTrainingDataFinder` | candidate-pair relation and persistence | Classic shared-core exact-key subset verified locally; upstream blocking-tree/sampling/model path and Connect remain open |
 | label | `SparkLabeller` | read/write pair relation; interactive UI excluded from non-interactive run | Classic shared-core deterministic threshold adaptation verified locally; upstream parity and Connect open |
 | updateLabel | `SparkLabelUpdater` | deterministic label merge/update | Classic shared-core implementation verified locally; upstream parity and Connect open |
 | train | `SparkTrainer` | feature construction and model persistence | contract inventory in `docs/upstream-train-contract.md`; shared-core implementation open |
@@ -43,3 +43,14 @@ The first full native E2E target will therefore use the upstream phase
 contracts and a declarative exact-similarity/candidate-pair path, with model
 and graph substitutions documented as adapted semantics until parity tests
 prove equivalence.
+
+## Confirmed `findTrainingData` divergence
+
+The pinned upstream `TrainingDataFinder.execute()` samples input records,
+preprocesses field-definition columns, constructs a blocking tree, predicts
+blocked pairs when labelled positive and negative samples are available, and
+writes uncertain pairs. The current `Core.findTrainingData` deliberately stops
+at an exact-key self-join and emits a deterministic candidate relation. It does
+not construct a blocking tree, consume labelled training artifacts, or select
+uncertain predictions. This difference is a tracked parity gap, not a hidden
+fallback to upstream code.
