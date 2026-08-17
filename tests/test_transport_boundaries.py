@@ -1,5 +1,11 @@
 from pathlib import Path
 
+
+def test_classic_capability_contract_names_artifact_schemas():
+    source = (Path(__file__).parents[1] / "python/src/zingg_native/backend/classic.py").read_text()
+    assert "model_artifact_schema_version" in source
+    assert "blocking_tree_artifact_schema_version" in source
+
 ROOT = Path(__file__).parents[1]
 
 

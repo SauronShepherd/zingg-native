@@ -37,6 +37,8 @@ class ClassicBackend:
             "metadata": self._gateway.capabilityMetadata(),
             "operations": list(self._gateway.supportedOperations()),
             "phases": list(self._gateway.supportedPhases()),
+            "model_artifact_schema_version": int(self._gateway.modelArtifactSchemaVersion()),
+            "blocking_tree_artifact_schema_version": int(self._gateway.blockingTreeArtifactSchemaVersion()),
         }
 
     def find_training_data(self, df: Any, keys: list[str], id_column: str, output_path: str | None = None) -> Any:
