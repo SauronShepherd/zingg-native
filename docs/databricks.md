@@ -22,6 +22,11 @@ The corresponding task run is `879126116901332`. This is shared-core JAR
 evidence only. It is not evidence that the managed
 Spark Connect `ExpressionPlugin` is installed or active.
 
+The shared gateway supports phase persistence, but Serverless persistence must
+target a supported Unity Catalog Volume or external storage location. A test
+write to `/tmp` was rejected with `DBFS_DISABLED`; `/tmp` is not a valid
+Serverless evidence path.
+
 The managed Connect feasibility test was also executed as Serverless job
 `177009162619307`, run `813057979287661`, task run `1075870166806203`. It was
 rejected before native execution with Databricks error
