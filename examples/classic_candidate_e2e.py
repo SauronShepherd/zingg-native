@@ -3,6 +3,7 @@
 import os
 import json
 import socketserver
+import tempfile
 
 if not hasattr(socketserver, "UnixStreamServer"):
     # Spark 4.1's Windows client imports this Unix-only symbol during startup.
@@ -57,6 +58,12 @@ def main() -> None:
         explicit = spark.sql("SELECT 'missing' AS z_cluster, 0 AS z_isMatch")
         updated_rows = [tuple(row) for row in zingg.update_label(pairs, explicit).collect()]
         assert updated_rows[0][-1] == 2, updated_rows
+        with tempfile.TemporaryDirectory(prefix="zingg-native-pairs-") as output_path:
+            persisted = zingg.find_training_data(
+                source, ["name", "city"], "record_id", output_path=output_path
+            )
+            assert persisted.count() == 1
+            assert spark.read.parquet(output_path).count() == 1
         evidence = {
             "status": status,
             "similarities": {
