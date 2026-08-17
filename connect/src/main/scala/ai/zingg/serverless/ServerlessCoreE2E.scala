@@ -54,8 +54,11 @@ object ServerlessCoreE2E {
       require(updated.select("z_isMatch").head().getInt(0) == 0, "updateLabel phase did not merge label")
       val persistedUpdated = persisted(updated, "updated")
       require(persistedUpdated.count() == 1, "persisted updated relation could not be read")
+      val evidenceRows = (Seq.fill(5)(1) ++ Seq.fill(5)(0)).toDF("z_isMatch")
+      val evidence = Core.inspectTrainingEvidence(evidenceRows)
+      require(evidence.isSufficient, s"training evidence should be sufficient: $evidence")
       val storage = outputPath.map(path => s" storage=$path").getOrElse("")
-      println(s"ZINGG_NATIVE_SERVERLESS_CORE_E2E PASS similarities=exact,jaccard,jaro phases=findTrainingData,label,updateLabel persistence=${outputPath.isDefined} spark=${spark.version}$storage")
+      println(s"ZINGG_NATIVE_SERVERLESS_CORE_E2E PASS similarities=exact,jaccard,jaro phases=findTrainingData,label,updateLabel trainingEvidence=${evidence.positivePairs}/${evidence.negativePairs} persistence=${outputPath.isDefined} spark=${spark.version}$storage")
     } finally {
       spark.stop()
     }
