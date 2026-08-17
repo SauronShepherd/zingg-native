@@ -1,5 +1,8 @@
 $ErrorActionPreference = 'Stop'
 if (-not $env:SPARK_HOME) { throw 'Set SPARK_HOME to a Spark 4.1 distribution.' }
+if ($IsWindows -and (-not $env:HADOOP_HOME -or -not (Test-Path (Join-Path $env:HADOOP_HOME 'bin\winutils.exe')))) {
+  throw 'Windows Spark Connect startup requires HADOOP_HOME\bin\winutils.exe. Configure a Hadoop Windows utility directory before starting the server.'
+}
 $repo = Split-Path -Parent $PSScriptRoot
 $core = Join-Path $repo 'core\target\zingg-native-core_2.13-0.2.0-SNAPSHOT.jar'
 $connect = Join-Path $repo 'connect\target\zingg-native-connect_2.13-0.2.0-SNAPSHOT.jar'
