@@ -81,7 +81,6 @@ class Zingg:
             F.dense_rank().over(Window.orderBy(*[F.col(k).asc_nulls_first() for k in keys])).cast("long"),
         )
 
-    @_prototype_phase
     def find_training_data(
         self,
         df: Any,
@@ -90,12 +89,18 @@ class Zingg:
         output_path: str | None = None,
         include_all_pairs: bool = False,
     ) -> Any:
-        """Generate native, deterministic candidate pairs for training.
+        """Generate candidate pairs through Classic shared core or prototype.
 
-        Candidates share at least one non-null exact key. The returned relation
-        contains left/right ids, per-key native exact scores, mean score, a
-        deterministic pair cluster id, and a nullable ``z_isMatch`` label.
+        Classic delegates to the Scala core. The legacy expression path remains
+        available only when explicitly selecting ``backend='expressions'``.
         """
+        if type(self.backend).__name__ == "ClassicBackend":
+            return self.backend.find_training_data(df, keys, id_column)
+        if type(self.backend).__name__ != "PrototypeExpressionBackend":
+            raise UnsupportedOperationError(
+                "find_training_data is not implemented by this transport; "
+                "the shared-core phase currently supports Classic only."
+            )
         from functools import reduce
         from pyspark.sql import functions as F
         if not keys:

@@ -31,3 +31,13 @@ class ClassicBackend:
         )
         from pyspark.sql import DataFrame
         return DataFrame(jdf, self.spark)
+
+    def find_training_data(self, df: Any, keys: list[str], id_column: str) -> Any:
+        if not keys:
+            raise ValueError("keys must contain at least one column")
+        java_keys = self.spark._jvm.java.util.ArrayList()
+        for key in keys:
+            java_keys.add(key)
+        jdf = self._gateway.findTrainingData(df._jdf, id_column, java_keys)
+        from pyspark.sql import DataFrame
+        return DataFrame(jdf, self.spark)

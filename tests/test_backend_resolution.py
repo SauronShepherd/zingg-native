@@ -26,3 +26,10 @@ def test_unverified_phases_are_not_exposed_by_safe_transport():
     z.backend = type("ClassicBackend", (), {})()
     with pytest.raises(UnsupportedOperationError):
         z.exact_match(None, ["key"])
+
+
+def test_candidate_phase_dispatches_only_to_shared_classic_backend():
+    z = object.__new__(Zingg)
+    z.backend = type("ConnectBackend", (), {})()
+    with pytest.raises(UnsupportedOperationError, match="shared-core phase"):
+        z.find_training_data(None, ["key"], "id")
