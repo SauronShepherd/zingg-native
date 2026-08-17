@@ -14,9 +14,13 @@ runtime. For local tests use a dedicated environment:
 python -m venv .venv
 .venv\Scripts\python -m pip install -e ".[dev]"
 .venv\Scripts\python -m pip install pyspark==4.1.0
+$env:PYTHONPATH = (Resolve-Path .\python\src)
 .venv\Scripts\python -m pytest -q
 ./scripts/build.ps1
 ```
+
+Setting `PYTHONPATH` ensures tests import the checked-out source rather than a
+previously installed wheel with the same package name.
 
 The build script uses `MAVEN_HOME` when configured, then the repository's
 ignored `.tools/apache-maven-3.9.11` runtime, and finally `mvn` from `PATH`.
