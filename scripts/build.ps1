@@ -1,6 +1,13 @@
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path -Parent $PSScriptRoot
-$maven = if ($env:MAVEN_HOME) { Join-Path $env:MAVEN_HOME 'bin\mvn.cmd' } else { 'mvn' }
+$bundledMaven = Join-Path $repo '.tools\apache-maven-3.9.11\bin\mvn.cmd'
+$maven = if ($env:MAVEN_HOME) {
+  Join-Path $env:MAVEN_HOME 'bin\mvn.cmd'
+} elseif (Test-Path $bundledMaven) {
+  $bundledMaven
+} else {
+  'mvn'
+}
 Push-Location $repo
 try {
   & $maven '-DskipTests' 'package'

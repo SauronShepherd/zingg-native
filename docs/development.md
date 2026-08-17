@@ -15,8 +15,11 @@ python -m venv .venv
 .venv\Scripts\python -m pip install -e ".[dev]"
 .venv\Scripts\python -m pip install pyspark==4.1.0
 .venv\Scripts\python -m pytest -q
-mvn test
+./scripts/build.ps1
 ```
+
+The build script uses `MAVEN_HOME` when configured, then the repository's
+ignored `.tools/apache-maven-3.9.11` runtime, and finally `mvn` from `PATH`.
 
 Keep Databricks Connect in a separate environment from OSS PySpark. The
 Connect server plugin and the Classic core JAR are compiled by Maven and must
