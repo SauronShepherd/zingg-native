@@ -41,6 +41,16 @@ def test_classic_requires_loaded_core():
         resolve_backend(FakeSpark(), "classic")
 
 
+def test_classic_boundary_rejects_unknown_operations_before_gateway_call():
+    from zingg_native.backend.classic import ClassicBackend
+
+    backend = object.__new__(ClassicBackend)
+    with pytest.raises(NotImplementedError, match="operation NOPE"):
+        backend.transform(None, "NOPE")
+    with pytest.raises(NotImplementedError, match="preprocessing operation NOPE"):
+        backend.preprocess(None, "NOPE", ["name"])
+
+
 def test_unverified_phases_are_not_exposed_by_safe_transport():
     z = object.__new__(Zingg)
     z.backend = type("ClassicBackend", (), {})()

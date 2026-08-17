@@ -22,6 +22,8 @@ class ClassicBackend:
             raise BackendUnavailableError(f"Unsupported zingg-native protocol: {gateway.protocolVersion()}")
 
     def transform(self, df: Any, operation: str, **options: Any) -> Any:
+        if operation not in {"EXACT_SIMILARITY", "JACCARD_SIMILARITY", "JARO_SIMILARITY"}:
+            raise NotImplementedError(f"Classic shared core does not certify operation {operation}")
         jdf = self._gateway.transform(
             df._jdf,
             operation,
@@ -56,6 +58,10 @@ class ClassicBackend:
     def preprocess(self, df: Any, operation: str, columns: list[str]) -> Any:
         if not columns:
             raise ValueError("columns must contain at least one field")
+        if operation not in {"CASE_NORMALIZE", "TRIM"}:
+            raise NotImplementedError(
+                f"Classic shared core does not certify preprocessing operation {operation}"
+            )
         java_columns = self.spark._jvm.java.util.ArrayList()
         for column in columns:
             java_columns.add(column)
