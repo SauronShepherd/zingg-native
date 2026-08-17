@@ -13,6 +13,7 @@ implementation or target-runtime proof is still missing.
 | Classic declarative phases | Verified subset | `Core.findTrainingData`, `Core.label`, `Core.updateLabel` | Local Classic E2E; upstream parity not certified |
 | Versioned model/blocking artifact contracts | Verified contract | `core/.../Artifacts.scala`, capability manifest, `ArtifactContractTest` | Schema and five-positive/five-negative validation exist; fitting/persistence remain open |
 | Training evidence readiness | Verified prerequisite | `Core.inspectTrainingEvidence`, Classic gateway, Serverless Bundle run `63231407646707` | Five-positive/five-negative count executed on Spark 4.1.0; model fitting remains open |
+| Experimental model fit seam | Implemented, not certified | `ExperimentalModelTrainer.scala` | Spark ML logistic regression over supplied features; upstream preprocessing/blocking parity remains open |
 | Python prototype isolation | Verified | `backend/base.py`, `_prototype_phase` guards, boundary tests | Prototype requires explicit `backend="expressions"` |
 | Artifact reproducibility | Verified | `scripts/verify-artifacts.py`, `scripts/artifact-checksums.py`, CI workflow | Wheel excludes Spark runtime; CI publishes SHA-256 manifest |
 | Python lint/type gates | Verified locally and wired to CI | Ruff, Mypy, `.github/workflows/ci.yml` | Ruff and Mypy pass on the current source tree |

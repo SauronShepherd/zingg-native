@@ -31,6 +31,12 @@ shared-core training prerequisite: deterministic counts of positive and
 negative `z_isMatch` rows, with `TrainingEvidence.isSufficient` enforcing the
 upstream five/five minimum. No model fitting is performed yet.
 
+`ExperimentalModelTrainer.fit` now provides a Spark ML logistic-regression fit
+over caller-supplied feature columns and persists the model to a caller-
+supplied path. It is intentionally experimental: it does not learn the
+upstream blocking tree or perform Zingg preprocessing, and is not exposed by
+the SAFE Python facade.
+
 Current status: `train` remains unsupported in the SAFE API. The old Python
 threshold model is retained only behind the explicitly selected prototype
 backend and is not evidence of upstream parity.
