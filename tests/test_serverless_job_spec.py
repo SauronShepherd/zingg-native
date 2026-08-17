@@ -17,7 +17,7 @@ def test_serverless_core_job_is_a_reproducible_jar_task():
     assert environment["spec"]["environment_version"] == "5"
     dependencies = environment["spec"]["java_dependencies"]
     assert any(path.endswith("zingg-native-core_2.13-0.2.0-SNAPSHOT.jar") for path in dependencies)
-    assert any(path.endswith("zingg-native-connect_2.13-0.2.0-SNAPSHOT.jar") for path in dependencies)
+    assert not any(path.endswith("zingg-native-connect_2.13-0.2.0-SNAPSHOT.jar") for path in dependencies)
 
 
 def test_serverless_evidence_records_success_and_non_claims():
