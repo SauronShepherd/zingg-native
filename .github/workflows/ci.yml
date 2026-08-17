@@ -68,3 +68,23 @@ jobs:
           assert Zingg
           print("clean wheel import passed")
           PY
+
+  jvm-compatibility:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        spark-profile: [default, spark40]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Test Spark compatibility profile
+        run: |
+          if [ "${{ matrix.spark-profile }}" = "default" ]; then
+            mvn -B test
+          else
+            mvn -B -P${{ matrix.spark-profile }} test
+          fi
