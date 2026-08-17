@@ -7,7 +7,6 @@ import org.apache.spark.sql.connect.plugin.ExpressionPlugin
 import org.apache.spark.connect.proto.{Expression => ConnectExpression}
 import org.sparkproject.connect.protobuf.CodedInputStream
 import org.sparkproject.connect.protobuf.Any
-import ai.zingg.native.{CatalystPreprocess, CatalystSimilarity}
 import java.util.Optional
 
 /**

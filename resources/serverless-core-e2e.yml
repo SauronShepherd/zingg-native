@@ -2,7 +2,7 @@ resources:
   jobs:
     zingg_native_serverless_core_e2e:
       name: zingg-native-serverless-core-e2e-bundle
-      description: Serverless shared-core E2E; managed Connect plugin is not claimed
+      description: Serverless public-API shared-core E2E; no Connect server plugin dependency
       max_concurrent_runs: 1
       tasks:
         - task_key: shared_core_e2e
@@ -18,4 +18,3 @@ resources:
             environment_version: "5"
             java_dependencies:
               - ${var.artifact_root}/zingg-native-core_2.13-0.2.0-SNAPSHOT.jar
-              - ${var.artifact_root}/zingg-native-connect_2.13-0.2.0-SNAPSHOT.jar

@@ -2,10 +2,12 @@
 
 **ARCHITECTURE REMEDIATION IN PROGRESS — NOT RELEASE READY**
 
-`zingg-native` is being rebuilt as a PySpark facade over a shared Scala 2.13
-Spark core, with explicit Classic/Py4J and Spark Connect transports. The
-existing Python-expression implementation is a preserved prototype, not the
-release architecture.
+`zingg-native` is being rebuilt as a native-execution layer for the real
+Zingg 0.7.x Spark workflow on Databricks Dedicated + Photon and Databricks
+Serverless. It captures Zingg operations, rewrites only semantically proven
+non-native constructs to public Spark SQL/DataFrame expressions, and records
+semantic and runtime evidence. The existing Python-expression and custom
+Connect-plugin implementations are preserved only as research prototypes.
 
 ## Current slice
 

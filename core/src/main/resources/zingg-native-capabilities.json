@@ -18,7 +18,11 @@
   "connectTrim": "verified-self-managed-spark-4.1",
   "connectCaseNormalize": "verified-self-managed-spark-4.1",
   "connectJaro": "open",
-  "databricksDedicatedPhoton": "out-of-scope-serverless-only",
-  "databricksServerlessSharedCoreJarTask": "verified-exact-jaccard-jaro-preprocessing-pair-expansion-and-four-phases-spark-4.1.0",
-  "databricksServerless": "shared-core-jar-verified-managed-connect-plugin-unsupported-current-path"
+  "targets": {
+    "databricksDedicatedPhoton": {"required": true, "status": "unverified"},
+    "databricksServerless": {"required": true, "status": "partial-shared-core-only"}
+  },
+  "databricksDedicatedPhoton": {"required": true, "status": "unverified"},
+  "databricksServerlessSharedCoreJarTask": {"status": "verified-narrow-slice", "evidence": "807529510025681"},
+  "databricksServerless": {"required": true, "status": "partial-shared-core-only", "managedConnectPlugin": "not-required-for-target-architecture"}
 }

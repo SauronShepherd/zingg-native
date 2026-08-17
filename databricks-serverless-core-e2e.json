@@ -23,8 +23,7 @@
       "spec": {
         "environment_version": "5",
         "java_dependencies": [
-          "/Workspace/Users/angel.alvarez@sdggroup.com/zingg-native/remediation/zingg-native-core_2.13-0.2.0-SNAPSHOT.jar",
-          "/Workspace/Users/angel.alvarez@sdggroup.com/zingg-native/remediation/zingg-native-connect_2.13-0.2.0-SNAPSHOT.jar"
+          "/Workspace/Users/angel.alvarez@sdggroup.com/zingg-native/remediation/zingg-native-core_2.13-0.2.0-SNAPSHOT.jar"
         ]
       }
     }

@@ -10,6 +10,7 @@ message ZinggNativeExpression {
   bytes options = 4;
 }
 
+
 // Transport-neutral artifact references. These messages describe persisted
 // artifacts; they do not encode model internals or claim train/match parity.
 message BlockingTreeArtifact {
