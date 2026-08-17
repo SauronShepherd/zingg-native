@@ -141,6 +141,15 @@ object Core {
       .withColumn("z_isMatch", org.apache.spark.sql.functions.coalesce(col("z_isMatch"), lit(2)))
   }
 
+  /** Inspect persisted labels before a future native model fit. */
+  def inspectTrainingEvidence(df: DataFrame): TrainingEvidence = {
+    require(df.columns.contains("z_isMatch"), "training relation must contain z_isMatch")
+    TrainingEvidence(
+      df.filter(col("z_isMatch") === lit(1)).count(),
+      df.filter(col("z_isMatch") === lit(0)).count()
+    )
+  }
+
   /** Persist a phase relation without collecting it on the driver. */
   def persist(df: DataFrame, outputPath: String): DataFrame = {
     df.write.mode("overwrite").parquet(ArtifactSchema.validatePath(outputPath))

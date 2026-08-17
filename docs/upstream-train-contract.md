@@ -26,6 +26,11 @@ are also exposed by the capability manifest; these contracts are validated but
 do not persist or fit a model. The Classic gateway exposes the same schema
 versions for Py4J compatibility checks.
 
+`Core.inspectTrainingEvidence` and the Classic gateway now provide the first
+shared-core training prerequisite: deterministic counts of positive and
+negative `z_isMatch` rows, with `TrainingEvidence.isSufficient` enforcing the
+upstream five/five minimum. No model fitting is performed yet.
+
 Current status: `train` remains unsupported in the SAFE API. The old Python
 threshold model is retained only behind the explicitly selected prototype
 backend and is not evidence of upstream parity.

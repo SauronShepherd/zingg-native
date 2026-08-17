@@ -38,4 +38,11 @@ class ArtifactContractTest {
     assert(ArtifactSchema.validatePath("/Volumes/catalog/schema/volume/run") != null)
     assert(ArtifactSchema.validatePath("s3://bucket/prefix") == "s3://bucket/prefix")
   }
+
+  @Test
+  def reportsTrainingEvidenceSufficiency(): Unit = {
+    assert(!TrainingEvidence(4, 5).isSufficient)
+    assert(!TrainingEvidence(5, 4).isSufficient)
+    assert(TrainingEvidence(5, 5).isSufficient)
+  }
 }

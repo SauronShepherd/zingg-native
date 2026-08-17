@@ -36,6 +36,13 @@ final case class ModelArtifact(
   require(negativePairs >= 5, "training requires at least five negative pairs")
 }
 
+final case class TrainingEvidence(positivePairs: Long, negativePairs: Long) {
+  require(positivePairs >= 0, "positive pair count must not be negative")
+  require(negativePairs >= 0, "negative pair count must not be negative")
+
+  def isSufficient: Boolean = positivePairs >= 5 && negativePairs >= 5
+}
+
 object ArtifactSchema {
   val currentVersion: Int = 1
 
