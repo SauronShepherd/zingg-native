@@ -19,6 +19,15 @@ object ServerlessCoreE2E {
         s"unexpected first result: ${rows(0)}")
       require(rows(1).getString(0) == "b" && math.abs(rows(1).getDouble(1)) < 1e-12,
         s"unexpected second result: ${rows(1)}")
+      val exactRows = Core.transform(input, "EXACT_SIMILARITY", "left_value", "right_value", "z_exact")
+        .select("record_id", "z_exact").orderBy("record_id").collect()
+      require(exactRows(0).getDouble(1) == 0.0 && exactRows(1).getDouble(1) == 0.0,
+        s"unexpected exact results: ${exactRows.mkString(",")}")
+      val jaroInput = Seq(("m", "MARTHA", "MARHTA")).toDF("record_id", "left_value", "right_value")
+      val jaroRows = Core.transform(jaroInput, "JARO_SIMILARITY", "left_value", "right_value", "z_jaro")
+        .select("z_jaro").collect()
+      require(math.abs(jaroRows(0).getDouble(0) - 0.9444444444444445) < 1e-12,
+        s"unexpected jaro result: ${jaroRows(0)}")
 
       val records = Seq(
         ("a", "Alice", "Madrid"),
@@ -33,7 +42,7 @@ object ServerlessCoreE2E {
       val explicit = pairs.select("z_cluster").limit(1).withColumn("z_isMatch", lit(0))
       val updated = Core.updateLabel(pairs, explicit)
       require(updated.select("z_isMatch").head().getInt(0) == 0, "updateLabel phase did not merge label")
-      println(s"ZINGG_NATIVE_SERVERLESS_CORE_E2E PASS rows=${rows.length} phases=findTrainingData,label,updateLabel spark=${spark.version}")
+      println(s"ZINGG_NATIVE_SERVERLESS_CORE_E2E PASS similarities=exact,jaccard,jaro phases=findTrainingData,label,updateLabel spark=${spark.version}")
     } finally {
       spark.stop()
     }

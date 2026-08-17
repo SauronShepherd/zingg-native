@@ -13,12 +13,12 @@ cannot prove the shared-core architecture.
 
 A real Serverless JAR-task run now verifies the shared Scala core path:
 
-- job `295665184144562`, latest run `310851442443218`;
+- job `295665184144562`, latest run `923271170978947`;
 - Serverless Spark `4.1.0`, task output
-  `ZINGG_NATIVE_SERVERLESS_CORE_E2E PASS rows=2 phases=findTrainingData,label,updateLabel spark=4.1.0`;
+  `ZINGG_NATIVE_SERVERLESS_CORE_E2E PASS similarities=exact,jaccard,jaro phases=findTrainingData,label,updateLabel spark=4.1.0`;
 - reproducible definition: `databricks-serverless-core-e2e.json`.
 
-The corresponding task run is `907194542843626`. This is shared-core JAR
+The corresponding task run is `879126116901332`. This is shared-core JAR
 evidence only. It is not evidence that the managed
 Spark Connect `ExpressionPlugin` is installed or active.
 

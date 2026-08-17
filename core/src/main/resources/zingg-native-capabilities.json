@@ -13,6 +13,6 @@
   "connectJaccard": "verified-self-managed-spark-4.1",
   "connectJaro": "open",
   "databricksDedicatedPhoton": "not-verified",
-  "databricksServerlessSharedCoreJarTask": "verified-jaccard-spark-4.1.0",
+  "databricksServerlessSharedCoreJarTask": "verified-exact-jaccard-jaro-and-three-phases-spark-4.1.0",
   "databricksServerless": "not-supported-until-server-plugin-proven"
 }
