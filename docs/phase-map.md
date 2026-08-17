@@ -13,7 +13,7 @@ replacing their Spark-sensitive internals.
 | findTrainingData | `SparkTrainingDataFinder` | candidate-pair relation and persistence | Classic shared-core implementation verified locally; upstream parity and Connect open |
 | label | `SparkLabeller` | read/write pair relation; interactive UI excluded from non-interactive run | Classic shared-core deterministic threshold adaptation verified locally; upstream parity and Connect open |
 | updateLabel | `SparkLabelUpdater` | deterministic label merge/update | Classic shared-core implementation verified locally; upstream parity and Connect open |
-| train | `SparkTrainer` | feature construction and model persistence | contract inventory; shared-core implementation open |
+| train | `SparkTrainer` | feature construction and model persistence | contract inventory in `docs/upstream-train-contract.md`; shared-core implementation open |
 | match | `SparkMatcher` | scoring, thresholding, clustering, output | contract inventory; shared-core implementation open |
 | link | `SparkLinker` | cross-source candidate generation and scoring | contract inventory; shared-core implementation open |
 | generateDocs | `SparkDocumenter` | metadata/document output | contract inventory; shared-core implementation open |
