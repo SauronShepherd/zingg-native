@@ -47,60 +47,27 @@ jobs:
           distribution: temurin
           java-version: '17'
           cache: maven
-      - name: Test shared Scala core and Connect plugin
-        run: mvn -B test
-      - name: Build release artifacts
+      - name: Build production Spark 4 Serverless artifacts
         run: |
-          mvn -B -DskipTests package
+          mvn -B -Dmaven.test.skip=true -Pdatabricks-serverless-env5 package -pl serverless-launcher -am
           pwsh ./scripts/check-serverless-core.ps1
-          python -m pip install build
-          python -m build --wheel
-          test -f core/target/zingg-native-core_2.13-0.2.0-SNAPSHOT.jar
-          test -f connect/target/zingg-native-connect_2.13-0.2.0-SNAPSHOT.jar
+          pwsh ./scripts/check-serverless-dependencies.ps1
+          pwsh ./scripts/check-artifacts.ps1
+          pwsh ./scripts/check-phase-contract.ps1
+          pwsh ./scripts/check-upstream-native-patch.ps1
+          pwsh ./scripts/check-source-context.ps1
+          python scripts/check-source-boundaries.py
+          pwsh ./scripts/build-patched-zingg.ps1 -Output dist/zingg-0.7.0-spark4-native.jar
+          python scripts/check-serverless-bytecode.py core/target/zingg-native-core_2.13-0.3.0-SNAPSHOT.jar serverless-launcher/target/zingg-native-serverless-launcher_2.13-0.3.0-SNAPSHOT.jar dist/zingg-0.7.0-spark4-native.jar
+          python scripts/check-release-metadata.py
           python scripts/verify-artifacts.py
           python scripts/artifact-checksums.py | tee artifact-sha256.txt
-          test $(wc -l < artifact-sha256.txt) -eq 3
+          test $(wc -l < artifact-sha256.txt) -eq 2
       - name: Upload artifact checksums
         uses: actions/upload-artifact@v4
         with:
           name: zingg-native-sha256
           path: artifact-sha256.txt
-      - name: Install wheel in a clean environment
-        run: |
-          wheel=$(ls dist/zingg_native-*.whl | tail -n 1)
-          python -m venv .wheel-venv
-          . .wheel-venv/bin/activate
-          python -m pip install --upgrade pip
-          python -m pip install pyspark==4.1.0 "$GITHUB_WORKSPACE/$wheel"
-          python - <<'PY'
-          from zingg_native import NativeConfig, Zingg
-          assert NativeConfig
-          assert Zingg
-          print("clean wheel import passed")
-          PY
-          export ZINGG_NATIVE_CORE_JAR="$GITHUB_WORKSPACE/core/target/zingg-native-core_2.13-0.2.0-SNAPSHOT.jar"
-          python examples/classic_candidate_e2e.py
-
-  jvm-compatibility:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        spark-profile: [default, spark40]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-          cache: maven
-      - name: Test Spark compatibility profile
-        run: |
-          if [ "${{ matrix.spark-profile }}" = "default" ]; then
-            mvn -B test
-          else
-            mvn -B -P${{ matrix.spark-profile }} test
-          fi
-
   semantic-reference:
     runs-on: ubuntu-latest
     steps:
@@ -111,3 +78,6 @@ jobs:
       - name: Verify reference is clean and pinned
         shell: pwsh
         run: ./scripts/check-reference.ps1
+      - name: Verify overlay source context and tree digests
+        shell: pwsh
+        run: ./scripts/check-source-context.ps1

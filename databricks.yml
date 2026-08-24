@@ -2,17 +2,85 @@ bundle:
   name: zingg-native
 
 include:
-  - resources/*.yml
+  # The sda validation workspace supports Serverless compute only. Keep the
+  # Dedicated definition available as documentation/reference, but never
+  # submit it from this production bundle.
+  - resources/serverless-zingg-native.yml
+  - resources/serverless-full-parquet-diagnostic.yml
+  - resources/serverless-production-validation.yml
+  - resources/serverless-four-feature-probe.yml
+  - resources/serverless-four-feature-train-only.yml
+  - resources/serverless-one-fuzzy-probe.yml
+  - resources/serverless-failure-probes.yml
+  - resources/serverless-fuzzy-action-probe.yml
+  - resources/serverless-fuzzy-rule-probes.yml
+  - resources/serverless-fuzzy-action-scale-probe.yml
+  - resources/serverless-graph-probe.yml
+  - resources/serverless-hash-differential-probe.yml
+  - resources/serverless-numeric-differential-probe.yml
+  - resources/serverless-date-array-differential-probe.yml
+  - resources/serverless-stopwords-differential-probe.yml
+  - resources/serverless-input-format-probe.yml
+  - resources/serverless-vector-probe.yml
+  - resources/serverless-blocking-differential-probe.yml
+  - resources/serverless-row-id-probe.yml
+  - resources/serverless-model-cross-job.yml
+  - resources/serverless-model-failure-probe.yml
+  - resources/serverless-model-semantic-probe.yml
+  - resources/serverless-materialization-recovery.yml
+  - resources/serverless-phase-failure-probe.yml
+  - resources/serverless-model-sparkml-oracle.yml
+  - resources/serverless-model-parity-probe.yml
 
 variables:
-  artifact_root:
-    description: Workspace directory containing the paired Scala JARs
-    default: /Workspace/Users/angel.alvarez@sdggroup.com/zingg-native/remediation
-  output_volume:
-    description: Unity Catalog Volume used by the Serverless E2E task
-    default: /Volumes/sda_dev/sandbox/zingg_native_e2e
-
+  release_id:
+    description: Immutable uploaded runtime release-set identifier
+    default: dev-current
+  workspace_artifact_root:
+    description: Workspace root containing release sets
+    default: /Workspace/Shared/zingg-native
+  workspace_fixture_root:
+    description: Workspace root containing generated non-secret E2E fixtures
+    default: /Workspace/Shared/zingg-native/e2e
+  catalog:
+    description: UC catalog for Serverless validation fixtures
+    default: sda_dev
+  schema:
+    description: UC schema for Serverless validation fixtures
+    default: default
+  volume:
+    description: UC Volume for Serverless validation fixtures
+    default: zingg_native_e2e_volume
+  license_path:
+    description: Workspace path to the Databricks/Zingg license material
+    default: /Workspace/Shared/zingg-native/e2e/LICENSE
+  model_probe_path:
+    description: Explicit Volume path shared only by the two cross-job persistence probes
+    default: /Volumes/sda_dev/default/zingg_native_e2e_volume/model-probe-completion-audit
+  native_core_jar:
+    description: Public-expression native core JAR
+    default: ${var.workspace_artifact_root}/releases/${var.release_id}/zingg-native-core_2.13-0.3.0-SNAPSHOT.jar
+  serverless_launcher_jar:
+    description: DatabricksSession bootstrap JAR for Serverless JAR tasks
+    default: ${var.workspace_artifact_root}/releases/${var.release_id}/zingg-native-serverless-launcher_2.13-0.3.0-SNAPSHOT.jar
+  zingg_patched_jar:
+    description: Zingg 0.7.0 Spark 4.x JAR built after applying integration/zingg-0.7.0-overlay
+    default: ${var.workspace_artifact_root}/releases/${var.release_id}/zingg-0.7.0-spark4-native.jar
+  zingg_main_class:
+    description: Fully qualified main class of the real Zingg 0.7.0 command being launched; supply with --var
+    default: zingg.spark.client.SparkClient
 targets:
-  sda:
+  development:
     mode: development
     default: true
+  serverless:
+    # Explicit deployment target for the sda workspace. Every job included
+    # here uses environment_version 5; do not attach an all-purpose cluster.
+    mode: development
+    variables:
+      native_core_jar:
+        default: ${var.workspace_artifact_root}/releases/${var.release_id}/zingg-native-core_2.13-0.3.0-SNAPSHOT.jar
+      serverless_launcher_jar:
+        default: ${var.workspace_artifact_root}/releases/${var.release_id}/zingg-native-serverless-launcher_2.13-0.3.0-SNAPSHOT.jar
+      zingg_patched_jar:
+        default: ${var.workspace_artifact_root}/releases/${var.release_id}/zingg-0.7.0-spark4-native.jar

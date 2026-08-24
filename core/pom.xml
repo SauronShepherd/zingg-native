@@ -1,11 +1,61 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0"><modelVersion>4.0.0</modelVersion>
-  <parent><groupId>ai.zingg</groupId><artifactId>zingg-native-parent</artifactId><version>0.2.0-SNAPSHOT</version></parent>
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <parent><groupId>ai.zingg</groupId><artifactId>zingg-native-parent</artifactId><version>0.3.0-SNAPSHOT</version></parent>
   <artifactId>zingg-native-core_2.13</artifactId>
+
   <dependencies>
-    <dependency><groupId>org.scala-lang</groupId><artifactId>scala-library</artifactId></dependency>
-    <dependency><groupId>org.apache.spark</groupId><artifactId>spark-sql_2.13</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.apache.spark</groupId><artifactId>spark-mllib_2.13</artifactId><version>${spark.version}</version><scope>provided</scope></dependency>
-    <dependency><groupId>org.junit.jupiter</groupId><artifactId>junit-jupiter</artifactId><version>5.11.0</version><scope>test</scope></dependency>
+    <dependency><groupId>org.scala-lang</groupId><artifactId>scala-library</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.junit.jupiter</groupId><artifactId>junit-jupiter-api</artifactId><version>5.10.2</version><scope>test</scope></dependency>
+    <dependency><groupId>org.junit.jupiter</groupId><artifactId>junit-jupiter-engine</artifactId><version>5.10.2</version><scope>test</scope></dependency>
   </dependencies>
-  <build><plugins><plugin><groupId>net.alchim31.maven</groupId><artifactId>scala-maven-plugin</artifactId><version>4.9.2</version><configuration><scalaVersion>${scala.version}</scalaVersion><args><arg>-release</arg><arg>17</arg><arg>-deprecation</arg><arg>-feature</arg><arg>-unchecked</arg></args></configuration><executions><execution><goals><goal>compile</goal><goal>testCompile</goal></goals></execution></executions></plugin><plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-compiler-plugin</artifactId><version>3.13.0</version><configuration><release>17</release></configuration></plugin></plugins></build>
+
+  <profiles>
+    <!-- Dedicated/Apache Spark compilation. Disabled when the Serverless profile is selected. -->
+    <profile>
+      <id>spark-public-api</id>
+      <activation><activeByDefault>true</activeByDefault></activation>
+      <dependencies>
+        <dependency><groupId>org.apache.spark</groupId><artifactId>spark-sql_2.13</artifactId><scope>provided</scope></dependency>
+        <dependency><groupId>org.apache.spark</groupId><artifactId>spark-mllib_2.13</artifactId><scope>provided</scope></dependency>
+      </dependencies>
+    </profile>
+    <!-- Databricks Serverless JAR compilation: Databricks Connect supplies the Spark APIs. -->
+    <profile>
+      <id>databricks-serverless-env5</id>
+      <dependencies>
+        <!-- Databricks Connect supplies the remote client contract.  Spark
+             SQL/ML remain compile-time provided APIs and are not packaged. -->
+        <dependency><groupId>org.apache.spark</groupId><artifactId>spark-sql_2.13</artifactId><scope>provided</scope></dependency>
+        <dependency><groupId>org.apache.spark</groupId><artifactId>spark-mllib_2.13</artifactId><scope>provided</scope></dependency>
+        <dependency>
+          <groupId>com.databricks</groupId>
+          <artifactId>databricks-connect_2.13</artifactId>
+          <scope>provided</scope>
+          <exclusions>
+            <!-- The dbutils bridge is Databricks-provided and its 0.1.4 POM
+                 is malformed; the Serverless adapter has no dbutils API use. -->
+            <exclusion>
+              <groupId>com.databricks</groupId>
+              <artifactId>databricks-dbutils-scala_2.13</artifactId>
+            </exclusion>
+          </exclusions>
+        </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
+
+  <build><plugins>
+    <plugin>
+      <groupId>net.alchim31.maven</groupId><artifactId>scala-maven-plugin</artifactId><version>4.9.2</version>
+      <configuration>
+        <scalaVersion>${scala.version}</scalaVersion>
+        <args><arg>-release</arg><arg>17</arg><arg>-deprecation</arg><arg>-feature</arg><arg>-unchecked</arg></args>
+      </configuration>
+      <executions><execution><goals><goal>compile</goal><goal>testCompile</goal></goals></execution></executions>
+    </plugin>
+    <plugin>
+      <groupId>org.apache.maven.plugins</groupId><artifactId>maven-compiler-plugin</artifactId><version>3.13.0</version>
+      <configuration><release>17</release></configuration>
+    </plugin>
+  </plugins></build>
 </project>

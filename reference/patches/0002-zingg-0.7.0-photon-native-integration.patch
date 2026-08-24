@@ -1,0 +1,1859 @@
+--- a/spark/core/src/main/java/zingg/spark/core/context/ZinggSparkContext.java
++++ b/spark/core/src/main/java/zingg/spark/core/context/ZinggSparkContext.java
+@@ -1,70 +1,58 @@
+-package zingg.spark.core.context;
+-
+-import org.apache.commons.logging.Log;
+-import org.apache.commons.logging.LogFactory;
+-import org.apache.spark.api.java.JavaSparkContext;
+-import org.apache.spark.sql.Column;
+-import org.apache.spark.sql.Dataset;
+-import org.apache.spark.sql.Row;
+-import org.apache.spark.sql.SparkSession;
+-import org.apache.spark.sql.types.DataType;
+-
+-import zingg.common.client.ZinggClientException;
+-//
+-import zingg.common.core.context.Context;
+-import zingg.spark.client.util.SparkDSUtil;
+-import zingg.spark.client.util.SparkModelHelper;
+-import zingg.spark.client.util.SparkPipeUtil;
+-import zingg.spark.core.util.SparkBlockingTreeUtil;
+-import zingg.spark.core.util.SparkGraphUtil;
+-import zingg.spark.core.util.SparkHashUtil;
+-import zingg.spark.core.util.SparkModelUtil;
+-
+-
+-public class ZinggSparkContext extends Context<SparkSession, Dataset<Row>, Row,Column,DataType>{
+-
+-    
+-    private static final long serialVersionUID = 1L;
+-	protected JavaSparkContext ctx;
+-    public static final Log LOG = LogFactory.getLog(ZinggSparkContext.class);
+-
+-	
+-    @Override
+-    public void init(SparkSession session)
+-        throws ZinggClientException {
+-			this.session = session;
+-        	setUtils();
+-		
+-    }
+-
+-	@Override
+-	public void cleanup() {
+-		try {
+-				if (ctx != null) {
+-					ctx.stop();
+-				}
+-				if (session!=null) {
+-					session.stop();
+-				}
+-				ctx = null;
+-				session = null;
+-		} catch (Exception e) {
+-			// ignore any exception in cleanup
+-			e.printStackTrace();
+-		}
+-	}
+-    
+-    @Override
+-    public void setUtils() {
+-        LOG.debug("Session passed to utils is " + session);
+-        setPipeUtil(new SparkPipeUtil(session));
+-        setDSUtil(new SparkDSUtil(session));
+-        setHashUtil(new SparkHashUtil(session));
+-        setGraphUtil(new SparkGraphUtil());
+-        setModelUtil(new SparkModelUtil(session));
+-        setBlockingTreeUtil(new SparkBlockingTreeUtil(session, getPipeUtil()));
+-		setModelHelper(new SparkModelHelper());
+-    }
+-
+-    
++package zingg.spark.core.context;
++
++import org.apache.commons.logging.Log;
++import org.apache.commons.logging.LogFactory;
++import org.apache.spark.sql.Column;
++import org.apache.spark.sql.Dataset;
++import org.apache.spark.sql.Row;
++import org.apache.spark.sql.SparkSession;
++import org.apache.spark.sql.types.DataType;
++
++import zingg.common.client.ZinggClientException;
++//
++import zingg.common.core.context.Context;
++import zingg.spark.client.util.SparkDSUtil;
++import zingg.spark.client.util.SparkModelHelper;
++import zingg.spark.client.util.SparkPipeUtil;
++import zingg.spark.core.util.SparkBlockingTreeUtil;
++import zingg.spark.core.util.SparkGraphUtil;
++import zingg.spark.core.util.SparkHashUtil;
++import zingg.spark.core.util.SparkModelUtil;
++
++
++public class ZinggSparkContext extends Context<SparkSession, Dataset<Row>, Row,Column,DataType>{
++
++    
++    private static final long serialVersionUID = 1L;
++    public static final Log LOG = LogFactory.getLog(ZinggSparkContext.class);
++
++	
++    @Override
++    public void init(SparkSession session)
++        throws ZinggClientException {
++			this.session = session;
++        	setUtils();
++		
++    }
++
++	@Override
++	public void cleanup() {
++        // Spark sessions/contexts are lifecycle-managed by Databricks. In particular
++        // Serverless must not access or stop SparkContext from application code.
++        session = null;
++	}
++    
++    @Override
++    public void setUtils() {
++        LOG.debug("Session passed to utils is " + session);
++        setPipeUtil(new SparkPipeUtil(session));
++        setDSUtil(new SparkDSUtil(session));
++        setHashUtil(new SparkHashUtil(session));
++        setGraphUtil(new SparkGraphUtil());
++        setModelUtil(new SparkModelUtil(session));
++        setBlockingTreeUtil(new SparkBlockingTreeUtil(session, getPipeUtil()));
++		setModelHelper(new SparkModelHelper());
++    }
++
++    
+  }
+\ No newline at end of file
+--- a/spark/core/src/main/java/zingg/spark/core/hash/SparkHashFunction.java
++++ b/spark/core/src/main/java/zingg/spark/core/hash/SparkHashFunction.java
+@@ -1,82 +1,89 @@
+-package zingg.spark.core.hash;
+-
+-import org.apache.commons.logging.Log;
+-import org.apache.commons.logging.LogFactory;
+-import org.apache.spark.sql.Column;
+-import org.apache.spark.sql.Dataset;
+-import org.apache.spark.sql.Row;
+-import org.apache.spark.sql.functions;
+-import org.apache.spark.sql.api.java.UDF1;
+-import org.apache.spark.sql.types.DataType;
+-
+-import zingg.common.client.ZFrame;
+-import zingg.common.core.hash.BaseHash;
+-import zingg.common.core.hash.HashFunction;
+-
+-
+-public abstract class SparkHashFunction<T1, R> extends HashFunction<Dataset<Row>,Row,Column,DataType> implements UDF1<T1, R>{
+-	
+-	public static final Log LOG = LogFactory.getLog(SparkHashFunction.class);
+-	
+-	private BaseHash<T1, R> baseHash;
+-
+-    public BaseHash<T1, R> getBaseHash() {
+-        return baseHash;
+-    }
+-
+-    public void setBaseHash(BaseHash<T1, R> baseHash) {
+-        this.baseHash = baseHash;
+-        this.setName(baseHash.getName());
+-    }
+-	
+-	@Override
+-	public R call(T1 t1) {
+-	    return getBaseHash().call(t1);
+-	}
+-	
+-
+-    @Override
+-    public ZFrame<Dataset<Row>, Row, Column> apply(ZFrame<Dataset<Row>, Row, Column> ds, String column,
+-            String newColumn) {
+-        return ds.withColumn(newColumn, functions.callUDF(this.name, ds.col(column)));
+-    }
+-
+-    @Override
+-    public Object getAs(Row r, String column) {
+-        return r.getAs(column);
+-    }
+-
+-    @Override
+-    public Object getAs(Dataset<Row> df, Row r, String column) {
+-        throw new UnsupportedOperationException("not supported for Spark");
+-    }
+-
+-
+-    @Override
+-    public Object apply(Row r, String column) {
+-        return call((T1)getAs(r, column));
+-   }
+-
+-
+-    @Override
+-    public Object apply(Dataset<Row> df, Row r, String column) {
+-        throw new UnsupportedOperationException("not supported for Spark");
+-    }
+-
+-    /* 
+-    @Override
+-    public void writeCustomObject(ObjectOutputStream out) throws IOException {
+-        out.writeObject(getBaseHash());
+-        out.writeObject(getDataType());
+-        out.writeObject(getReturnType());
+-    }
+-    
+-    @Override
+-	public void readCustomObject(ObjectInputStream ois) throws IOException, ClassNotFoundException{
+-        setBaseHash((BaseHash) ois.readObject());
+-        setDataType((DataType)ois.readObject());
+-        setReturnType((DataType)ois.readObject());
+-    }*/
+-		
+-
+-}
++package zingg.spark.core.hash;
++
++import org.apache.commons.logging.Log;
++import org.apache.commons.logging.LogFactory;
++import org.apache.spark.sql.Column;
++import org.apache.spark.sql.Dataset;
++import org.apache.spark.sql.Row;
++import org.apache.spark.sql.functions;
++import org.apache.spark.sql.api.java.UDF1;
++import org.apache.spark.sql.types.DataType;
++
++import zingg.common.client.ZFrame;
++import zingg.common.core.hash.BaseHash;
++import zingg.common.core.hash.HashFunction;
++import zingg.spark.client.SparkFrame;
++import ai.zingg.nativebridge.NativeOperationProvider;
++
++
++public abstract class SparkHashFunction<T1, R> extends HashFunction<Dataset<Row>,Row,Column,DataType> implements UDF1<T1, R>{
++	
++	public static final Log LOG = LogFactory.getLog(SparkHashFunction.class);
++	
++	private BaseHash<T1, R> baseHash;
++
++    public BaseHash<T1, R> getBaseHash() {
++        return baseHash;
++    }
++
++    public void setBaseHash(BaseHash<T1, R> baseHash) {
++        this.baseHash = baseHash;
++        this.setName(baseHash.getName());
++    }
++	
++	@Override
++	public R call(T1 t1) {
++	    return getBaseHash().call(t1);
++	}
++	
++
++    @Override
++    public ZFrame<Dataset<Row>, Row, Column> apply(ZFrame<Dataset<Row>, Row, Column> ds, String column,
++            String newColumn) {
++        NativeOperationProvider nativeProvider = NativeOperationProvider.fromSpark(ds.df().sparkSession(), "blocking.hash");
++        if (nativeProvider.shouldRewrite()) {
++            return new SparkFrame(nativeProvider.hash(ds.df(), this.name, column, newColumn));
++        }
++        nativeProvider.auditLegacyOperation("blocking." + this.name, "ScalaUDF/callUDF", getClass().getName());
++        return ds.withColumn(newColumn, functions.callUDF(this.name, ds.col(column)));
++    }
++
++    @Override
++    public Object getAs(Row r, String column) {
++        return r.getAs(column);
++    }
++
++    @Override
++    public Object getAs(Dataset<Row> df, Row r, String column) {
++        throw new UnsupportedOperationException("not supported for Spark");
++    }
++
++
++    @Override
++    public Object apply(Row r, String column) {
++        return call((T1)getAs(r, column));
++   }
++
++
++    @Override
++    public Object apply(Dataset<Row> df, Row r, String column) {
++        throw new UnsupportedOperationException("not supported for Spark");
++    }
++
++    /* 
++    @Override
++    public void writeCustomObject(ObjectOutputStream out) throws IOException {
++        out.writeObject(getBaseHash());
++        out.writeObject(getDataType());
++        out.writeObject(getReturnType());
++    }
++    
++    @Override
++	public void readCustomObject(ObjectInputStream ois) throws IOException, ClassNotFoundException{
++        setBaseHash((BaseHash) ois.readObject());
++        setDataType((DataType)ois.readObject());
++        setReturnType((DataType)ois.readObject());
++    }*/
++		
++
++}
+--- a/spark/core/src/main/java/zingg/spark/core/model/SparkModel.java
++++ b/spark/core/src/main/java/zingg/spark/core/model/SparkModel.java
+@@ -1,198 +1,267 @@
+-package zingg.spark.core.model;
+-
+-import java.io.IOException;
+-import java.util.ArrayList;
+-import java.util.List;
+-import java.util.Map;
+-
+-import org.apache.commons.logging.Log;
+-import org.apache.commons.logging.LogFactory;
+-import org.apache.spark.ml.Pipeline;
+-import org.apache.spark.ml.PipelineStage;
+-import org.apache.spark.ml.Transformer;
+-import org.apache.spark.ml.classification.LogisticRegression;
+-import org.apache.spark.ml.evaluation.BinaryClassificationEvaluator;
+-import org.apache.spark.ml.feature.PolynomialExpansion;
+-import org.apache.spark.ml.feature.VectorAssembler;
+-import org.apache.spark.ml.param.ParamMap;
+-import org.apache.spark.ml.tuning.CrossValidator;
+-import org.apache.spark.ml.tuning.CrossValidatorModel;
+-import org.apache.spark.ml.tuning.ParamGridBuilder;
+-import org.apache.spark.sql.Column;
+-import org.apache.spark.sql.Dataset;
+-import org.apache.spark.sql.Row;
+-import org.apache.spark.sql.SparkSession;
+-import org.apache.spark.sql.types.DataType;
+-
+-import zingg.common.client.FieldDefinition;
+-import zingg.common.client.ZFrame;
+-import zingg.common.client.util.ColName;
+-import zingg.common.core.feature.Feature;
+-import zingg.common.core.model.Model;
+-import zingg.common.core.similarity.function.SimFunction;
+-import zingg.spark.client.SparkFrame;
+-import zingg.spark.core.similarity.SparkSimFunction;
+-import zingg.spark.core.similarity.SparkTransformer;
+-
+-public class SparkModel extends Model<SparkSession, Dataset<Row>, Row, Column, DataType>{
+-	
+-	public static final Log LOG = LogFactory.getLog(SparkModel.class);
+-	//private Map<FieldDefinition, Feature> featurers;
+-	List<PipelineStage> pipelineStage;
+-	List<SparkTransformer> featureCreators; 
+-	LogisticRegression lr;
+-	Transformer transformer;
+-	BinaryClassificationEvaluator binaryClassificationEvaluator;
+-	
+-	VectorValueExtractor vve;
+-	
+-	public SparkModel(SparkSession s, Map<FieldDefinition, Feature<DataType>> f) {
+-		super(s);
+-		featureCreators = new ArrayList<SparkTransformer>();
+-		pipelineStage = new ArrayList<PipelineStage> ();
+-		int count = 0;
+-		for (FieldDefinition fd : f.keySet()) {
+-			Feature fea = f.get(fd);
+-			List<SimFunction> sfList = fea.getSimFunctions();
+-			for (SimFunction sf : sfList) {
+-				String outputCol = getColumnName(fd.fieldName, sf.getName(), count);
+-				columnsAdded.add(outputCol);	
+-				SparkTransformer st = new SparkTransformer(fd.fieldName, new SparkSimFunction(sf), outputCol);
+-				count++;
+-				//pipelineStage.add(sf);
+-				featureCreators.add(st);
+-			}
+-		}
+-		
+-		VectorAssembler assembler = new VectorAssembler();
+-		assembler.setInputCols(columnsAdded.toArray(new String[columnsAdded.size()]));
+-		assembler.setOutputCol(ColName.FEATURE_VECTOR_COL);
+-		columnsAdded.add(ColName.FEATURE_VECTOR_COL);
+-		pipelineStage.add(assembler);
+-		PolynomialExpansion polyExpansion = new PolynomialExpansion()
+-		  .setInputCol(ColName.FEATURE_VECTOR_COL)
+-		  .setOutputCol(ColName.FEATURE_COL)
+-		  .setDegree(3);	
+-		columnsAdded.add(ColName.FEATURE_COL);
+-		pipelineStage.add(polyExpansion);
+-		lr = new LogisticRegression();
+-		lr.setMaxIter(100);
+-		lr.setFeaturesCol(ColName.FEATURE_COL);
+-		lr.setLabelCol(ColName.MATCH_FLAG_COL);
+-		lr.setProbabilityCol(ColName.PROBABILITY_COL);
+-		lr.setPredictionCol(ColName.PREDICTION_COL);
+-		lr.setFitIntercept(true);
+-		pipelineStage.add(lr);
+-																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																					
+-		vve = new VectorValueExtractor(ColName.PROBABILITY_COL,ColName.SCORE_COL);
+-		//vve.setInputCol(ColName.PROBABILITY_COL);
+-		//vve.setOutputCol(ColName.SCORE_COL);
+-		//pipelineStage.add(vve);
+-		columnsAdded.add(ColName.PROBABILITY_COL);	
+-		columnsAdded.add(ColName.RAW_PREDICTION);	
+-	}
+-	
+-	@Override
+-	public void fit(ZFrame<Dataset<Row>,Row,Column> pos, ZFrame<Dataset<Row>,Row,Column> neg) {
+-		fitCore(pos, neg);
+-	}
+-
+-	public ZFrame<Dataset<Row>,Row,Column> transformTrainingData(ZFrame<Dataset<Row>,Row,Column> pos, ZFrame<Dataset<Row>,Row,Column> neg) {
+-		return pos.union(neg).coalesce(1).cache();
+-	}
+-
+-	public ZFrame<Dataset<Row>,Row,Column> applyFitPipeline(ZFrame<Dataset<Row>,Row,Column> input) {
+-		Pipeline pipeline = new Pipeline();
+-		pipeline.setStages(pipelineStage.toArray(new PipelineStage[pipelineStage.size()]));
+-		
+-		LOG.debug("Pipeline is " + pipeline);
+-		//create lr params
+-		ParamMap[] paramGrid = new ParamGridBuilder()
+-		  .addGrid(lr.regParam(), getGrid(0.0001, 1, 10, true))
+-		  .addGrid(lr.threshold(), getGrid(0.40, 0.55, 0.05, false))
+-		  .build();
+-		
+-		binaryClassificationEvaluator = new BinaryClassificationEvaluator();
+-		binaryClassificationEvaluator.setLabelCol(ColName.MATCH_FLAG_COL);
+-		CrossValidator cv = new CrossValidator()
+-		  .setEstimator(pipeline)
+-		  .setEvaluator(binaryClassificationEvaluator)
+-		  .setEstimatorParamMaps(paramGrid)
+-		  .setNumFolds(2);  // Use 3+ in practice
+-		  //.setParallelism(2);
+-		CrossValidatorModel cvModel = cv.fit(input.df());
+-		transformer = cvModel;
+-		LOG.debug("threshold after fitting is " + lr.getThreshold());
+-		return input;
+-	}
+-	
+-	public ZFrame<Dataset<Row>,Row,Column> fitCore(ZFrame<Dataset<Row>,Row,Column> pos, ZFrame<Dataset<Row>,Row,Column> neg) {
+-		//transform
+-		ZFrame<Dataset<Row>,Row,Column> input = transform(transformTrainingData(pos, neg));
+-		return applyFitPipeline(input);
+-	}
+-	
+-	
+-	public void load(String path) {
+-		transformer =  CrossValidatorModel.load(path);
+-	}
+-	
+-	public ZFrame<Dataset<Row>,Row,Column> predict(ZFrame<Dataset<Row>,Row,Column> data) {
+-		return predict(data, true);
+-	}
+-	
+-	@Override
+-	public ZFrame<Dataset<Row>,Row,Column> predict(ZFrame<Dataset<Row>,Row,Column> data, boolean isDrop) {
+-		return dropFeatureCols(predictCore(data), isDrop);
+-	}
+-
+-	@Override
+-    public ZFrame<Dataset<Row>,Row,Column> predictCore(ZFrame<Dataset<Row>,Row,Column> data) {
+-		//create features
+-		LOG.info("threshold while predicting is " + lr.getThreshold());
+-		return transformAndPredict(transform(data));
+-	}
+-
+-	public ZFrame<Dataset<Row>,Row,Column> transformAndPredict(ZFrame<Dataset<Row>,Row,Column> data) {
+-		Dataset<Row> predictWithFeatures = transformer.transform(data.df());
+-		//LOG.debug(predictWithFeatures.schema());
+-		predictWithFeatures = vve.transform(predictWithFeatures);
+-		//LOG.debug("Original schema is " + predictWithFeatures.schema());
+-		
+-		LOG.debug("Return schema is " + predictWithFeatures.schema());
+-		return new SparkFrame(predictWithFeatures);
+-	}
+-
+-	public void save(String path) throws IOException{
+-		((CrossValidatorModel) transformer).write().overwrite().save(path);
+-	}
+-
+-	public ZFrame<Dataset<Row>,Row,Column> transform(Dataset<Row> input) {
+-		for (SparkTransformer bsf: featureCreators) {
+-			input = bsf.transform(input);
+-		}
+-		return new SparkFrame(input); //.cache();
+-	}
+-	
+-	public ZFrame<Dataset<Row>,Row,Column> transform(ZFrame<Dataset<Row>,Row,Column> i) {
+-		return transform(i.df());
+-	}
+-
+-	public List<SparkTransformer> getFeatureCreators() {
+-		return featureCreators;
+-	}
+-
+-
+-
+-	@Override
+-	public void register() {
+-		if (featureCreators != null) {
+-			for (SparkTransformer bsf: featureCreators) {
+-				bsf.register(session);
+-			}
+-		}
+-		vve.register(session);
+-		
+-	}
+-	
+-}
++package zingg.spark.core.model;
++
++import java.io.IOException;
++import java.util.ArrayList;
++import java.util.List;
++import java.util.Map;
++
++import org.apache.commons.logging.Log;
++import org.apache.commons.logging.LogFactory;
++import org.apache.spark.ml.Pipeline;
++import org.apache.spark.ml.PipelineStage;
++import org.apache.spark.ml.Transformer;
++import org.apache.spark.ml.classification.LogisticRegression;
++import org.apache.spark.ml.evaluation.BinaryClassificationEvaluator;
++import org.apache.spark.ml.feature.PolynomialExpansion;
++import org.apache.spark.ml.feature.VectorAssembler;
++import org.apache.spark.ml.param.ParamMap;
++import org.apache.spark.ml.tuning.CrossValidator;
++import org.apache.spark.ml.tuning.CrossValidatorModel;
++import org.apache.spark.ml.tuning.ParamGridBuilder;
++import org.apache.spark.sql.Column;
++import org.apache.spark.sql.Dataset;
++import org.apache.spark.sql.Row;
++import org.apache.spark.sql.SparkSession;
++import org.apache.spark.sql.types.DataType;
++
++import ai.zingg.nativebridge.NativeModelHandle;
++import ai.zingg.nativebridge.NativeOperationProvider;
++import zingg.common.client.FieldDefinition;
++import zingg.common.client.ZFrame;
++import zingg.common.client.util.ColName;
++import zingg.common.core.feature.Feature;
++import zingg.common.core.model.Model;
++import zingg.common.core.similarity.function.SimFunction;
++import zingg.spark.client.SparkFrame;
++import zingg.spark.core.similarity.SparkSimFunction;
++import zingg.spark.core.similarity.SparkTransformer;
++
++/**
++ * Zingg 0.7 SparkModel with a transparent public-DataFrame native execution
++ * path.  Zingg still owns feature definitions and phase orchestration; only the
++ * Spark-ML training/prediction boundary is replaced in REWRITE/STRICT mode.
++ */
++public class SparkModel extends Model<SparkSession, Dataset<Row>, Row, Column, DataType>{
++
++    public static final Log LOG = LogFactory.getLog(SparkModel.class);
++    List<PipelineStage> pipelineStage;
++    List<SparkTransformer> featureCreators;
++    List<String> nativeFeatureColumns;
++    LogisticRegression lr;
++    Transformer transformer;
++    BinaryClassificationEvaluator binaryClassificationEvaluator;
++    VectorValueExtractor vve;
++    NativeModelHandle nativeModel;
++
++    public SparkModel(SparkSession s, Map<FieldDefinition, Feature<DataType>> f) {
++        super(s);
++        featureCreators = new ArrayList<SparkTransformer>();
++        nativeFeatureColumns = new ArrayList<String>();
++        pipelineStage = new ArrayList<PipelineStage>();
++        int count = 0;
++        for (FieldDefinition fd : f.keySet()) {
++            Feature fea = f.get(fd);
++            List<SimFunction> sfList = fea.getSimFunctions();
++            for (SimFunction sf : sfList) {
++                String outputCol = getColumnName(fd.fieldName, sf.getName(), count);
++                columnsAdded.add(outputCol);
++                nativeFeatureColumns.add(outputCol);
++                SparkTransformer st = new SparkTransformer(fd.fieldName, new SparkSimFunction(sf), outputCol);
++                count++;
++                featureCreators.add(st);
++            }
++        }
++
++        NativeOperationProvider nativeProvider = NativeOperationProvider.fromSpark(s, "model.initialization");
++        if (!nativeProvider.shouldRewrite()) {
++            initializeLegacySparkMlPipeline();
++        } else {
++            // Preserve upstream temporary-column bookkeeping even though native
++            // prediction builds these expressions directly.
++            columnsAdded.add(ColName.FEATURE_VECTOR_COL);
++            columnsAdded.add(ColName.FEATURE_COL);
++            columnsAdded.add(ColName.PROBABILITY_COL);
++            columnsAdded.add(ColName.RAW_PREDICTION);
++        }
++    }
++
++    private void initializeLegacySparkMlPipeline() {
++        VectorAssembler assembler = new VectorAssembler();
++        assembler.setInputCols(nativeFeatureColumns.toArray(new String[nativeFeatureColumns.size()]));
++        assembler.setOutputCol(ColName.FEATURE_VECTOR_COL);
++        columnsAdded.add(ColName.FEATURE_VECTOR_COL);
++        pipelineStage.add(assembler);
++
++        PolynomialExpansion polyExpansion = new PolynomialExpansion()
++                .setInputCol(ColName.FEATURE_VECTOR_COL)
++                .setOutputCol(ColName.FEATURE_COL)
++                .setDegree(3);
++        columnsAdded.add(ColName.FEATURE_COL);
++        pipelineStage.add(polyExpansion);
++
++        lr = new LogisticRegression();
++        lr.setMaxIter(100);
++        lr.setFeaturesCol(ColName.FEATURE_COL);
++        lr.setLabelCol(ColName.MATCH_FLAG_COL);
++        lr.setProbabilityCol(ColName.PROBABILITY_COL);
++        lr.setPredictionCol(ColName.PREDICTION_COL);
++        lr.setFitIntercept(true);
++        pipelineStage.add(lr);
++
++        vve = new VectorValueExtractor(ColName.PROBABILITY_COL,ColName.SCORE_COL);
++        columnsAdded.add(ColName.PROBABILITY_COL);
++        columnsAdded.add(ColName.RAW_PREDICTION);
++    }
++
++    @Override
++    public void fit(ZFrame<Dataset<Row>,Row,Column> pos, ZFrame<Dataset<Row>,Row,Column> neg) {
++        fitCore(pos, neg);
++    }
++
++    public ZFrame<Dataset<Row>,Row,Column> transformTrainingData(
++            ZFrame<Dataset<Row>,Row,Column> pos,
++            ZFrame<Dataset<Row>,Row,Column> neg) {
++        ZFrame<Dataset<Row>,Row,Column> union = pos.union(neg).coalesce(1);
++        NativeOperationProvider nativeProvider = NativeOperationProvider.fromSpark(session, "model.trainingData");
++        if (nativeProvider.shouldRewrite()) {
++            // cache/persist/checkpoint are unsupported on Databricks Serverless.
++            return union;
++        }
++        nativeProvider.auditLegacyOperation("model.trainingData.cache", "DataFrame.cache", getClass().getName());
++        return union.cache();
++    }
++
++    public ZFrame<Dataset<Row>,Row,Column> applyFitPipeline(ZFrame<Dataset<Row>,Row,Column> input) {
++        NativeOperationProvider nativeProvider = NativeOperationProvider.fromSpark(session, "model.train");
++        if (nativeProvider.shouldRewrite()) {
++            nativeModel = nativeProvider.fitModel(
++                    input.df(),
++                    nativeFeatureColumns.toArray(new String[nativeFeatureColumns.size()]),
++                    ColName.MATCH_FLAG_COL);
++            return input;
++        }
++        nativeProvider.auditLegacyOperation(
++                "model.sparkMlPipeline",
++                "VectorAssembler/PolynomialExpansion/LogisticRegression/CrossValidator",
++                getClass().getName());
++
++        Pipeline pipeline = new Pipeline();
++        pipeline.setStages(pipelineStage.toArray(new PipelineStage[pipelineStage.size()]));
++        LOG.debug("Pipeline is " + pipeline);
++        ParamMap[] paramGrid = new ParamGridBuilder()
++                .addGrid(lr.regParam(), getGrid(0.0001, 1, 10, true))
++                .addGrid(lr.threshold(), getGrid(0.40, 0.55, 0.05, false))
++                .build();
++        binaryClassificationEvaluator = new BinaryClassificationEvaluator();
++        binaryClassificationEvaluator.setLabelCol(ColName.MATCH_FLAG_COL);
++        CrossValidator cv = new CrossValidator()
++                .setEstimator(pipeline)
++                .setEvaluator(binaryClassificationEvaluator)
++                .setEstimatorParamMaps(paramGrid)
++                .setNumFolds(2);
++        CrossValidatorModel cvModel = cv.fit(input.df());
++        transformer = cvModel;
++        LOG.debug("threshold after fitting is " + lr.getThreshold());
++        return input;
++    }
++
++    public ZFrame<Dataset<Row>,Row,Column> fitCore(
++            ZFrame<Dataset<Row>,Row,Column> pos,
++            ZFrame<Dataset<Row>,Row,Column> neg) {
++        ZFrame<Dataset<Row>,Row,Column> input = transform(transformTrainingData(pos, neg));
++        return applyFitPipeline(input);
++    }
++
++    public void load(String path) {
++        NativeOperationProvider nativeProvider = NativeOperationProvider.fromSpark(session, "model.load");
++        if (nativeProvider.shouldRewrite()) {
++            nativeModel = nativeProvider.loadModel(path);
++            return;
++        }
++        nativeProvider.auditLegacyOperation("model.crossValidator.load", "CrossValidatorModel.load", getClass().getName());
++        transformer = CrossValidatorModel.load(path);
++    }
++
++    public ZFrame<Dataset<Row>,Row,Column> predict(ZFrame<Dataset<Row>,Row,Column> data) {
++        return predict(data, true);
++    }
++
++    @Override
++    public ZFrame<Dataset<Row>,Row,Column> predict(ZFrame<Dataset<Row>,Row,Column> data, boolean isDrop) {
++        return dropFeatureCols(predictCore(data), isDrop);
++    }
++
++    @Override
++    public ZFrame<Dataset<Row>,Row,Column> predictCore(ZFrame<Dataset<Row>,Row,Column> data) {
++        NativeOperationProvider nativeProvider = NativeOperationProvider.fromSpark(session, "model.predict");
++        if (!nativeProvider.shouldRewrite() && lr != null) {
++            LOG.info("threshold while predicting is " + lr.getThreshold());
++        }
++        return transformAndPredict(transform(data));
++    }
++
++    public ZFrame<Dataset<Row>,Row,Column> transformAndPredict(ZFrame<Dataset<Row>,Row,Column> data) {
++        NativeOperationProvider nativeProvider = NativeOperationProvider.fromSpark(session, "model.predict");
++        Dataset<Row> predictWithFeatures;
++        if (nativeProvider.shouldRewrite()) {
++            if (nativeModel == null) {
++                throw new IllegalStateException(
++                        "Native Zingg model is not fitted or loaded. Train the model or load a zingg-native model artifact before prediction.");
++            }
++            predictWithFeatures = nativeProvider.predictModel(
++                    data.df(), nativeModel,
++                    ColName.FEATURE_VECTOR_COL,
++                    ColName.FEATURE_COL,
++                    ColName.PROBABILITY_COL,
++                    ColName.RAW_PREDICTION,
++                    ColName.PREDICTION_COL,
++                    ColName.SCORE_COL);
++        } else {
++            nativeProvider.auditLegacyOperation("model.crossValidator.predict", "CrossValidatorModel.transform", getClass().getName());
++            predictWithFeatures = transformer.transform(data.df());
++            predictWithFeatures = vve.transform(predictWithFeatures);
++        }
++        LOG.debug("Return schema is " + predictWithFeatures.schema());
++        return new SparkFrame(predictWithFeatures);
++    }
++
++    public void save(String path) throws IOException{
++        NativeOperationProvider nativeProvider = NativeOperationProvider.fromSpark(session, "model.save");
++        if (nativeProvider.shouldRewrite()) {
++            if (nativeModel == null) {
++                throw new IllegalStateException("Native Zingg model has not been fitted; nothing can be saved");
++            }
++            nativeProvider.saveModel(nativeModel, path);
++            return;
++        }
++        nativeProvider.auditLegacyOperation("model.crossValidator.save", "CrossValidatorModel.write", getClass().getName());
++        ((CrossValidatorModel) transformer).write().overwrite().save(path);
++    }
++
++    public ZFrame<Dataset<Row>,Row,Column> transform(Dataset<Row> input) {
++        for (SparkTransformer bsf: featureCreators) {
++            input = bsf.transform(input);
++        }
++        return new SparkFrame(input);
++    }
++
++    public ZFrame<Dataset<Row>,Row,Column> transform(ZFrame<Dataset<Row>,Row,Column> i) {
++        return transform(i.df());
++    }
++
++    public List<SparkTransformer> getFeatureCreators() {
++        return featureCreators;
++    }
++
++    @Override
++    public void register() {
++        if (featureCreators != null) {
++            for (SparkTransformer bsf: featureCreators) {
++                bsf.register(session);
++            }
++        }
++        if (vve != null) {
++            vve.register(session);
++        }
++    }
++}
+--- a/spark/core/src/main/java/zingg/spark/core/model/VectorValueExtractor.java
++++ b/spark/core/src/main/java/zingg/spark/core/model/VectorValueExtractor.java
+@@ -1,50 +1,57 @@
+-package zingg.spark.core.model;
+-
+-import org.apache.spark.ml.linalg.Vector;
+-import org.apache.spark.sql.Dataset;
+-import org.apache.spark.sql.Row;
+-import org.apache.spark.sql.functions;
+-import org.apache.spark.sql.api.java.UDF1;
+-import org.apache.spark.sql.types.DataTypes;
+-
+-import org.apache.spark.sql.SparkSession;
+-import zingg.spark.core.similarity.SparkBaseTransformer;
+-import zingg.spark.core.util.SparkFnRegistrar;
+-
+-public class VectorValueExtractor extends SparkBaseTransformer implements UDF1<Vector, Double>{
+-
+-	private static final long serialVersionUID = 1L;
+-
+-	public VectorValueExtractor(String inputCol, String outputCol) {
+-		super(inputCol, outputCol, "VectorValueExtractor");
+-		
+-	}
+-	
+-	@Override
+-	public Double call(Vector v) {
+-		return v.toArray()[1];
+-	}
+-	
+-	@Override
+-	public void register(SparkSession spark) {
+-
+-		SparkFnRegistrar.registerUDF1(spark, uid, this, DataTypes.DoubleType);
+-    }
+-	
+-	/*@Override
+-	public String getUid() {
+-   	if (uid == null) {
+-   		uid = Identifiable$.MODULE$.randomUID("VectorValueExtractor");
+-   	}
+-   	return uid;
+-   }*/
+-	
+-	@Override	
+-	public Dataset<Row> transform(Dataset<?> ds){
+-		LOG.debug("transforming dataset for " + uid);
+-		transformSchema(ds.schema());
+-		return ds.withColumn(getOutputCol(), 
+-				functions.callUDF(this.uid, ds.col(getInputCol())));
+-	}
+-
+-}
++package zingg.spark.core.model;
++
++import org.apache.spark.ml.linalg.Vector;
++import org.apache.spark.sql.Dataset;
++import org.apache.spark.sql.Row;
++import org.apache.spark.sql.functions;
++import org.apache.spark.sql.api.java.UDF1;
++import org.apache.spark.sql.types.DataTypes;
++
++import org.apache.spark.sql.SparkSession;
++import zingg.spark.core.similarity.SparkBaseTransformer;
++import zingg.spark.core.util.SparkFnRegistrar;
++import ai.zingg.nativebridge.NativeOperationProvider;
++
++public class VectorValueExtractor extends SparkBaseTransformer implements UDF1<Vector, Double>{
++
++	private static final long serialVersionUID = 1L;
++
++	public VectorValueExtractor(String inputCol, String outputCol) {
++		super(inputCol, outputCol, "VectorValueExtractor");
++		
++	}
++	
++	@Override
++	public Double call(Vector v) {
++		return v.toArray()[1];
++	}
++	
++	@Override
++	public void register(SparkSession spark) {
++
++        if (!NativeOperationProvider.fromSpark(spark, "model.vector.registration").shouldRewrite()) {
++            SparkFnRegistrar.registerUDF1(spark, uid, this, DataTypes.DoubleType);
++        }
++    }
++	
++	/*@Override
++	public String getUid() {
++   	if (uid == null) {
++   		uid = Identifiable$.MODULE$.randomUID("VectorValueExtractor");
++   	}
++   	return uid;
++   }*/
++	
++	@Override	
++	public Dataset<Row> transform(Dataset<?> ds){
++		LOG.debug("transforming dataset for " + uid);
++		transformSchema(ds.schema());
++        NativeOperationProvider nativeProvider = NativeOperationProvider.fromSpark(ds.sparkSession(), "model.vector");
++        if (nativeProvider.shouldRewrite()) {
++            return nativeProvider.vectorValue(ds.toDF(), getInputCol(), getOutputCol());
++        }
++        nativeProvider.auditLegacyOperation("model.vectorValue", "ScalaUDF/callUDF", getClass().getName());
++		return ds.withColumn(getOutputCol(), functions.callUDF(this.uid, ds.col(getInputCol())));
++	}
++
++}
+--- a/spark/core/src/main/java/zingg/spark/core/preprocess/stopwords/SparkStopWordsRemover.java
++++ b/spark/core/src/main/java/zingg/spark/core/preprocess/stopwords/SparkStopWordsRemover.java
+@@ -1,68 +1,75 @@
+-package zingg.spark.core.preprocess.stopwords;
+-
+-import static org.apache.spark.sql.functions.callUDF;
+-import static org.apache.spark.sql.functions.lit;
+-
+-import java.io.Serializable;
+-
+-import org.apache.commons.logging.Log;
+-import org.apache.commons.logging.LogFactory;
+-import org.apache.spark.sql.Column;
+-import org.apache.spark.sql.Dataset;
+-import org.apache.spark.sql.Row;
+-import org.apache.spark.sql.types.DataType;
+-import org.apache.spark.sql.types.DataTypes;
+-
+-import zingg.common.client.FieldDefinition;
+-import zingg.common.client.ZFrame;
+-import zingg.common.core.context.IContext;
+-import zingg.common.core.preprocess.stopwords.StopWordsRemover;
+-import zingg.spark.client.SparkFrame;
+-import org.apache.spark.sql.SparkSession;
+-import zingg.spark.core.util.SparkFnRegistrar;
+-
+-public class SparkStopWordsRemover extends StopWordsRemover<SparkSession,Dataset<Row>,Row,Column,DataType>  implements Serializable {
+-
+-	private static final long serialVersionUID = 1L;
+-	protected static String name = "zingg.spark.preprocess.SparkStopWordsRemover";
+-	public static final Log LOG = LogFactory.getLog(SparkStopWordsRemover.class);
+-	
+-	private String udfName;
+-
+-	public SparkStopWordsRemover(){
+-    }
+-
+-	public SparkStopWordsRemover(IContext<SparkSession, Dataset<Row>, Row, Column,DataType> context) {
+-		super(context);
+-		registerUDF();
+-	}
+-
+-	public SparkStopWordsRemover(IContext<SparkSession, Dataset<Row>, Row, Column,DataType> context, FieldDefinition fd) {
+-		super(context,fd);
+-		registerUDF();
+-	}
+-	
+- 	@Override
+-	protected ZFrame<Dataset<Row>, Row, Column> removeStopWordsFromDF(ZFrame<Dataset<Row>, Row, Column> ds,
+-			String fieldName, String pattern) {
+-		Dataset<Row> dfAfterRemoval = ds.df().withColumn(fieldName,callUDF(udfName, ds.df().col(fieldName),lit(pattern)));
+-
+-		return new SparkFrame(dfAfterRemoval);
+-	}
+-
+-	protected void registerUDF() {
+-		RemoveStopWordsUDF removeStopWordsUDF = new RemoveStopWordsUDF();
+-		// Each field will have different pattern
+-		this.udfName = removeStopWordsUDF.getName();
+-		// register the UDF
+-		SparkSession zSession = getContext().getSession();
+-
+-		SparkFnRegistrar.registerUDF2(zSession, udfName, removeStopWordsUDF, DataTypes.StringType);
+-	}
+-
+-	@Override
+-	public void init() {
+-		registerUDF();
+-	}
+-
+-}
++package zingg.spark.core.preprocess.stopwords;
++
++import static org.apache.spark.sql.functions.callUDF;
++import static org.apache.spark.sql.functions.lit;
++
++import java.io.Serializable;
++
++import org.apache.commons.logging.Log;
++import org.apache.commons.logging.LogFactory;
++import org.apache.spark.sql.Column;
++import org.apache.spark.sql.Dataset;
++import org.apache.spark.sql.Row;
++import org.apache.spark.sql.types.DataType;
++import org.apache.spark.sql.types.DataTypes;
++
++import zingg.common.client.FieldDefinition;
++import zingg.common.client.ZFrame;
++import zingg.common.core.context.IContext;
++import zingg.common.core.preprocess.stopwords.StopWordsRemover;
++import zingg.spark.client.SparkFrame;
++import org.apache.spark.sql.SparkSession;
++import zingg.spark.core.util.SparkFnRegistrar;
++import ai.zingg.nativebridge.NativeOperationProvider;
++
++public class SparkStopWordsRemover extends StopWordsRemover<SparkSession,Dataset<Row>,Row,Column,DataType>  implements Serializable {
++
++	private static final long serialVersionUID = 1L;
++	protected static String name = "zingg.spark.preprocess.SparkStopWordsRemover";
++	public static final Log LOG = LogFactory.getLog(SparkStopWordsRemover.class);
++	
++	private String udfName;
++
++	public SparkStopWordsRemover(){
++    }
++
++	public SparkStopWordsRemover(IContext<SparkSession, Dataset<Row>, Row, Column,DataType> context) {
++		super(context);
++		registerUDF();
++	}
++
++	public SparkStopWordsRemover(IContext<SparkSession, Dataset<Row>, Row, Column,DataType> context, FieldDefinition fd) {
++		super(context,fd);
++		registerUDF();
++	}
++	
++ 	@Override
++	protected ZFrame<Dataset<Row>, Row, Column> removeStopWordsFromDF(ZFrame<Dataset<Row>, Row, Column> ds,
++			String fieldName, String pattern) {
++        NativeOperationProvider nativeProvider = NativeOperationProvider.fromSpark(ds.df().sparkSession(), "preprocess.stopWords");
++        if (nativeProvider.shouldRewrite()) {
++            return new SparkFrame(nativeProvider.removeStopWords(ds.df(), fieldName, pattern));
++        }
++        nativeProvider.auditLegacyOperation("preprocess.stopWords", "ScalaUDF/callUDF", getClass().getName());
++		Dataset<Row> dfAfterRemoval = ds.df().withColumn(fieldName,callUDF(udfName, ds.df().col(fieldName),lit(pattern)));
++		return new SparkFrame(dfAfterRemoval);
++	}
++
++	protected void registerUDF() {
++		RemoveStopWordsUDF removeStopWordsUDF = new RemoveStopWordsUDF();
++		// Each field will have different pattern
++		this.udfName = removeStopWordsUDF.getName();
++		// register the UDF
++		SparkSession zSession = getContext().getSession();
++
++        if (!NativeOperationProvider.fromSpark(zSession, "preprocess.stopWords.registration").shouldRewrite()) {
++            SparkFnRegistrar.registerUDF2(zSession, udfName, removeStopWordsUDF, DataTypes.StringType);
++        }
++	}
++
++	@Override
++	public void init() {
++		registerUDF();
++	}
++
++}
+--- a/spark/core/src/main/java/zingg/spark/core/similarity/SparkBaseTransformer.java
++++ b/spark/core/src/main/java/zingg/spark/core/similarity/SparkBaseTransformer.java
+@@ -1,118 +1,126 @@
+-package zingg.spark.core.similarity;
+-
+-import org.apache.commons.logging.Log;
+-import org.apache.commons.logging.LogFactory;
+-import org.apache.spark.ml.Transformer;
+-import org.apache.spark.ml.param.Param;
+-import org.apache.spark.ml.param.ParamMap;
+-import org.apache.spark.ml.param.shared.HasInputCol;
+-import org.apache.spark.ml.param.shared.HasOutputCol;
+-import org.apache.spark.sql.Dataset;
+-import org.apache.spark.sql.Row;
+-import org.apache.spark.sql.functions;
+-import org.apache.spark.sql.types.DataTypes;
+-import org.apache.spark.sql.types.StructType;
+-
+-import zingg.common.client.util.ColName;
+-import org.apache.spark.sql.SparkSession;
+-
+-
+-public abstract class SparkBaseTransformer extends Transformer implements HasInputCol, HasOutputCol {
+-	
+-	private static final long serialVersionUID = 1L;
+-	Param<String> inputcol; //= new Param<String>(this, "inputCol", "input column name");
+-	Param<String> outputcol; //= new Param<String>(this, "outputCol", "output column name");
+-	protected String uid;
+-	
+-	public static final Log LOG = LogFactory.getLog(SparkTransformer.class);
+-	
+-
+-    public SparkBaseTransformer(String inputCol, String outputCol, String uid) {
+-        this.uid = uid;
+-        inputcol = new Param<String>(this, "inputCol", "input column name");
+-        outputcol = new Param<String>(this, "outputCol", "output column name");	
+-        setInputCol(inputCol);
+-        setOutputCol(outputCol);
+-    }
+-
+-	
+-	
+-	
+-	@Override
+-	public String getInputCol() {
+-		return get(inputcol).get();
+-	}
+-	
+-	public void setInputCol(String inputColumn) {
+-		set(inputcol, inputColumn);
+-		//this.inputColumn = inputColumn;
+-	}
+-
+-	@Override
+-	public String getOutputCol() {
+-		return get(outputcol).get();
+-	}
+-
+-	public void setOutputCol(String outputColumn) {
+-		set(outputcol, outputColumn);
+-	}
+-	
+-	@Override	
+-	public Dataset<Row> transform(Dataset<?> ds){
+-		//LOG.debug("transforming dataset for " + uid);
+-		//transformSchema(ds.schema());
+-		return ds.withColumn(getOutputCol(), 
+-				functions.callUDF(this.uid, ds.col(getInputCol()), 
+-						ds.col(ColName.COL_PREFIX + getInputCol())));
+-	}
+-	
+-	@Override
+-	public StructType transformSchema(StructType structType) {
+-		//LOG.debug("transforming schema for " + uid);
+-		return structType.add(getOutputCol(),DataTypes.DoubleType,true);
+-	}
+-	
+-	
+-	@Override
+-    public SparkTransformer copy(ParamMap paramMap) {
+-	  LOG.debug("Copying params for " + this.uid);
+-	  paramMap.put(inputcol, get(inputcol).get());
+-	  paramMap.put(outputcol, get(outputcol).get());
+-      return defaultCopy(paramMap);
+-    }
+-	
+-    @Override
+-    public String uid() {
+-      return getUid();
+-    } 
+-    
+-    public String getUid() {
+-    	/*if (uid == null) {
+-    		uid = Identifiable$.MODULE$.randomUID(name);
+-    	}*/
+-    	return uid;
+-    }
+-    
+-    
+-    public Param<String> inputCol() {
+-    	return inputcol;
+-    }
+-    
+-   
+-    public Param<String> outputCol() {
+-    	return outputcol;
+-    }
+-    
+-    public void org$apache$spark$ml$param$shared$HasInputCol$_setter_$inputCol_$eq(org.apache.spark.ml.param.Param param) {
+-    	inputcol = param;
+-    }
+-    
+-    public void org$apache$spark$ml$param$shared$HasOutputCol$_setter_$outputCol_$eq(org.apache.spark.ml.param.Param param) {
+-    	outputcol = param;
+-    }
+-    
+-     
+-	 
+-    public abstract void register(SparkSession spark);
+-}
+-
++package zingg.spark.core.similarity;
++
++import org.apache.commons.logging.Log;
++import org.apache.commons.logging.LogFactory;
++import org.apache.spark.ml.Transformer;
++import org.apache.spark.ml.param.Param;
++import org.apache.spark.ml.param.ParamMap;
++import org.apache.spark.ml.param.shared.HasInputCol;
++import org.apache.spark.ml.param.shared.HasOutputCol;
++import org.apache.spark.sql.Dataset;
++import org.apache.spark.sql.Row;
++import org.apache.spark.sql.functions;
++import org.apache.spark.sql.types.DataTypes;
++import org.apache.spark.sql.types.StructType;
++
++import zingg.common.client.util.ColName;
++import org.apache.spark.sql.SparkSession;
++import ai.zingg.nativebridge.NativeOperationProvider;
++
++
++public abstract class SparkBaseTransformer extends Transformer implements HasInputCol, HasOutputCol {
++	
++	private static final long serialVersionUID = 1L;
++	Param<String> inputcol; //= new Param<String>(this, "inputCol", "input column name");
++	Param<String> outputcol; //= new Param<String>(this, "outputCol", "output column name");
++	protected String uid;
++	
++	public static final Log LOG = LogFactory.getLog(SparkTransformer.class);
++	
++
++    public SparkBaseTransformer(String inputCol, String outputCol, String uid) {
++        this.uid = uid;
++        inputcol = new Param<String>(this, "inputCol", "input column name");
++        outputcol = new Param<String>(this, "outputCol", "output column name");	
++        setInputCol(inputCol);
++        setOutputCol(outputCol);
++    }
++
++	
++	
++	
++	@Override
++	public String getInputCol() {
++		return get(inputcol).get();
++	}
++	
++	public void setInputCol(String inputColumn) {
++		set(inputcol, inputColumn);
++		//this.inputColumn = inputColumn;
++	}
++
++	@Override
++	public String getOutputCol() {
++		return get(outputcol).get();
++	}
++
++	public void setOutputCol(String outputColumn) {
++		set(outputcol, outputColumn);
++	}
++	
++	@Override	
++	public Dataset<Row> transform(Dataset<?> ds){
++        NativeOperationProvider nativeProvider = NativeOperationProvider.fromSpark(ds.sparkSession(), "similarity");
++        if (nativeProvider.shouldRewrite()) {
++            return nativeProvider.similarityByZinggName(ds.toDF(), getNativeOperationName(), getInputCol(),
++                    ColName.COL_PREFIX + getInputCol(), getOutputCol());
++        }
++        nativeProvider.auditLegacyOperation("similarity." + getNativeOperationName(), "ScalaUDF/callUDF", getNativeOperationName());
++		return ds.withColumn(getOutputCol(), 
++				functions.callUDF(this.uid, ds.col(getInputCol()), 
++						ds.col(ColName.COL_PREFIX + getInputCol())));
++	}
++
++    /** Concrete transformer overrides this with the underlying SimFunction class. */
++    public String getNativeOperationName() { return uid; }
++	
++	@Override
++	public StructType transformSchema(StructType structType) {
++		//LOG.debug("transforming schema for " + uid);
++		return structType.add(getOutputCol(),DataTypes.DoubleType,true);
++	}
++	
++	
++	@Override
++    public SparkTransformer copy(ParamMap paramMap) {
++	  LOG.debug("Copying params for " + this.uid);
++	  paramMap.put(inputcol, get(inputcol).get());
++	  paramMap.put(outputcol, get(outputcol).get());
++      return defaultCopy(paramMap);
++    }
++	
++    @Override
++    public String uid() {
++      return getUid();
++    } 
++    
++    public String getUid() {
++    	/*if (uid == null) {
++    		uid = Identifiable$.MODULE$.randomUID(name);
++    	}*/
++    	return uid;
++    }
++    
++    
++    public Param<String> inputCol() {
++    	return inputcol;
++    }
++    
++   
++    public Param<String> outputCol() {
++    	return outputcol;
++    }
++    
++    public void org$apache$spark$ml$param$shared$HasInputCol$_setter_$inputCol_$eq(org.apache.spark.ml.param.Param param) {
++    	inputcol = param;
++    }
++    
++    public void org$apache$spark$ml$param$shared$HasOutputCol$_setter_$outputCol_$eq(org.apache.spark.ml.param.Param param) {
++    	outputcol = param;
++    }
++    
++     
++	 
++    public abstract void register(SparkSession spark);
++}
++
+--- a/spark/core/src/main/java/zingg/spark/core/similarity/SparkSimFunction.java
++++ b/spark/core/src/main/java/zingg/spark/core/similarity/SparkSimFunction.java
+@@ -1,26 +1,31 @@
+-package zingg.spark.core.similarity;
+-
+-import org.apache.spark.sql.api.java.UDF2;
+-
+-import zingg.common.core.similarity.function.SimFunction;
+-
+-public class SparkSimFunction<T> implements UDF2<T, T, Double> {
+-
+-    SimFunction<T> function;
+-
+-    public SparkSimFunction(SimFunction<T> fn) {
+-        this.function = fn;
+-    }
+-
+-    public String getName() {
+-        return function.getName();
+-    }
+-
+-    @Override
+-    public Double call(T t1, T t2) throws Exception {
+-        return function.call(t1,t2);
+-    }
+-    
+-}
+-
+-
++package zingg.spark.core.similarity;
++
++import org.apache.spark.sql.api.java.UDF2;
++
++import zingg.common.core.similarity.function.SimFunction;
++
++public class SparkSimFunction<T> implements UDF2<T, T, Double> {
++
++    SimFunction<T> function;
++
++    public SparkSimFunction(SimFunction<T> fn) {
++        this.function = fn;
++    }
++
++    public String getName() {
++        return function.getName();
++    }
++
++    /** Stable semantic key used by zingg-native; avoids UDF-name collisions. */
++    public String getSemanticClassName() {
++        return function.getClass().getName();
++    }
++
++    @Override
++    public Double call(T t1, T t2) throws Exception {
++        return function.call(t1,t2);
++    }
++    
++}
++
++
+--- a/spark/core/src/main/java/zingg/spark/core/similarity/SparkTransformer.java
++++ b/spark/core/src/main/java/zingg/spark/core/similarity/SparkTransformer.java
+@@ -1,35 +1,42 @@
+-package zingg.spark.core.similarity;
+-
+-import org.apache.commons.logging.Log;
+-import org.apache.commons.logging.LogFactory;
+-import org.apache.spark.sql.types.DataTypes;
+-
+-import org.apache.spark.sql.SparkSession;
+-import zingg.spark.core.util.SparkFnRegistrar;
+-
+-
+-public class SparkTransformer extends SparkBaseTransformer {
+-	private static final long serialVersionUID = 1L;
+-
+-	protected SparkSimFunction function;
+-	
+-	public static final Log LOG = LogFactory.getLog(SparkTransformer.class);
+-	
+-	
+-
+-    public SparkTransformer(String inputCol, SparkSimFunction function, String outputCol) {
+-        super(inputCol, outputCol, function.getName());
+-        this.function = function;
+-    }
+-
+-   
+-
+-	 
+-    public void register(SparkSession spark) {
+-
+-        SparkFnRegistrar.registerUDF2(spark, getUid(), function, DataTypes.DoubleType);
+-    }
+-   
+-
+-}
+-
++package zingg.spark.core.similarity;
++
++import org.apache.commons.logging.Log;
++import org.apache.commons.logging.LogFactory;
++import org.apache.spark.sql.types.DataTypes;
++
++import org.apache.spark.sql.SparkSession;
++import zingg.spark.core.util.SparkFnRegistrar;
++import ai.zingg.nativebridge.NativeOperationProvider;
++
++
++public class SparkTransformer extends SparkBaseTransformer {
++	private static final long serialVersionUID = 1L;
++
++	protected SparkSimFunction function;
++	
++	public static final Log LOG = LogFactory.getLog(SparkTransformer.class);
++	
++	
++
++    public SparkTransformer(String inputCol, SparkSimFunction function, String outputCol) {
++        super(inputCol, outputCol, function.getName());
++        this.function = function;
++    }
++
++   
++
++	 
++    public void register(SparkSession spark) {
++        if (!NativeOperationProvider.fromSpark(spark, "similarity.registration").shouldRewrite()) {
++            SparkFnRegistrar.registerUDF2(spark, getUid(), function, DataTypes.DoubleType);
++        }
++    }
++
++    @Override
++    public String getNativeOperationName() {
++        return function.getSemanticClassName();
++    }
++   
++
++}
++
+--- a/spark/core/src/main/java/zingg/spark/core/util/SparkBlockingTreeUtil.java
++++ b/spark/core/src/main/java/zingg/spark/core/util/SparkBlockingTreeUtil.java
+@@ -1,91 +1,94 @@
+-package zingg.spark.core.util;
+-
+-import java.util.ArrayList;
+-import java.util.List;
+-
+-import org.apache.commons.logging.Log;
+-import org.apache.commons.logging.LogFactory;
+-import org.apache.spark.ml.util.SchemaUtils;
+-import org.apache.spark.sql.Column;
+-import org.apache.spark.sql.Dataset;
+-import org.apache.spark.sql.Encoders;
+-import org.apache.spark.sql.Row;
+-import org.apache.spark.sql.RowFactory;
+-import org.apache.spark.sql.types.DataType;
+-import org.apache.spark.sql.types.DataTypes;
+-import org.apache.spark.sql.types.StructField;
+-import org.apache.spark.sql.types.StructType;
+-import zingg.common.client.arguments.model.IArguments;
+-import zingg.common.client.ZFrame;
+-import zingg.common.client.util.ColName;
+-import zingg.common.client.util.ListMap;
+-import zingg.common.client.util.PipeUtilBase;
+-import zingg.common.core.block.*;
+-import zingg.common.core.hash.HashFunction;
+-import zingg.common.core.util.BlockingTreeUtil;
+-import zingg.spark.client.SparkFrame;
+-import org.apache.spark.sql.SparkSession;
+-import zingg.spark.core.block.SparkBlock;
+-import zingg.spark.core.block.SparkBlockFunction;
+-
+-public class SparkBlockingTreeUtil extends BlockingTreeUtil<SparkSession, Dataset<Row>, Row, Column, DataType>{
+-
+-    public static final Log LOG = LogFactory.getLog(SparkBlockingTreeUtil.class);
+-    protected SparkSession spark;
+-    
+-    public SparkBlockingTreeUtil(SparkSession s, PipeUtilBase pipeUtil) {
+-        this.spark = s;
+-        setPipeUtil(pipeUtil);
+-    }
+-
+-    @Override
+-    public ZFrame<Dataset<Row>, Row, Column> getBlockHashes(ZFrame<Dataset<Row>, Row, Column> testData,
+-            Tree<Canopy<Row>> tree) {
+-            Dataset<Row> retDF = testData.df().map(new SparkBlockFunction(tree), Encoders.row(
+-                    appendHashCol(testData.df().schema())));
+-            return new SparkFrame(retDF);
+-    }
+-
+-    public StructType appendHashCol(StructType s) {
+-        StructType retSchema = SchemaUtils.appendColumn(s, ColName.HASH_COL, DataTypes.IntegerType, false);
+-        LOG.debug("returning schema after step 1 is " + retSchema);
+-        return retSchema;
+-}
+-
+-
+-
+-
+-@Override 
+-public ZFrame<Dataset<Row>, Row, Column> getTreeDF(byte[] blockingTree){
+-        StructType schema = DataTypes.createStructType(new StructField[] { DataTypes.createStructField("BlockingTree", DataTypes.BinaryType, false) });
+-        List<Row> objList = new ArrayList<Row>();
+-        objList.add(RowFactory.create(blockingTree));
+-        Dataset<Row> df = spark.sqlContext().createDataFrame(objList, schema).toDF().coalesce(1);
+-        return new SparkFrame(df);
+-}
+-
+-
+-/* 
+-@Override
+-public Tree<Canopy<Row>> readBlockingTree(Arguments args) throws Exception, ZinggClientException {
+-        PipeUtilBase<SparkSession, Dataset<Row>, Row, Column> pu = getPipeUtil();
+-        ZFrame<Dataset<Row>, Row, Column> tree = pu.read(false, 1, false, pu.getBlockingTreePipe(args));
+-        tree.show();
+-        tree.df().show();
+-        byte [] byteArrayBack = (byte[]) tree.df().head().get(0);
+-        Tree<Canopy<Row>> blockingTree = null;
+-        LOG.warn("byte array back is " + byteArrayBack);
+-        blockingTree =  (Tree<Canopy<Row>>) Util.revertObjectFromByteArray(byteArrayBack);
+-        return blockingTree;
+-}
+-*/
+-
+-@Override
+-public Block<Dataset<Row>, Row, Column, DataType> getBlock(ZFrame<Dataset<Row>, Row, Column> sample,
+-                                                           ZFrame<Dataset<Row>, Row, Column> positives,
+-                                                           ListMap<DataType, HashFunction<Dataset<Row>, Row, Column, DataType>> hashFunctions,
+-                                                           long blockSize, IArguments arguments) {
+--        return new SparkBlock(sample, positives, hashFunctions, blockSize, new DefaultFieldDefinitionStrategy<Row>());
+-}
++package zingg.spark.core.util;
++
++import java.util.ArrayList;
++import java.util.List;
++
++import org.apache.commons.logging.Log;
++import org.apache.commons.logging.LogFactory;
++import org.apache.spark.ml.util.SchemaUtils;
++import org.apache.spark.sql.Column;
++import org.apache.spark.sql.Dataset;
++import org.apache.spark.sql.Encoders;
++import org.apache.spark.sql.Row;
++import org.apache.spark.sql.types.DataType;
++import org.apache.spark.sql.types.DataTypes;
++import org.apache.spark.sql.types.StructType;
++import zingg.common.client.arguments.model.IArguments;
++import zingg.common.client.ZFrame;
++import zingg.common.client.util.ColName;
++import zingg.common.client.util.ListMap;
++import zingg.common.client.util.PipeUtilBase;
++import zingg.common.core.block.*;
++import zingg.common.core.hash.HashFunction;
++import zingg.common.core.util.BlockingTreeUtil;
++import zingg.spark.client.SparkFrame;
++import org.apache.spark.sql.SparkSession;
++import zingg.spark.core.block.SparkBlock;
++import zingg.spark.core.block.SparkBlockFunction;
++import ai.zingg.nativebridge.NativeOperationProvider;
++
++public class SparkBlockingTreeUtil extends BlockingTreeUtil<SparkSession, Dataset<Row>, Row, Column, DataType>{
++
++    public static final Log LOG = LogFactory.getLog(SparkBlockingTreeUtil.class);
++    protected SparkSession spark;
++    
++    public SparkBlockingTreeUtil(SparkSession s, PipeUtilBase pipeUtil) {
++        this.spark = s;
++        setPipeUtil(pipeUtil);
++    }
++
++    @Override
++    public ZFrame<Dataset<Row>, Row, Column> getBlockHashes(ZFrame<Dataset<Row>, Row, Column> testData,
++            Tree<Canopy<Row>> tree) {
++            NativeOperationProvider nativeProvider = NativeOperationProvider.fromSpark(testData.df().sparkSession(), "blocking.tree");
++            if (nativeProvider.shouldRewrite()) {
++                Dataset<Row> retDF = nativeProvider.blockHashes(testData.df(), tree, ColName.HASH_COL);
++                return new SparkFrame(retDF);
++            }
++            nativeProvider.auditLegacyOperation("blocking.blockingTree", "Dataset.map/MapFunction/Encoder", getClass().getName());
++            Dataset<Row> retDF = testData.df().map(new SparkBlockFunction(tree), Encoders.row(appendHashCol(testData.df().schema())));
++            return new SparkFrame(retDF);
++    }
++
++    public StructType appendHashCol(StructType s) {
++        StructType retSchema = SchemaUtils.appendColumn(s, ColName.HASH_COL, DataTypes.IntegerType, false);
++        LOG.debug("returning schema after step 1 is " + retSchema);
++        return retSchema;
++}
++
++
++
++
++@Override
++public ZFrame<Dataset<Row>, Row, Column> getTreeDF(byte[] blockingTree){
++        Dataset<Row> df = spark.range(1L)
++                .select(org.apache.spark.sql.functions.lit(blockingTree).alias("BlockingTree"))
++                .coalesce(1);
++        return new SparkFrame(df);
++}
++
++
++/* 
++@Override
++public Tree<Canopy<Row>> readBlockingTree(Arguments args) throws Exception, ZinggClientException {
++        PipeUtilBase<SparkSession, Dataset<Row>, Row, Column> pu = getPipeUtil();
++        ZFrame<Dataset<Row>, Row, Column> tree = pu.read(false, 1, false, pu.getBlockingTreePipe(args));
++        tree.show();
++        tree.df().show();
++        byte [] byteArrayBack = (byte[]) tree.df().head().get(0);
++        Tree<Canopy<Row>> blockingTree = null;
++        LOG.warn("byte array back is " + byteArrayBack);
++        blockingTree =  (Tree<Canopy<Row>>) Util.revertObjectFromByteArray(byteArrayBack);
++        return blockingTree;
++}
++*/
++
++@Override
++public Block<Dataset<Row>, Row, Column, DataType> getBlock(ZFrame<Dataset<Row>, Row, Column> sample,
++                                                           ZFrame<Dataset<Row>, Row, Column> positives,
++                                                           ListMap<DataType, HashFunction<Dataset<Row>, Row, Column, DataType>> hashFunctions,
++                                                           long blockSize, IArguments arguments) {
++        // TODO Auto-generated method stub
++        return new SparkBlock(sample, positives, hashFunctions, blockSize, new DefaultFieldDefinitionStrategy<Row>());
++}
+ }
+\ No newline at end of file
+--- a/spark/core/src/main/java/zingg/spark/core/util/SparkGraphUtil.java
++++ b/spark/core/src/main/java/zingg/spark/core/util/SparkGraphUtil.java
+@@ -1,81 +1,108 @@
+-package zingg.spark.core.util;
+-
+-import java.util.ArrayList;
+-import java.util.List;
+-
+-import org.apache.spark.sql.Column;
+-import org.apache.spark.sql.Dataset;
+-import org.apache.spark.sql.Row;
+-import org.graphframes.GraphFrame;
+-
+-import scala.collection.JavaConverters;
+-import zingg.common.client.ZFrame;
+-import zingg.common.client.util.ColName;
+-import zingg.common.core.util.GraphUtil;
+-import zingg.spark.client.SparkFrame;
+-
+-public class SparkGraphUtil implements GraphUtil<Dataset<Row>, Row, Column> {
+-
+-	public ZFrame<Dataset<Row>, Row, Column> buildGraph(ZFrame<Dataset<Row>, Row, Column> vOrig, ZFrame<Dataset<Row>, Row, Column> ed) {
+-		// we need to transform the input here by using stop words
+-		//rename id field which is a common field in data to another field as it 
+-		//clashes with graphframes :-(
+-		vOrig = vOrig.cache();
+-		Dataset<Row> vertices = vOrig.df();	
+-		Dataset<Row> edges = ed.df();
+-		vertices = vertices.withColumnRenamed(ColName.ID_EXTERNAL_ORIG_COL, ColName.ID_EXTERNAL_COL);
+-		
+-		Dataset<Row> v1 = vertices.withColumnRenamed(ColName.ID_COL, "id");
+-		Dataset<Row> v = v1.select("id").cache();
+-		List<Column> cols = new ArrayList<Column>();
+-		cols.add(edges.col(ColName.ID_COL));
+-		cols.add(edges.col(ColName.COL_PREFIX + ColName.ID_COL));
+-		
+-		Dataset<Row> e = edges.select(JavaConverters.asScalaIteratorConverter(
+-				cols.iterator()).asScala().toSeq());
+-		e = e.toDF("src","dst").cache();
+-		GraphFrame gf = new GraphFrame(v, e);
+-		//gf = gf.dropIsolatedVertices();
+-		//Dataset<Row> returnGraph = gf.connectedComponents().setAlgorithm("graphx").run().cache();
+-		Dataset<Row> returnGraph = gf.connectedComponents().run().cache();
+-		//reverse back o avoid graphframes id :-()
+-		returnGraph = returnGraph.join(vertices, returnGraph.col("id").equalTo(vertices.col(ColName.ID_COL)));
+-		returnGraph = returnGraph.drop(ColName.ID_COL).withColumnRenamed("id", ColName.ID_COL);		
+-		returnGraph = returnGraph.withColumnRenamed("component", ColName.CLUSTER_COLUMN);
+-		returnGraph = returnGraph.withColumnRenamed(ColName.ID_EXTERNAL_COL, ColName.ID_EXTERNAL_ORIG_COL);
+-		return new SparkFrame(returnGraph);
+-	}
+-
+-	
+-
+-	/*
+-	public static Dataset<Row> buildGraph(Dataset<Row> vertices, Dataset<Row> edges, boolean withScore) {
+-		// we need to transform the input here by using stop words
+-		//rename id field which is a common field in data to another field as it 
+-		//clashes with graphframes :-(
+-		vertices = vertices.withColumnRenamed(ColName.ID_EXTERNAL_ORIG_COL, ColName.ID_EXTERNAL_COL);
+-		
+-		Dataset<Row> v = vertices.withColumnRenamed(ColName.ID_COL, "id").cache();
+-		List<Column> cols = new ArrayList<Column>();
+-		cols.add(edges.col(ColName.ID_COL));
+-		cols.add(edges.col(ColName.COL_PREFIX + ColName.ID_COL));
+-		cols.add(edges.col(ColName.SCORE_COL));
+-		Dataset<Row> e = edges.select(JavaConverters.asScalaIteratorConverter(
+-				cols.iterator()).asScala().toSeq());
+-		e = e.toDF("src","dst", "MSG").cache();
+-		e.show(true);
+-		GraphFrame gf = new GraphFrame(v, e);
+-		//gf = gf.dropIsolatedVertices();
+-		Dataset<Row> returnGraph = gf.connectedComponents().run().cache();
+-		
+-		Dataset<Row> dsWithScore = DFUtil.scoring(returnGraph, e);
+-		//reverse back o avoid graphframes id :-()
+-		dsWithScore = dsWithScore.withColumnRenamed("id", ColName.ID_COL);
+-		dsWithScore = dsWithScore.withColumnRenamed("component", ColName.CLUSTER_COLUMN);
+-		dsWithScore = dsWithScore.withColumnRenamed(ColName.ID_EXTERNAL_COL, ColName.ID_EXTERNAL_ORIG_COL);
+-		dsWithScore.show(false);
+-		return dsWithScore;
+-	}
+-*/	
+-			
+-}
++package zingg.spark.core.util;
++
++import java.lang.reflect.Constructor;
++import java.lang.reflect.InvocationTargetException;
++import java.lang.reflect.Method;
++import java.util.ArrayList;
++import java.util.List;
++
++import org.apache.spark.sql.Column;
++import org.apache.spark.sql.Dataset;
++import org.apache.spark.sql.Row;
++
++import scala.collection.JavaConverters;
++import zingg.common.client.ZFrame;
++import zingg.common.client.util.ColName;
++import zingg.common.core.util.GraphUtil;
++import zingg.spark.client.SparkFrame;
++import ai.zingg.nativebridge.NativeOperationProvider;
++
++/**
++ * Zingg graph integration with a public-DataFrame native path.
++ *
++ * Native mode has no compile-time or runtime dependency on GraphFrames.  The
++ * original Zingg 0.7 GraphFrames implementation remains available only for
++ * OFF/AUDIT compatibility and is loaded reflectively if GraphFrames is present.
++ */
++public class SparkGraphUtil implements GraphUtil<Dataset<Row>, Row, Column> {
++
++    public ZFrame<Dataset<Row>, Row, Column> buildGraph(
++            ZFrame<Dataset<Row>, Row, Column> vOrig,
++            ZFrame<Dataset<Row>, Row, Column> ed) {
++        // Keep the original external-id rename contract: GraphFrames used "id"
++        // internally and ordinary user data can already contain that name.
++        Dataset<Row> vertices = vOrig.df();
++        Dataset<Row> edges = ed.df();
++        vertices = vertices.withColumnRenamed(ColName.ID_EXTERNAL_ORIG_COL, ColName.ID_EXTERNAL_COL);
++
++        NativeOperationProvider nativeProvider = NativeOperationProvider.fromSpark(
++                vertices.sparkSession(), "graph.connectedComponents");
++        if (nativeProvider.shouldRewrite()) {
++            Dataset<Row> returnGraph = nativeProvider.connectedComponents(
++                    vertices,
++                    edges,
++                    ColName.ID_COL,
++                    ColName.COL_PREFIX + ColName.ID_COL,
++                    ColName.CLUSTER_COLUMN,
++                    128);
++            returnGraph = returnGraph.withColumnRenamed(
++                    ColName.ID_EXTERNAL_COL, ColName.ID_EXTERNAL_ORIG_COL);
++            return new SparkFrame(returnGraph);
++        }
++        nativeProvider.auditLegacyOperation("graph.connectedComponents", "GraphFrames.connectedComponents", getClass().getName());
++
++        // Caching belongs exclusively to the legacy GraphFrames path. Databricks
++        // Serverless rejects DataFrame cache/persist APIs, so native execution
++        // must never construct these calls.
++        vertices = vertices.cache();
++
++        // Legacy Zingg path.  Reflection is deliberate: GraphFrames must never
++        // become a compile/runtime dependency of the Serverless native artifact.
++        Dataset<Row> v1 = vertices.withColumnRenamed(ColName.ID_COL, "id");
++        Dataset<Row> v = v1.select("id").cache();
++        List<Column> cols = new ArrayList<Column>();
++        cols.add(edges.col(ColName.ID_COL));
++        cols.add(edges.col(ColName.COL_PREFIX + ColName.ID_COL));
++
++        Dataset<Row> e = edges.select(JavaConverters.asScalaIteratorConverter(
++                cols.iterator()).asScala().toSeq());
++        e = e.toDF("src", "dst").cache();
++
++        Dataset<Row> returnGraph = runLegacyGraphFramesConnectedComponents(v, e).cache();
++        returnGraph = returnGraph.join(
++                vertices,
++                returnGraph.col("id").equalTo(vertices.col(ColName.ID_COL)));
++        returnGraph = returnGraph.drop(ColName.ID_COL).withColumnRenamed("id", ColName.ID_COL);
++        returnGraph = returnGraph.withColumnRenamed("component", ColName.CLUSTER_COLUMN);
++        returnGraph = returnGraph.withColumnRenamed(
++                ColName.ID_EXTERNAL_COL, ColName.ID_EXTERNAL_ORIG_COL);
++        return new SparkFrame(returnGraph);
++    }
++
++    @SuppressWarnings("unchecked")
++    private Dataset<Row> runLegacyGraphFramesConnectedComponents(
++            Dataset<Row> vertices,
++            Dataset<Row> edges) {
++        try {
++            Class<?> graphFrameClass = Class.forName("org.graphframes.GraphFrame");
++            Constructor<?> constructor = graphFrameClass.getConstructor(Dataset.class, Dataset.class);
++            Object graphFrame = constructor.newInstance(vertices, edges);
++            Method connectedComponents = graphFrameClass.getMethod("connectedComponents");
++            Object builder = connectedComponents.invoke(graphFrame);
++            Method run = builder.getClass().getMethod("run");
++            return (Dataset<Row>) run.invoke(builder);
++        } catch (ClassNotFoundException e) {
++            throw new IllegalStateException(
++                    "GraphFrames is required only when ZINGG_NATIVE_MODE is OFF/AUDIT. " +
++                    "Use REWRITE/STRICT for the GraphFrames-free native implementation, " +
++                    "or install the GraphFrames dependency for legacy execution.", e);
++        } catch (NoSuchMethodException | InstantiationException | IllegalAccessException e) {
++            throw new IllegalStateException(
++                    "Unable to invoke the legacy Zingg 0.7 GraphFrames connected-components API", e);
++        } catch (InvocationTargetException e) {
++            Throwable cause = e.getCause() == null ? e : e.getCause();
++            throw new IllegalStateException(
++                    "Legacy GraphFrames connected-components execution failed", cause);
++        }
++    }
++}
+--- a/spark/core/src/main/java/zingg/spark/core/util/SparkHashUtil.java
++++ b/spark/core/src/main/java/zingg/spark/core/util/SparkHashUtil.java
+@@ -1,29 +1,32 @@
+-package zingg.spark.core.util;
+-
+-import org.apache.spark.sql.Column;
+-import org.apache.spark.sql.Dataset;
+-import org.apache.spark.sql.Row;
+-import org.apache.spark.sql.api.java.UDF1;
+-import org.apache.spark.sql.types.DataType;
+-
+-import zingg.common.core.hash.HashFnFromConf;
+-import zingg.common.core.hash.HashFunction;
+-import zingg.common.core.util.BaseHashUtil;
+-import org.apache.spark.sql.SparkSession;
+-import zingg.spark.core.hash.SparkHashFunctionRegistry;
+-
+-
+-public class SparkHashUtil extends BaseHashUtil<SparkSession,Dataset<Row>, Row, Column,DataType>{
+-
+-	public SparkHashUtil(SparkSession spark) {
+-		super(spark);
+-	}
+-	
+-    public HashFunction<Dataset<Row>, Row, Column,DataType> registerHashFunction(HashFnFromConf scriptArg) {
+-        HashFunction<Dataset<Row>, Row, Column,DataType> fn = new SparkHashFunctionRegistry().getFunction(scriptArg.getName());
+-
+-        SparkFnRegistrar.registerUDF1(getSessionObj(), fn.getName(), (UDF1) fn, fn.getReturnType());
+-        return fn;
+-    }
+-    
+-}
++package zingg.spark.core.util;
++
++import org.apache.spark.sql.Column;
++import org.apache.spark.sql.Dataset;
++import org.apache.spark.sql.Row;
++import org.apache.spark.sql.api.java.UDF1;
++import org.apache.spark.sql.types.DataType;
++
++import zingg.common.core.hash.HashFnFromConf;
++import zingg.common.core.hash.HashFunction;
++import zingg.common.core.util.BaseHashUtil;
++import org.apache.spark.sql.SparkSession;
++import zingg.spark.core.hash.SparkHashFunctionRegistry;
++import ai.zingg.nativebridge.NativeOperationProvider;
++
++
++public class SparkHashUtil extends BaseHashUtil<SparkSession,Dataset<Row>, Row, Column,DataType>{
++
++	public SparkHashUtil(SparkSession spark) {
++		super(spark);
++	}
++	
++    public HashFunction<Dataset<Row>, Row, Column,DataType> registerHashFunction(HashFnFromConf scriptArg) {
++        HashFunction<Dataset<Row>, Row, Column,DataType> fn = new SparkHashFunctionRegistry().getFunction(scriptArg.getName());
++
++        if (!NativeOperationProvider.fromSpark(getSessionObj(), "blocking.hash.registration").shouldRewrite()) {
++            SparkFnRegistrar.registerUDF1(getSessionObj(), fn.getName(), (UDF1) fn, fn.getReturnType());
++        }
++        return fn;
++    }
++    
++}

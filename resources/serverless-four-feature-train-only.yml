@@ -1,0 +1,39 @@
+resources:
+  jobs:
+    zingg_native_serverless_four_feature_train_only:
+      name: zingg-native-serverless-four-feature-train-only
+      description: Serverless-only ordinary four-feature train against the persisted fixture
+      max_concurrent_runs: 1
+      timeout_seconds: 1200
+      tasks:
+        - task_key: four_feature_train_only
+          spark_jar_task:
+            main_class_name: ai.zingg.nativebridge.launch.DatabricksZinggMainEntry
+            parameters:
+              - --delegate-main
+              - ${var.zingg_main_class}
+              - --native-mode
+              - STRICT
+              - --native-plan-guard
+              - "true"
+              - --native-model-max-iter
+              - "1"
+              - --native-model-quick-probe
+              - "true"
+              - --phase
+              - train
+              - --conf
+              - ${var.workspace_fixture_root}/config-four-feature-marked.json
+              - --zinggDir
+              - /Volumes/${var.catalog}/${var.schema}/${var.volume}/models-four-feature-marked
+              - --license
+              - ${var.license_path}
+          environment_key: serverless_env5
+      environments:
+        - environment_key: serverless_env5
+          spec:
+            environment_version: "5"
+            java_dependencies:
+              - ${var.serverless_launcher_jar}
+              - ${var.native_core_jar}
+              - ${var.zingg_patched_jar}

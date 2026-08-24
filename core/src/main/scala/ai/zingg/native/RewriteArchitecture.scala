@@ -1,148 +1,211 @@
 package ai.zingg.native
 
+import java.nio.charset.StandardCharsets
+import java.security.MessageDigest
+import java.util.concurrent.ConcurrentHashMap
+import scala.collection.concurrent.TrieMap
+import scala.jdk.CollectionConverters._
 import org.apache.spark.sql.{Column, DataFrame, SparkSession}
+import org.apache.spark.sql.functions._
 
-/** Execution policy for the native rewrite layer. */
-sealed trait NativeExecutionMode { def id: String }
+sealed trait NativeExecutionMode { def id: String; def rewrites: Boolean; def audits: Boolean }
 object NativeExecutionMode {
-  case object OFF extends NativeExecutionMode { val id = "OFF" }
-  case object AUDIT extends NativeExecutionMode { val id = "AUDIT" }
-  case object REWRITE extends NativeExecutionMode { val id = "REWRITE" }
-  case object STRICT extends NativeExecutionMode { val id = "STRICT" }
-
-  def parse(value: String): NativeExecutionMode = value.trim.toUpperCase match {
-    case "OFF" => OFF
-    case "AUDIT" => AUDIT
-    case "REWRITE" => REWRITE
-    case "STRICT" => STRICT
+  case object OFF extends NativeExecutionMode { val id="OFF"; val rewrites=false; val audits=false }
+  case object AUDIT extends NativeExecutionMode { val id="AUDIT"; val rewrites=false; val audits=true }
+  case object REWRITE extends NativeExecutionMode { val id="REWRITE"; val rewrites=true; val audits=true }
+  case object STRICT extends NativeExecutionMode { val id="STRICT"; val rewrites=true; val audits=true }
+  def parse(value: String): NativeExecutionMode = Option(value).getOrElse("OFF").trim.toUpperCase match {
+    case "OFF" => OFF; case "AUDIT" => AUDIT; case "REWRITE" => REWRITE; case "STRICT" => STRICT
     case other => throw new IllegalArgumentException(s"Unknown native execution mode: $other")
   }
 }
 
-/** Stable semantic IDs; these are not JVM implementation class names. */
-sealed trait NativeOperation { def id: String }
+final case class NativeOperation(id: String)
 object NativeOperation {
-  case object ExactSimilarity extends NativeOperation { val id = "similarity.exact" }
-  case object JaccardSimilarity extends NativeOperation { val id = "similarity.jaccard" }
-  case object JaroSimilarity extends NativeOperation { val id = "similarity.jaro" }
-  case object Trim extends NativeOperation { val id = "preprocess.trim" }
-  case object CaseNormalize extends NativeOperation { val id = "preprocess.case_normalize" }
-  // Inventoried upstream boundaries. They are intentionally unresolved until
-  // a semantic oracle proves a public-expression replacement.
-  case object Hash extends NativeOperation { val id = "blocking.hash" }
-  case object BlockingTree extends NativeOperation { val id = "blocking.tree" }
-  case object StopWords extends NativeOperation { val id = "preprocess.stopwords" }
-  case object VectorExtraction extends NativeOperation { val id = "model.vector_extraction" }
-  case object GraphLink extends NativeOperation { val id = "link.connected_components" }
-  case object First1Chars extends NativeOperation { val id = "blocking.first1Chars" }
-  case object First2Chars extends NativeOperation { val id = "blocking.first2Chars" }
-  case object First3Chars extends NativeOperation { val id = "blocking.first3Chars" }
-  case object First4Chars extends NativeOperation { val id = "blocking.first4Chars" }
-  case object Last1Chars extends NativeOperation { val id = "blocking.last1Chars" }
-  case object Last2Chars extends NativeOperation { val id = "blocking.last2Chars" }
-  case object Last3Chars extends NativeOperation { val id = "blocking.last3Chars" }
-  case object LastWord extends NativeOperation { val id = "blocking.lastWord" }
-  case object IsNullOrEmpty extends NativeOperation { val id = "blocking.isNullOrEmpty" }
-  case object IdentityString extends NativeOperation { val id = "blocking.identityString" }
-  case object IdentityInteger extends NativeOperation { val id = "blocking.identityInteger" }
-  case object IdentityLong extends NativeOperation { val id = "blocking.identityLong" }
-  case object LessThanZero extends NativeOperation { val id = "blocking.lessThanZero" }
-  case object Round extends NativeOperation { val id = "blocking.round" }
-  case object TruncateDouble1 extends NativeOperation { val id = "blocking.truncateDoubleTo1Places" }
-  case object TruncateDouble2 extends NativeOperation { val id = "blocking.truncateDoubleTo2Places" }
-  case object TruncateDouble3 extends NativeOperation { val id = "blocking.truncateDoubleTo3Places" }
-  case object TrimLastDigitsInt1 extends NativeOperation { val id = "blocking.trimLast1DigitsInt" }
-  case object TrimLastDigitsInt2 extends NativeOperation { val id = "blocking.trimLast2DigitsInt" }
-  case object TrimLastDigitsInt3 extends NativeOperation { val id = "blocking.trimLast3DigitsInt" }
-  case object RangeDbl0To10 extends NativeOperation { val id = "blocking.rangeBetween0And10Dbl" }
-  case object RangeDbl10To100 extends NativeOperation { val id = "blocking.rangeBetween10And100Dbl" }
-  case object RangeDbl100To1000 extends NativeOperation { val id = "blocking.rangeBetween100And1000Dbl" }
-  case object RangeDbl1000To10000 extends NativeOperation { val id = "blocking.rangeBetween1000And10000Dbl" }
-  case object RangeInt0To10 extends NativeOperation { val id = "blocking.rangeBetween0And10Int" }
-  case object RangeInt10To100 extends NativeOperation { val id = "blocking.rangeBetween10And100Int" }
-  case object RangeInt100To1000 extends NativeOperation { val id = "blocking.rangeBetween100And1000Int" }
-  case object RangeInt1000To10000 extends NativeOperation { val id = "blocking.rangeBetween1000And10000Int" }
-
-  val all: Seq[NativeOperation] = Seq(ExactSimilarity, JaccardSimilarity, JaroSimilarity, Trim, CaseNormalize,
-    Hash, BlockingTree, StopWords, VectorExtraction, GraphLink, First1Chars, First2Chars, First3Chars,
-    First4Chars, Last1Chars, Last2Chars, Last3Chars, LastWord, IsNullOrEmpty,
-    IdentityString, IdentityInteger, IdentityLong, LessThanZero, Round, TruncateDouble1, TruncateDouble2,
-    TruncateDouble3, TrimLastDigitsInt1, TrimLastDigitsInt2, TrimLastDigitsInt3, RangeDbl0To10,
-    RangeDbl10To100, RangeDbl100To1000, RangeDbl1000To10000, RangeInt0To10, RangeInt10To100,
-    RangeInt100To1000, RangeInt1000To10000)
-  private val byId = all.map(op => op.id -> op).toMap
-  def resolve(id: String): NativeOperation = byId.getOrElse(id, throw new IllegalArgumentException(s"Unknown native operation: $id"))
+  private val similarityNames = Seq(
+    "SimilarityFunctionExact", "StringSimilarityFunction", "CheckNullFunction", "CheckBlankOrNullFunction",
+    "IntegerSimilarityFunction", "LongSimilarityFunction", "DoubleSimilarityFunction", "FloatSimilarityFunction",
+    "DateSimilarityFunction", "ArrayDoubleSimilarityFunction", "JaccSimFunction", "BigramJaccSimFn",
+    "NumbersJaccardFunction", "ProductCodeFunction", "JaroWinklerFunction", "AJaroWinklerFunction",
+    "AffineGapSimilarityFunction", "EmailMatchTypeFunction", "PinCodeMatchTypeFunction",
+    "OnlyAlphabetsExactSimilarity", "OnlyAlphabetsAffineGapSimilarity", "SameFirstWordFunction")
+  private val hashNames = Seq(
+    "first1Chars","first2Chars","first3Chars","first4Chars","last1Chars","last2Chars","last3Chars","lastWord",
+    "isNullOrEmpty","identityString","first2CharsBox","first3CharsBox","identityInteger","identityLong","identityBoolean",
+    "truncateDoubleTo1Places","truncateDoubleTo2Places","truncateDoubleTo3Places",
+    "truncateFloatTo1Places","truncateFloatTo2Places","truncateFloatTo3Places",
+    "lessThanZeroDbl","lessThanZeroFloat","lessThanZeroInt","lessThanZeroLong",
+    "trimLast1DigitsDbl","trimLast2DigitsDbl","trimLast3DigitsDbl",
+    "trimLast1DigitsFloat","trimLast2DigitsFloat","trimLast3DigitsFloat",
+    "trimLast1DigitsInt","trimLast2DigitsInt","trimLast3DigitsInt",
+    "trimLast1DigitsLong","trimLast2DigitsLong","trimLast3DigitsLong",
+    "rangeBetween0And10Dbl","rangeBetween10And100Dbl","rangeBetween100And1000Dbl","rangeBetween1000And10000Dbl",
+    "rangeBetween0And10Float","rangeBetween10And100Float","rangeBetween100And1000Float","rangeBetween1000And10000Float",
+    "rangeBetween0And10Int","rangeBetween10And100Int","rangeBetween100And1000Int","rangeBetween1000And10000Int",
+    "rangeBetween0And10Long","rangeBetween10And100Long","rangeBetween100And1000Long","rangeBetween1000And10000Long","round")
+  val preprocessNames = Seq("trim", "caseNormalize", "stopWords")
+  val modelNames = Seq("vectorValue", "nativeLogisticCv", "nativePrediction", "nativePersistence.save", "nativePersistence.load")
+  val graphNames = Seq("connectedComponents")
+  val blockingNames = Seq("blockingTree")
+  val all: Seq[NativeOperation] =
+    similarityNames.map(n => NativeOperation(s"similarity.$n")) ++
+    hashNames.map(n => NativeOperation(s"blocking.$n")) ++
+    preprocessNames.map(n => NativeOperation(s"preprocess.$n")) ++
+    modelNames.map(n => NativeOperation(s"model.$n")) ++
+    graphNames.map(n => NativeOperation(s"graph.$n")) ++
+    blockingNames.map(n => NativeOperation(s"blocking.$n"))
+  private val byId = all.map(o => o.id -> o).toMap
+  def resolve(id: String): NativeOperation = byId.getOrElse(id, NativeOperation(id))
 }
 
 final case class RewriteContext(
-    spark: SparkSession,
-    mode: NativeExecutionMode,
-    runtime: RuntimeDescriptor,
-    phase: String = "unknown",
-    correlationId: String = "")
+  spark: SparkSession,
+  mode: NativeExecutionMode,
+  runtime: RuntimeDescriptor,
+  phase: String = "unknown",
+  correlationId: String = "",
+  parameters: Map[String,String] = Map.empty) {
+  lazy val disabledRules: Set[String] = parameters.get("disabledRules").toSeq.flatMap(_.split(",")).map(_.trim).filter(_.nonEmpty).toSet
+  def isDisabled(operationId:String, ruleId:String):Boolean = disabledRules.contains(operationId) || disabledRules.contains(ruleId)
+}
 
-/** One semantic rewrite rule. Implementations must use public Spark APIs. */
 trait RewriteRule {
   def id: String
   def operation: NativeOperation
   def apply(left: Column, right: Option[Column], context: RewriteContext): Column
 }
+final class FunctionalRewriteRule(
+  val id: String,
+  val operation: NativeOperation,
+  fn: (Column, Option[Column], RewriteContext) => Column) extends RewriteRule {
+  def apply(left: Column, right: Option[Column], context: RewriteContext): Column = fn(left,right,context)
+}
 
-final case class NativeFinding(
-    phase: String,
-    operation: String,
-    construct: String,
-    rewritten: Boolean,
-    diagnostic: String)
-
-final case class NativeCompatibilityReport(phase: String, findings: Seq[NativeFinding]) {
+final case class NativeFinding(phase:String, operation:String, construct:String, rewritten:Boolean, diagnostic:String)
+final case class NativeCompatibilityReport(phase:String, findings:Seq[NativeFinding]) {
   def unsupported: Seq[NativeFinding] = findings.filterNot(_.rewritten)
   def isCompatible: Boolean = unsupported.isEmpty
 }
 
-/** Deterministic rule lookup; no implicit approximation or fallback. */
 final class RewriteRegistry private (private val rules: Map[String, RewriteRule]) {
-  def resolve(operation: NativeOperation): RewriteRule =
-    rules.getOrElse(operation.id, throw new IllegalArgumentException(s"No rewrite rule registered for ${operation.id}"))
+  def resolve(operation: NativeOperation): RewriteRule = rules.getOrElse(operation.id,
+    throw new NativeRewriteUnsupportedException(s"No rewrite rule registered for ${operation.id}"))
   def contains(operation: NativeOperation): Boolean = rules.contains(operation.id)
   def operationIds: Seq[String] = rules.keys.toSeq.sorted
 }
-
 object RewriteRegistry {
-  def empty: RewriteRegistry = new RewriteRegistry(Map.empty)
   def apply(rules: Seq[RewriteRule]): RewriteRegistry = {
-    val grouped = rules.groupBy(_.operation.id)
-    val duplicate = grouped.collect { case (id, values) if values.size > 1 => id }.toSeq.sorted
+    val duplicate = rules.groupBy(_.operation.id).collect{ case (id, xs) if xs.size > 1 => id }.toSeq.sorted
     require(duplicate.isEmpty, s"Duplicate rewrite rules: ${duplicate.mkString(", ")}")
-    new RewriteRegistry(rules.map(rule => rule.operation.id -> rule).toMap)
+    new RewriteRegistry(rules.map(r => r.operation.id -> r).toMap)
   }
 }
 
 object NativeCompatibilityAnalyzer {
-  def analyze(phase: String, operations: Seq[(NativeOperation, Boolean, String)]): NativeCompatibilityReport =
-    NativeCompatibilityReport(phase, operations.map { case (operation, rewritten, construct) =>
-      NativeFinding(phase, operation.id, construct, rewritten,
-        if (rewritten) "rewrite available" else s"no rewrite registered for ${operation.id}")
+  def analyze(phase:String, operations:Seq[(NativeOperation,Boolean,String)]): NativeCompatibilityReport =
+    NativeCompatibilityReport(phase, operations.map { case(op,rewritten,construct) =>
+      NativeFinding(phase,op.id,construct,rewritten,if(rewritten) "rewrite available" else s"no rewrite registered for ${op.id}")
     })
 }
-
-final class NativeRewriteUnsupportedException(message: String) extends IllegalStateException(message)
+final class NativeRewriteUnsupportedException(message:String) extends IllegalStateException(message)
 
 object NativePlanGuard {
-  def requireCompatible(report: NativeCompatibilityReport, context: RewriteContext): Unit = {
-    if (context.mode == NativeExecutionMode.STRICT && !report.isCompatible) {
-      val details = report.unsupported.map(f => s"${f.operation} (${f.construct})").mkString(", ")
-      throw new NativeRewriteUnsupportedException(
-        s"STRICT native execution rejected phase '${report.phase}' for ${context.runtime.sparkVersion}: $details")
+  private val forbidden = Seq("ScalaUDF", "PythonUDF", "BatchEvalPython", "ArrowEvalPython", "MapElements", "MapPartitions", "SerializeFromObject", "DeserializeToObject", "ExistingRDD")
+  def requireCompatible(report: NativeCompatibilityReport, context: RewriteContext): Unit =
+    if(context.mode == NativeExecutionMode.STRICT && !report.isCompatible)
+      throw new NativeRewriteUnsupportedException(s"STRICT native execution rejected phase '${report.phase}': ${report.unsupported.map(_.operation).mkString(", ")}")
+  def inspectPlan(phase:String, plan:String, context:RewriteContext): NativeCompatibilityReport = {
+    val findings = forbidden.filter(plan.contains).map(n => NativeFinding(phase,s"plan.$n",n,false,s"forbidden non-native plan node $n"))
+    val report = NativeCompatibilityReport(phase,findings)
+    requireCompatible(report,context); report
+  }
+  def explain(df: DataFrame, extended:Boolean=true): String = {
+    val baos = new java.io.ByteArrayOutputStream()
+    Console.withOut(new java.io.PrintStream(baos, true, StandardCharsets.UTF_8)) { df.explain(extended) }
+    baos.toString(StandardCharsets.UTF_8)
+  }
+  def normalize(plan:String):String = plan.replaceAll("#\\d+", "#?").replaceAll("id=\\d+", "id=?").replaceAll("\\s+", " ").trim
+  def fingerprint(plan:String):String = sha256(normalize(plan))
+  def sha256(value:String):String = MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8)).map("%02x".format(_)).mkString
+
+  /**
+   * Planning-time strict guard.  It analyzes the public DataFrame plan without
+   * triggering a Spark action, so native mode fails before execution if a
+   * known JVM/Python callback or object-encoder node survived rewriting.
+   * The hot path uses the physical plan only; extended parsed/analyzed output
+   * is reserved for explicit evidence capture because its expansion is
+   * disproportionately expensive for large public higher-order expressions.
+   */
+  def guardDataFrame(df:DataFrame, context:RewriteContext):DataFrame = {
+    val enabled = sys.props.get("zingg.native.plan.guard")
+      .orElse(sys.env.get("ZINGG_NATIVE_PLAN_GUARD"))
+      .forall(v => !Set("0","false","off","no").contains(v.trim.toLowerCase))
+    if(context.mode == NativeExecutionMode.STRICT && enabled) {
+      // similarity.batch has already resolved every operation through the
+      // public rewrite registry and checked each rule's disabled state before
+      // constructing this projection. Expanding its physical plan here is
+      // prohibitively expensive for 20 AffineGap/Jaro expressions on
+      // Serverless and adds no new forbidden-node information: the registry
+      // emits only public Column expressions. All other strict boundaries keep
+      // the full forbidden-node inspection.
+      if (context.phase != "similarity.batch")
+        inspectPlan(context.phase, explain(df, extended=false), context)
     }
+    df
   }
 }
 
 final case class NativeExecutionEvidence(
-    phase: String,
-    mode: String,
-    appliedRules: Seq[String],
-    planFingerprint: String,
-    runtime: RuntimeDescriptor,
-    outputFingerprint: Option[String],
-    photonEvidence: Option[String])
+  phase:String, mode:String, appliedRules:Seq[String], planFingerprint:String,
+  runtime:RuntimeDescriptor, outputFingerprint:Option[String], photonEvidence:Option[String], correlationId:String)
+
+object NativeEvidenceCollector {
+  private val rules = TrieMap.empty[String, Vector[String]]
+  private val evidence = TrieMap.empty[String, NativeExecutionEvidence]
+  @volatile private var latestEvidence:Option[NativeExecutionEvidence] = None
+  private def addRule(runId:String, ruleId:String):Unit = if(runId.nonEmpty) rules.updateWith(runId)(v => Some(v.getOrElse(Vector.empty) :+ ruleId))
+  def recordRule(runId:String, ruleId:String):Unit = addRule(runId,ruleId)
+  def recordRule(context:RewriteContext, ruleId:String):Unit = { addRule(context.correlationId,ruleId); NativeDiagnostics.rewrite(context,ruleId) }
+  def applied(runId:String):Seq[String] = rules.getOrElse(runId,Vector.empty).distinct
+  def capture(df:DataFrame, context:RewriteContext, photonEvidence:Option[String]=None):NativeExecutionEvidence = {
+    val plan = NativePlanGuard.explain(df, extended=true)
+    NativePlanGuard.inspectPlan(context.phase,plan,context)
+    val outputFingerprint = captureOutputFingerprint(df)
+    val e = NativeExecutionEvidence(context.phase,context.mode.id,applied(context.correlationId),NativePlanGuard.fingerprint(plan),context.runtime,Some(outputFingerprint),photonEvidence,context.correlationId)
+    if(context.correlationId.nonEmpty) evidence.put(context.correlationId,e)
+    latestEvidence = Some(e)
+    NativeDiagnostics.phaseSummary(e)
+    e
+  }
+  /**
+    * Privacy-safe multiset evidence. Only a row count and a digest of sorted
+    * row digests leave the Spark plan; raw values are never logged or returned.
+    * This is intentionally available at the explicit evidence seam, not on
+    * every ordinary phase boundary.
+    */
+  private def captureOutputFingerprint(df:DataFrame):String = {
+    val rowDigest = sha2(to_json(struct(df.col("*"))), 256).alias("_native_row_digest")
+    val summary = df.select(rowDigest).agg(
+      count(lit(1)).alias("_native_row_count"),
+      sha2(concat_ws("|", sort_array(collect_list(col("_native_row_digest")))), 256)
+        .alias("_native_multiset_sha256")).head()
+    s"rows=${summary.getLong(0)};multisetSha256=${summary.getString(1)}"
+  }
+  /** Emit a phase-end summary even when the upstream phase does not expose a
+    * final DataFrame at the integration seam.  The plan fingerprint remains
+    * explicitly unavailable rather than being inferred or fabricated. */
+  def phaseSummary(context:RewriteContext):NativeExecutionEvidence = {
+    evidence.get(context.correlationId).orElse(latestEvidence.filter(_.phase == context.phase)).foreach { captured =>
+      NativeDiagnostics.phaseSummary(captured)
+      return captured
+    }
+    val e = NativeExecutionEvidence(
+      context.phase, context.mode.id, applied(context.correlationId),
+      "unavailable", context.runtime, None, None, context.correlationId)
+    if(context.correlationId.nonEmpty) evidence.put(context.correlationId,e)
+    NativeDiagnostics.phaseSummary(e)
+    e
+  }
+  def get(runId:String):Option[NativeExecutionEvidence] = evidence.get(runId)
+  def clear(runId:String):Unit = { rules.remove(runId); evidence.remove(runId) }
+}

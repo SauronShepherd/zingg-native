@@ -1,0 +1,29 @@
+resources:
+  jobs:
+    zingg_native_serverless_model_semantic_probe:
+      name: zingg-native-serverless-model-semantic-probe
+      description: Serverless bounded degree-three model metadata and prediction contract probe
+      max_concurrent_runs: 1
+      timeout_seconds: 600
+      tasks:
+        - task_key: semantic_model
+          spark_jar_task:
+            main_class_name: ai.zingg.nativebridge.launch.DatabricksZinggMainEntry
+            parameters:
+              - --native-model-probe
+              - --native-model-probe-features
+              - "2"
+              - --native-model-max-iter
+              - "1"
+              - --native-model-bounded-probe
+              - --native-mode
+              - STRICT
+          environment_key: serverless_env5
+      environments:
+        - environment_key: serverless_env5
+          spec:
+            environment_version: "5"
+            java_dependencies:
+              - ${var.serverless_launcher_jar}
+              - ${var.native_core_jar}
+              - ${var.zingg_patched_jar}

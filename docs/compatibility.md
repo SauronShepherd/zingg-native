@@ -1,17 +1,17 @@
-# Compatibility
+# Compatibility matrix
 
-**Status: architecture remediation in progress — not release ready.**
+| Target | Production path | Source status |
+|---|---|---|
+| Databricks Dedicated + Photon | patched Zingg JVM + shared public-expression core | implemented-unvalidated |
+| Databricks Serverless | DatabricksSession bootstrap + patched Zingg + same core | runtime-validated; Photon participation evidenced, operator attribution unverified |
+| Spark 4.0 / Scala 2.13 | `spark40` / Dedicated 17.3 profile | implemented-unvalidated |
+| Spark 4.1 / Scala 2.13 | `spark41` / Dedicated 18 profile | implemented-unvalidated |
+| custom Connect planner plugin | archived reference only | not a production dependency |
 
-| Runtime / transport | Exact | Jaccard | Jaro | Evidence |
-|---|---:|---:|---:|---|
-| Local Spark 4.0 Classic + Scala core JAR | PASS | PASS | PASS | Real Py4J execution; Jaro matches SecondString vectors |
-| Databricks Dedicated + Photon | REQUIRED / OPEN | REQUIRED / OPEN | REQUIRED / OPEN | Real Photon E2E not yet captured |
-| Databricks Serverless public-API JAR path | REQUIRED / OPEN | REQUIRED / OPEN | REQUIRED / OPEN | Historical shared-core slice exists; full Zingg/native evidence pending |
-| Databricks Serverless JAR task / shared Scala core | PASS (Exact + Jaccard + Jaro + preprocessing + 3 phases + UC-volume persistence) | NOT TESTED | NOT TESTED | Real job `295665184144562`, run `847651604040137`, Spark 4.1.0; plugin loading not proven |
-| Databricks Serverless Asset Bundle / shared Scala core | PASS (similarities + preprocessing + pair expansion + phase subset + UC-volume persistence) | NOT TESTED | NOT TESTED | Bundle job `190949869955356`, run `807529510025681`, task `889856143647722`, Spark 4.1.0; plugin loading not proven |
-| Self-managed Spark Connect 4.1 | PASS | PASS | OPEN | Exact, Jaccard, TRIM, and CASE_NORMALIZE executed through local Spark 4.1 plugin; Jaro and phase operations remain open |
-| Fabric Runtime 2 / Gluten+Velox | DEFERRED | DEFERRED | DEFERRED | Outside current scope |
-
-The previous Serverless wheel-only runs are retained as prototype expression
-feasibility evidence. They do not validate this repository's shared Scala core
-or Connect server plugin and are not support evidence.
+The semantic baseline is pinned Zingg 0.7.0. Databricks-only runtime validation
+has covered Serverless `findTrainingData`, bounded and full-shape native
+training, native persistence, cross-job reload, a strict fail-closed negative
+case, and Photon participation via nonzero `photon_total_time_ms` on
+job-linked queries. Semantic parity, operator-level Photon attribution, and
+Dedicated execution remain unvalidated because the current workspace rejects
+Dedicated compute.

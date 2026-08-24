@@ -1,0 +1,23 @@
+resources:
+  jobs:
+    zingg_native_serverless_date_array_differential_probe:
+      name: zingg-native-serverless-date-array-differential-probe
+      description: STRICT date and array similarity differential against pinned Zingg 0.7 classes.
+      timeout_seconds: 300
+      tasks:
+        - task_key: date_array_differential
+          spark_jar_task:
+            main_class_name: ai.zingg.nativebridge.launch.DatabricksZinggMainEntry
+            parameters:
+              - --native-mode
+              - STRICT
+              - --native-date-array-differential-probe
+          environment_key: serverless_env5
+      environments:
+        - environment_key: serverless_env5
+          spec:
+            environment_version: "5"
+            java_dependencies:
+              - ${var.serverless_launcher_jar}
+              - ${var.native_core_jar}
+              - ${var.zingg_patched_jar}

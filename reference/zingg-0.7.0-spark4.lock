@@ -1,0 +1,15 @@
+project=zingg
+version=0.7.0
+sourceCheckout=reference/upstream-zingg materialized from the immutable Zingg 0.7.0 tag checkout
+branch=detached-v0.7.0
+commit=21f54e9b4693d49d6f26b2851853b140951a7502
+referenceTreeDigest=c203e5e74995e97b9b38c5523c94c3b19742ef5dd96376e944ee52cc705e3272
+overlayTreeDigest=eda6896b9924e4b6c4e29fcb05c76d8c8cbe96377d70171fe2755e6e06f9c5ff
+sourceContext=pristine-reference-plus-pinned-overlay
+sparkProfile=databricks-serverless-env5
+sparkVersion=4.1.0
+scalaVersion=2.13.16
+javaRelease=17
+overlay=integration/zingg-0.7.0-overlay
+buildArtifact=assembly/target/zingg-0.7.0.jar
+mainClass=zingg.spark.client.SparkClient

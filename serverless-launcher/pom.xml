@@ -1,0 +1,57 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>ai.zingg</groupId>
+    <artifactId>zingg-native-parent</artifactId>
+    <version>0.3.0-SNAPSHOT</version>
+  </parent>
+  <artifactId>zingg-native-serverless-launcher_2.13</artifactId>
+
+  <!--
+    Serverless JAR entrypoint only. Databricks Connect supplies Spark APIs;
+    neither Spark nor Databricks Connect is packaged into the application JAR.
+  -->
+  <dependencies>
+    <dependency>
+      <groupId>ai.zingg</groupId>
+      <artifactId>zingg-native-core_2.13</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala-library</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.databricks</groupId>
+      <artifactId>databricks-connect_2.13</artifactId>
+      <scope>provided</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>com.databricks</groupId>
+          <artifactId>databricks-dbutils-scala_2.13</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>net.alchim31.maven</groupId>
+        <artifactId>scala-maven-plugin</artifactId>
+        <version>4.9.2</version>
+        <configuration>
+          <scalaVersion>${scala.version}</scalaVersion>
+          <args>
+            <arg>-release</arg><arg>17</arg>
+            <arg>-deprecation</arg><arg>-feature</arg><arg>-unchecked</arg>
+          </args>
+        </configuration>
+        <executions>
+          <execution><goals><goal>compile</goal><goal>testCompile</goal></goals></execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

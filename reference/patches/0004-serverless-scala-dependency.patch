@@ -1,0 +1,6 @@
+diff --git a/pom.xml b/pom.xml
+--- a/pom.xml
++++ b/pom.xml
+@@ -166,1 +166,1 @@
+-            <artifactId>jackson-module-scala_2.12</artifactId>
++            <artifactId>jackson-module-scala_2.13</artifactId>

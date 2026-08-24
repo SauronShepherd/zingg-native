@@ -1,19 +1,5 @@
-# Dedicated Photon E2E runbook
+# Dedicated Photon runbook skeleton
 
-The Asset Bundle defines `zingg_native_dedicated_photon_e2e` as the Dedicated
-Photon execution gate. It uses Spark 15.4 with Scala 2.13 and Photon, and
-stores output under the configured Unity Catalog Volume.
+Use `resources/dedicated-photon-zingg-native.yml` through the Asset Bundle after building/uploading the native-core and patched-Zingg JARs and supplying the real Zingg main class/arguments.
 
-Run it with:
-
-```powershell
-databricks bundle validate -t sda
-databricks bundle deploy -t sda
-databricks bundle run -t sda zingg_native_dedicated_photon_e2e
-```
-
-After a successful run, populate `docs/evidence/photon-evidence.template.json`
-from the Databricks run and query-profile/plan evidence. A successful JAR
-completion alone is not Photon evidence. The evidence must identify the
-workspace, job, run, task, runtime, profile, native rewrites, and zero
-fallbacks for claimed operations.
+The current `sda` workspace rejects Dedicated/job-cluster compute with `Only serverless compute is supported in the workspace.` This is recorded as an environment blocker in [docs/evidence/databricks-serverless-v5.json](evidence/databricks-serverless-v5.json); it is not Dedicated Photon certification.

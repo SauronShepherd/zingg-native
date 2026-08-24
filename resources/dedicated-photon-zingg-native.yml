@@ -1,0 +1,27 @@
+resources:
+  jobs:
+    zingg_native_dedicated_photon:
+      name: zingg-native-dedicated-photon
+      description: Real Zingg 0.7.0 execution through the native adapter on Dedicated Photon
+      max_concurrent_runs: 1
+      job_clusters:
+        - job_cluster_key: photon
+          new_cluster:
+            spark_version: ${var.dedicated_spark_version}
+            runtime_engine: PHOTON
+            node_type_id: ${var.dedicated_node_type}
+            num_workers: 1
+            spark_conf:
+              spark.driver.extraJavaOptions: >-
+                -Dzingg.native.mode=STRICT
+                -Dzingg.native.plan.guard=true
+                -Dzingg.native.platform=databricks-dedicated
+                -Dzingg.native.transport=py4j
+      tasks:
+        - task_key: zingg_dedicated_photon
+          spark_jar_task:
+            main_class_name: ${var.zingg_main_class}
+          job_cluster_key: photon
+          libraries:
+            - jar: ${var.native_core_jar}
+            - jar: ${var.zingg_patched_jar}

@@ -1,0 +1,23 @@
+resources:
+  jobs:
+    zingg_native_serverless_row_id_probe:
+      name: zingg-native-serverless-row-id-probe
+      description: Serverless opaque row-ID uniqueness and association contract probe
+      max_concurrent_runs: 1
+      tasks:
+        - task_key: row_id_contract
+          spark_jar_task:
+            main_class_name: ai.zingg.nativebridge.launch.DatabricksZinggMainEntry
+            parameters:
+              - --native-mode
+              - STRICT
+              - --native-row-id-probe
+          environment_key: serverless_env5
+      environments:
+        - environment_key: serverless_env5
+          spec:
+            environment_version: "5"
+            java_dependencies:
+              - ${var.serverless_launcher_jar}
+              - ${var.native_core_jar}
+              - ${var.zingg_patched_jar}

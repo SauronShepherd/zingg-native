@@ -1,0 +1,38 @@
+resources:
+  jobs:
+    zingg_native_serverless_one_fuzzy_probe:
+      name: zingg-native-serverless-one-fuzzy-probe
+      description: Bounded Serverless probe for one fuzzy field; records Jaro/affine action boundary
+      max_concurrent_runs: 1
+      timeout_seconds: 600
+      tasks:
+        - task_key: one_fuzzy_train
+          spark_jar_task:
+            main_class_name: ai.zingg.nativebridge.launch.DatabricksZinggMainEntry
+            parameters:
+              - --delegate-main
+              - ${var.zingg_main_class}
+              - --native-mode
+              - STRICT
+              - --native-plan-guard
+              - "true"
+              - --native-model-max-iter
+              - "1"
+              - --native-model-bounded-probe
+              - --phase
+              - train
+              - --conf
+              - ${var.workspace_fixture_root}/config-one-fuzzy.json
+              - --zinggDir
+              - /Volumes/${var.catalog}/${var.schema}/${var.volume}/models-four-feature-marked
+              - --license
+              - ${var.license_path}
+          environment_key: serverless_env5
+      environments:
+        - environment_key: serverless_env5
+          spec:
+            environment_version: "5"
+            java_dependencies:
+              - ${var.serverless_launcher_jar}
+              - ${var.native_core_jar}
+              - ${var.zingg_patched_jar}

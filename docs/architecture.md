@@ -1,19 +1,22 @@
 # Architecture
 
-The remediation target is a Python API over one Scala 2.13 Spark core:
+`zingg-native` is a thin execution adapter around the real Zingg 0.7.0 Spark implementation. It does not replace Zingg phases, candidate generation, labeling, or user-facing model orchestration. It does replace Spark-hostile execution boundaries inside the model stage and writes a versioned native model sidecar in native mode.
 
 ```text
-Python facade -> ClassicBackend -> Py4J -> core JAR -> Spark SQL expressions
-Python facade -> ConnectBackend -> Connect server plugin -> same core JAR
+real Zingg operation
+  -> patched Spark choke point
+  -> NativeOperationProvider
+  -> semantic RewriteRegistry
+  -> public Spark SQL/DataFrame expression
+  -> Spark planner/runtime
+  -> STRICT plan guard + evidence hooks
 ```
 
-The core currently contains the certified Exact, Jaccard, and Jaro expression
-implementations and a Java/Py4J-friendly `ClassicGateway`. The Connect module
-contains the Spark 4.1 `ExpressionPlugin` entry point and versioned protocol
-schema. Exact, Jaccard, TRIM, and CASE_NORMALIZE payloads have self-managed
-Spark Connect execution evidence; Connect Jaro and Connect phase operations
-remain open.
+The overlay intercepts before the original UDF, typed `Dataset.map`, GraphFrames-specific operation, or Spark-ML estimator training boundary is emitted. Therefore the production implementation does not need to mutate Catalyst plans. The semantic operation is known at the Zingg boundary and is rebuilt directly with public Spark expressions.
 
-The old Python expression path is available only with `backend="expressions"`
-for comparison. It is not the production transport and is not Databricks
-architecture evidence.
+`OFF` preserves upstream execution, `AUDIT` records legacy constructs without rewriting, `REWRITE` applies known rules, and `STRICT` applies rules and rejects unknown/disabled operations or forbidden callback/object-encoder plan nodes. `STRICT` is the production default.
+
+Dedicated and Serverless share the exact same registry. Dedicated runs the patched Zingg JVM application directly. Serverless uses a small `DatabricksSession` bootstrap and then delegates to the real Zingg main class. The historical custom Spark Connect planner plugin is archived under `reference/legacy-connect-plugin/` and is not a production dependency.
+
+
+Model training follows the same rule: upstream Zingg creates the similarity features, then `SparkModel` delegates the assembler/polynomial/logistic-CV boundary to `NativeModelEngine`, which uses public DataFrame expressions/aggregates and versioned persistence. Existing legacy models can be converted on Dedicated/local Spark without changing Zingg application code.

@@ -5,7 +5,6 @@ $allowed = @(
   (Join-Path $pythonRoot 'backend\classic.py'),
   (Join-Path $pythonRoot 'backend\connect.py')
 )
-
 $violations = @()
 Get-ChildItem -Path $pythonRoot -Recurse -Filter '*.py' | ForEach-Object {
   $path = $_.FullName
@@ -14,14 +13,5 @@ Get-ChildItem -Path $pythonRoot -Recurse -Filter '*.py' | ForEach-Object {
     $violations += "${path}: private JVM handle found outside an approved transport"
   }
 }
-
-if ($violations.Count -gt 0) {
-  throw ($violations -join [Environment]::NewLine)
-}
-
-$similarity = Join-Path $pythonRoot 'similarity.py'
-if ((Get-Content -Raw $similarity) -notmatch 'Deprecated Python comparison prototypes') {
-  throw 'python/src/zingg_native/similarity.py must remain explicitly marked as a comparison prototype.'
-}
-
+if ($violations.Count -gt 0) { throw ($violations -join [Environment]::NewLine) }
 Write-Output 'Architecture boundary checks passed.'

@@ -1,44 +1,10 @@
-# Upstream `train` contract
+# Upstream train contract
 
-The pinned Zingg 0.7.0 source (`reference/upstream-zingg`, commit recorded in
-`reference/zingg-0.7.0.lock`) shows that `SparkTrainer` is not a threshold
-calculation over a labeled relation.
+Training remains orchestrated by upstream Zingg 0.7.0. In native mode, the
+adapter replaces the Spark-specific model execution boundary (assembler,
+polynomial expansion, logistic/CV fitting, prediction, and persistence) with
+the public-DataFrame native model engine; it does not replace Zingg's training
+phase contract, feature definitions, training-evidence rules, or model
+orchestration.
 
-The executor contract is:
-
-1. Read persisted training data and preprocess it.
-2. Self-join by `z_cluster` and split pairs by `z_isMatch`.
-3. Require at least five positive and five negative pairs.
-4. Build a blocking tree from the test-data sample and positive pairs.
-5. Persist the blocking tree.
-6. Create a configured `Model`, fit it on positive and negative feature rows,
-   and persist the learned model.
-
-The model and blocking-tree artifacts are therefore part of the public phase
-contract. A native implementation cannot substitute a scalar threshold or a
-Python dictionary and claim Zingg parity. The shared-core implementation must
-first define versioned, transport-independent model and blocking artifact
-schemas, then provide declarative Spark feature construction and persistence.
-
-The shared core now defines versioned `ModelArtifact` and
-`BlockingTreeArtifact` contracts in `Artifacts.scala`. Their schema versions
-are also exposed by the capability manifest; these contracts are validated but
-do not persist or fit a model. The Classic gateway exposes the same schema
-versions for Py4J compatibility checks.
-
-`Core.buildTrainingPairs` now implements the declarative self-join prerequisite
-for labeled records, and `Core.inspectTrainingEvidence` plus the Classic
-gateway provide deterministic counts of positive and negative `z_isMatch`
-rows. `TrainingEvidence.isSufficient` enforces the upstream five/five minimum.
-This is still a prerequisite, not the complete trainer; no blocking-tree
-learning or production model fitting is performed yet.
-
-`ExperimentalModelTrainer.fit` now provides a Spark ML logistic-regression fit
-over caller-supplied feature columns and persists the model to a caller-
-supplied path. It is intentionally experimental: it does not learn the
-upstream blocking tree or perform Zingg preprocessing, and is not exposed by
-the SAFE Python facade.
-
-Current status: `train` remains unsupported in the SAFE API. The old Python
-threshold model is retained only behind the explicitly selected prototype
-backend and is not evidence of upstream parity.
+The execution substitutions reached during training are handled at the shared Spark boundaries: feature similarities, blocking hashes/tree application, stop-word preprocessing, and vector extraction. This preserves the real Zingg training contract rather than introducing a second trainer.

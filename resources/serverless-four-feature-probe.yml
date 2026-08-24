@@ -1,0 +1,48 @@
+resources:
+  jobs:
+    zingg_native_serverless_four_feature_probe:
+      name: zingg-native-serverless-four-feature-probe
+      description: Serverless ordinary Zingg train probe for the materialized higher-order term path
+      max_concurrent_runs: 1
+      timeout_seconds: 1200
+      tasks:
+        - task_key: prepare_four_feature_fixture
+          spark_python_task:
+            python_file: ${var.workspace_fixture_root}/databricks-copy-four-feature-fixture.py
+          environment_key: serverless_env5_python
+        - task_key: four_feature_train
+          depends_on:
+            - task_key: prepare_four_feature_fixture
+          spark_jar_task:
+            main_class_name: ai.zingg.nativebridge.launch.DatabricksZinggMainEntry
+            parameters:
+              - --delegate-main
+              - ${var.zingg_main_class}
+              - --native-mode
+              - STRICT
+              - --native-plan-guard
+              - "true"
+              - --native-model-max-iter
+              - "1"
+              - --native-model-quick-probe
+              - "true"
+              - --phase
+              - train
+              - --conf
+              - ${var.workspace_fixture_root}/config-four-feature-marked.json
+              - --zinggDir
+              - /Volumes/${var.catalog}/${var.schema}/${var.volume}/models-four-feature-marked
+              - --license
+              - ${var.license_path}
+          environment_key: serverless_env5
+      environments:
+        - environment_key: serverless_env5_python
+          spec:
+            environment_version: "5"
+        - environment_key: serverless_env5
+          spec:
+            environment_version: "5"
+            java_dependencies:
+              - ${var.serverless_launcher_jar}
+              - ${var.native_core_jar}
+              - ${var.zingg_patched_jar}

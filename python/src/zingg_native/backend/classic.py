@@ -1,79 +1,57 @@
-"""Classic/Py4J transport for the shared Scala core."""
-
+"""Classic/Py4J transport for the shared public-expression rewrite registry."""
+from __future__ import annotations
 from typing import Any
 
 from ..errors import BackendUnavailableError
 
 
+def set_native_properties(spark: Any, mode: str, disabled_rules: tuple[str, ...] | list[str], run_id: str | None = None) -> None:
+    """Set native policy on the Classic JVM transport when it is available."""
+    system = spark._jvm.java.lang.System
+    system.setProperty("zingg.native.mode", mode)
+    system.setProperty("zingg.native.disabled.rules", ",".join(disabled_rules))
+    if run_id:
+        system.setProperty("zingg.native.run.id", run_id)
+
+
 class ClassicBackend:
     name = "classic-py4j"
     expected_protocol = "1"
-    expected_library_prefix = "0.2.0"
+    expected_library_prefix = "0.3.0"
 
     def __init__(self, spark: Any):
         self.spark = spark
         try:
             gateway = spark._jvm.ai.zingg.native.gateway.ClassicGateway()
-            self._gateway = gateway
         except Exception as exc:
             raise BackendUnavailableError(
-                "The shared zingg-native Scala core is not loaded in this Spark JVM; "
-                "install the core JAR before using backend='classic'."
+                "The zingg-native Scala core is not loaded in this Spark JVM; "
+                "install the core JAR or use the patched Zingg artifact."
             ) from exc
-        protocol = str(gateway.protocolVersion())
-        if protocol != self.expected_protocol:
-            raise BackendUnavailableError(f"Unsupported zingg-native protocol: {protocol}")
-        library = str(gateway.libraryVersion())
-        if not library.startswith(self.expected_library_prefix):
-            raise BackendUnavailableError(f"Unsupported zingg-native library version: {library}")
-        spark_version = str(getattr(spark, "version", "unknown"))
-        if spark_version != "unknown" and not spark_version.startswith("4."):
-            raise BackendUnavailableError(
-                f"Unsupported Spark runtime {spark_version}; this build requires Spark 4.x"
-            )
+        self._gateway = gateway
+        if str(gateway.protocolVersion()) != self.expected_protocol:
+            raise BackendUnavailableError(f"Unsupported zingg-native protocol: {gateway.protocolVersion()}")
+        if not str(gateway.libraryVersion()).startswith(self.expected_library_prefix):
+            raise BackendUnavailableError(f"Unsupported zingg-native library version: {gateway.libraryVersion()}")
+        version = str(getattr(spark, "version", "unknown"))
+        if version != "unknown" and not version.startswith("4."):
+            raise BackendUnavailableError(f"Unsupported Spark runtime {version}; this build requires Spark 4.x")
 
     def transform(self, df: Any, operation: str, **options: Any) -> Any:
-        if operation not in {"EXACT_SIMILARITY", "JACCARD_SIMILARITY", "JARO_SIMILARITY"}:
-            raise NotImplementedError(f"Classic shared core does not certify operation {operation}")
-        jdf = self._gateway.transform(
-            df._jdf,
-            operation,
-            options["left"],
-            options["right"],
-            options.get("output", "z_score"),
-        )
+        right = options.get("right")
+        if right is None:
+            # Unary operations should use preprocess; this avoids an invented JVM null column name.
+            raise ValueError("Classic transform requires a right column; use preprocess for unary rewrites")
+        jdf = self._gateway.transform(df._jdf, operation, options["left"], right, options.get("output", "z_score"))
         from pyspark.sql import DataFrame
         return DataFrame(jdf, self.spark)
 
-    def capabilities(self) -> dict[str, Any]:
-        return {
-            "protocol_version": str(self._gateway.protocolVersion()),
-            "metadata": self._gateway.capabilityMetadata(),
-            "operations": list(self._gateway.supportedOperations()),
-            "phases": list(self._gateway.supportedPhases()),
-            "model_artifact_schema_version": int(self._gateway.modelArtifactSchemaVersion()),
-            "blocking_tree_artifact_schema_version": int(self._gateway.blockingTreeArtifactSchemaVersion()),
-        }
-
-    def find_training_data(self, df: Any, keys: list[str], id_column: str, output_path: str | None = None) -> Any:
-        if not keys:
-            raise ValueError("keys must contain at least one column")
-        java_keys = self.spark._jvm.java.util.ArrayList()
-        for key in keys:
-            java_keys.add(key)
-        jdf = self._gateway.findTrainingData(df._jdf, id_column, java_keys)
-        if output_path:
-            jdf = self._gateway.persist(jdf, output_path)
-        from pyspark.sql import DataFrame
-        return DataFrame(jdf, self.spark)
-
-    def preprocess(self, df: Any, operation: str, columns: list[str]) -> Any:
-        if not columns:
-            raise ValueError("columns must contain at least one field")
-        if operation not in {"CASE_NORMALIZE", "TRIM"}:
-            raise NotImplementedError(
-                f"Classic shared core does not certify preprocessing operation {operation}"
-            )
+    def preprocess(self, df: Any, operation: str, columns: list[str], **parameters: Any) -> Any:
+        if parameters:
+            # Stop-word patterns are normally supplied by patched Zingg directly to the JVM provider.
+            # Python Classic's tiny gateway intentionally carries no generic string parameter protocol.
+            from .base import PublicExpressionBackend
+            return PublicExpressionBackend(self.spark).preprocess(df, operation, columns, **parameters)
         java_columns = self.spark._jvm.java.util.ArrayList()
         for column in columns:
             java_columns.add(column)
@@ -81,48 +59,10 @@ class ClassicBackend:
         from pyspark.sql import DataFrame
         return DataFrame(jdf, self.spark)
 
-    def label(self, df: Any, threshold: float, output_path: str | None = None) -> Any:
-        jdf = self._gateway.label(df._jdf, float(threshold))
-        if output_path:
-            jdf = self._gateway.persist(jdf, output_path)
-        from pyspark.sql import DataFrame
-        return DataFrame(jdf, self.spark)
-
-    def build_training_pairs(self, df: Any, id_column: str) -> Any:
-        jdf = self._gateway.buildTrainingPairs(df._jdf, id_column)
-        from pyspark.sql import DataFrame
-        return DataFrame(jdf, self.spark)
-
-    def update_label(self, pairs: Any, labels: Any, output_path: str | None = None) -> Any:
-        jdf = self._gateway.updateLabel(pairs._jdf, labels._jdf)
-        if output_path:
-            jdf = self._gateway.persist(jdf, output_path)
-        from pyspark.sql import DataFrame
-        return DataFrame(jdf, self.spark)
-
-    def inspect_training_evidence(self, df: Any) -> dict[str, Any]:
-        counts = self._gateway.inspectTrainingEvidence(df._jdf)
-        positive, negative = int(counts[0]), int(counts[1])
+    def capabilities(self) -> dict[str, Any]:
         return {
-            "positive_pairs": positive,
-            "negative_pairs": negative,
-            "sufficient": positive >= 5 and negative >= 5,
+            "protocol_version": str(self._gateway.protocolVersion()),
+            "metadata": str(self._gateway.capabilityMetadata()),
+            "operations": list(self._gateway.supportedOperations()),
+            "transport": self.name,
         }
-
-    def fit_experimental_model(
-        self,
-        df: Any,
-        feature_columns: list[str],
-        model_path: str,
-        model_checksum: str,
-        blocking_tree_path: str,
-        blocking_tree_checksum: str,
-    ) -> dict[str, Any]:
-        java_columns = self.spark._jvm.java.util.ArrayList()
-        for column in feature_columns:
-            java_columns.add(column)
-        import json
-        return json.loads(self._gateway.fitExperimentalModel(
-            df._jdf, java_columns, model_path, model_checksum,
-            blocking_tree_path, blocking_tree_checksum,
-        ))

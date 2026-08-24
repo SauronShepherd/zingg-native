@@ -1,12 +1,15 @@
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path -Parent $PSScriptRoot
-$patch = Join-Path $repo 'reference\patches\0001-native-spark-transformer-provider.patch'
-$source = Join-Path $repo 'reference\upstream-zingg\spark\core\src\main\java\zingg\spark\core\similarity\SparkBaseTransformer.java'
-if (-not (Test-Path $patch)) { throw 'Upstream integration patch is missing.' }
-if (-not (Test-Path $source)) { throw 'Pinned upstream transformer source is missing.' }
+$patch = Join-Path $repo 'reference\patches\0002-zingg-0.7.0-photon-native-integration.patch'
+if (-not (Test-Path $patch)) { throw 'Focused upstream integration patch is missing.' }
 $text = Get-Content $patch -Raw
-foreach ($required in @('ai.zingg.nativebridge.NativeOperationProvider', 'NativeOperationProvider.fromSpark', 'similarityByZinggName', '"OFF".equals')) {
-  if ($text -notlike "*$required*") { throw "Integration patch is missing required seam: $required" }
+$required = @(
+  'SparkBaseTransformer.java', 'SparkSimFunction.java', 'SparkTransformer.java',
+  'SparkHashFunction.java', 'SparkHashUtil.java', 'SparkStopWordsRemover.java',
+  'SparkBlockingTreeUtil.java', 'VectorValueExtractor.java', 'SparkModel.java', 'SparkGraphUtil.java',
+  'ZinggSparkContext.java', 'ai.zingg.nativebridge.NativeOperationProvider'
+)
+foreach ($needle in $required) {
+  if ($text -notlike "*$needle*") { throw "Integration patch is missing required content: $needle" }
 }
-if ((Get-Content $patch | Select-String '^diff --git ').Count -ne 1) { throw 'Integration patch must target exactly one upstream file.' }
-Write-Output 'Upstream native transformer integration patch passed structural checks.'
+Write-Output 'Focused Zingg 0.7 native integration patch has all expected choke points.'

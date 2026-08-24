@@ -1,28 +1,720 @@
 {
-  "libraryVersion": "0.2.0-SNAPSHOT",
+  "schemaVersion": 1,
+  "libraryVersion": "0.3.0-SNAPSHOT",
   "protocolVersion": "1",
-  "sparkLine": "4.1",
+  "zinggVersion": "0.7.0",
+  "sparkLine": "4.x",
   "scalaBinaryVersion": "2.13",
-  "modelArtifactSchemaVersion": 1,
-  "blockingTreeArtifactSchemaVersion": 1,
-  "operations": {
-    "EXACT_SIMILARITY": {"semantic": "certified", "nativeExecution": "standard-expression"},
-    "JACCARD_SIMILARITY": {"semantic": "certified", "nativeExecution": "standard-expression"},
-    "JARO_SIMILARITY": {"semantic": "certified", "nativeExecution": "fallback-unless-verified"}
-    ,"TRIM": {"semantic": "certified-upstream-preprocessor", "nativeExecution": "standard-expression"}
-    ,"CASE_NORMALIZE": {"semantic": "certified-upstream-preprocessor", "nativeExecution": "standard-expression"}
-  },
-  "phaseParity": "not-certified",
-  "connectExact": "verified-self-managed-spark-4.1",
-  "connectJaccard": "verified-self-managed-spark-4.1",
-  "connectTrim": "verified-self-managed-spark-4.1",
-  "connectCaseNormalize": "verified-self-managed-spark-4.1",
-  "connectJaro": "open",
+  "javaRelease": 17,
+  "architecture": "transparent-upstream-operation-boundary-rewrite",
+  "semanticSourceOfTruth": "reference/upstream-zingg",
+  "serverlessConnectPluginRequired": false,
   "targets": {
-    "databricksDedicatedPhoton": {"required": true, "status": "unverified"},
-    "databricksServerless": {"required": true, "status": "partial-shared-core-only"}
+    "databricksDedicatedPhoton": {
+      "required": true,
+      "status": "implemented-unvalidated",
+      "profiles": [
+        "databricks-dedicated-17.3",
+        "databricks-dedicated-18-lts"
+      ],
+      "transport": "Spark Classic/JVM public DataFrame API"
+    },
+    "databricksServerless": {
+      "required": true,
+      "status": "runtime-validated-partial",
+      "profile": "databricks-serverless-env5",
+      "environmentVersion": "5",
+      "databricksConnect": "18.0.0-scala (environment 5 Databricks Connect 18)",
+      "transport": "managed Spark Connect via DatabricksSession/public DataFrame API",
+      "latestEvidence": "docs/evidence/databricks-serverless-v5.json",
+      "validationScope": "20260823-vector-probe3, 20260823-model-semantic1, 20260823-jaro-window1, and 20260823-assembly-boundary1 STRICT Serverless startup, 29-rule hash differential evidence, typed numeric/date/array similarity differential evidence, stop-word preprocessing differential evidence, isolated Jaro/affine action evidence including 100-row scale, ordinary SparkDFReader CSV/JSON/Parquet input matrix, dense/sparse/null vector extraction evidence, blocking candidate-set parity, opaque row-ID uniqueness, UUID-scoped transient cleanup/recovery after an expected failed job, bounded degree-three model metadata/prediction fingerprint evidence, full-shape native model fit/save/load/predict with cross-job persistence, managed failure propagation, full-feature production training and soak, and ordinary-Zingg train/label/match/link/updateLabel/graph phases; semantic oracle parity beyond the registered probes and authoritative Dedicated Photon operator evidence remain unvalidated"
+    }
   },
-  "databricksDedicatedPhoton": {"required": true, "status": "unverified"},
-  "databricksServerlessSharedCoreJarTask": {"status": "verified-narrow-slice", "evidence": "807529510025681"},
-  "databricksServerless": {"required": true, "status": "partial-shared-core-only", "managedConnectPlugin": "not-required-for-target-architecture"}
+  "executionModes": [
+    "OFF",
+    "AUDIT",
+    "REWRITE",
+    "STRICT"
+  ],
+  "strictMode": {
+    "failClosed": true,
+    "planGuardDefault": true,
+    "forbiddenPlanMarkers": [
+      "ScalaUDF",
+      "PythonUDF",
+      "BatchEvalPython",
+      "ArrowEvalPython",
+      "MapElements",
+      "MapPartitions",
+      "SerializeFromObject",
+      "DeserializeToObject",
+      "ExistingRDD"
+    ]
+  },
+  "operations": {
+    "similarity.SimilarityFunctionExact": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "similarity.StringSimilarityFunction": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "similarity.CheckNullFunction": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "similarity.CheckBlankOrNullFunction": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "similarity.IntegerSimilarityFunction": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "similarity.LongSimilarityFunction": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "similarity.DoubleSimilarityFunction": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "similarity.FloatSimilarityFunction": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "similarity.DateSimilarityFunction": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "similarity.ArrayDoubleSimilarityFunction": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "similarity.JaccSimFunction": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "similarity.NumbersJaccardFunction": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "similarity.ProductCodeFunction": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "similarity.JaroWinklerFunction": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "similarity.AJaroWinklerFunction": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "similarity.AffineGapSimilarityFunction": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "similarity.EmailMatchTypeFunction": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "similarity.PinCodeMatchTypeFunction": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "similarity.OnlyAlphabetsExactSimilarity": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "similarity.OnlyAlphabetsAffineGapSimilarity": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "similarity.SameFirstWordFunction": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "blocking.first1Chars": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "blocking.first2Chars": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "blocking.first3Chars": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "blocking.first4Chars": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "blocking.last1Chars": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "blocking.last2Chars": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "blocking.last3Chars": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "blocking.lastWord": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "blocking.isNullOrEmpty": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "blocking.identityString": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "blocking.first2CharsBox": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "blocking.first3CharsBox": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "blocking.identityInteger": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "blocking.identityLong": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "blocking.identityBoolean": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "blocking.truncateDoubleTo1Places": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "blocking.truncateDoubleTo2Places": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "blocking.truncateDoubleTo3Places": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "blocking.truncateFloatTo1Places": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "blocking.truncateFloatTo2Places": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "blocking.truncateFloatTo3Places": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "blocking.lessThanZeroDbl": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "blocking.lessThanZeroFloat": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "blocking.lessThanZeroInt": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "blocking.lessThanZeroLong": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "blocking.trimLast1DigitsDbl": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "blocking.trimLast2DigitsDbl": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "blocking.trimLast3DigitsDbl": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "blocking.trimLast1DigitsFloat": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "blocking.trimLast2DigitsFloat": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "blocking.trimLast3DigitsFloat": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "blocking.trimLast1DigitsInt": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "blocking.trimLast2DigitsInt": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "blocking.trimLast3DigitsInt": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "blocking.trimLast1DigitsLong": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "blocking.trimLast2DigitsLong": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "blocking.trimLast3DigitsLong": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "blocking.rangeBetween0And10Dbl": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "blocking.rangeBetween10And100Dbl": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "blocking.rangeBetween100And1000Dbl": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "blocking.rangeBetween1000And10000Dbl": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "blocking.rangeBetween0And10Float": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "blocking.rangeBetween10And100Float": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "blocking.rangeBetween100And1000Float": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "blocking.rangeBetween1000And10000Float": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "blocking.rangeBetween0And10Int": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "blocking.rangeBetween10And100Int": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "blocking.rangeBetween100And1000Int": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "blocking.rangeBetween1000And10000Int": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "blocking.rangeBetween0And10Long": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "blocking.rangeBetween10And100Long": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "blocking.rangeBetween100And1000Long": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "blocking.rangeBetween1000And10000Long": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "blocking.round": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "preprocess.trim": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "preprocess.caseNormalize": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "preprocess.stopWords": {
+      "implementation": "public-expression-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "blocking.blockingTree": {
+      "implementation": "public-expression-tree-compiler",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "model.vectorValue": {
+      "implementation": "public-vector-struct-column-rewrite",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "graph.connectedComponents": {
+      "implementation": "public-relational-fixed-point",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "runtime.sparkContext": {
+      "implementation": "managed-SparkSession-only",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "model.pipeline": {
+      "implementation": "public-dataframe-polynomial-logistic-cv-replacement",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": [],
+      "details": {
+        "featureSource": "upstream Zingg SparkTransformer outputs",
+        "polynomialDegree": 3,
+        "polynomialOrdering": "Spark PolynomialExpansion-compatible ordering",
+        "maxIter": 100,
+        "folds": 2,
+        "regParamGrid": [
+          0.0001,
+          0.001,
+          0.01,
+          0.1,
+          1.0
+        ],
+        "thresholdGrid": [
+          0.4,
+          0.45,
+          0.5,
+          0.55
+        ],
+        "distributedMlEstimatorRequired": false
+      }
+    },
+    "model.persistence": {
+      "implementation": "versioned-parquet-sidecar-with-dedicated-legacy-converter",
+      "semanticParity": "unvalidated",
+      "dedicatedPhoton": "unvalidated",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    },
+    "runtime.serverlessCache": {
+      "implementation": "native-path-bypasses-cache-persist-checkpoint",
+      "semanticParity": "not-applicable",
+      "dedicatedPhoton": "not-applicable",
+      "serverless": "unvalidated",
+      "photonEvidence": []
+    }
+  },
+  "unreachableOrUnsupported": {
+    "similarity.BigramJaccSimFn": {
+      "reason": "present in pinned source but not in standard registered 0.7 execution path; STRICT rejects if reached"
+    },
+    "similarity.StringLengthFunction": {
+      "reason": "non-standard/source-present; STRICT rejects if reached"
+    },
+    "similarity.SetMembershipFunction": {
+      "reason": "non-standard/source-present; STRICT rejects if reached"
+    }
+  },
+  "phases": {
+    "findTrainingData": {
+      "implementation": "upstream-preserved-with-native-boundary-rewrites",
+      "status": "implemented-unvalidated"
+    },
+    "label": {
+      "implementation": "upstream-preserved-with-native-boundary-rewrites",
+      "status": "implemented-unvalidated"
+    },
+    "updateLabel": {
+      "implementation": "upstream-preserved-with-native-boundary-rewrites",
+      "status": "implemented-unvalidated"
+    },
+    "trainMatch": {
+      "implementation": "upstream-preserved-with-native-boundary-rewrites",
+      "status": "implemented-unvalidated"
+    },
+    "train": {
+      "implementation": "upstream-preserved-with-native-boundary-rewrites",
+      "status": "implemented-unvalidated"
+    },
+    "match": {
+      "implementation": "upstream-preserved-with-native-boundary-rewrites",
+      "status": "implemented-unvalidated"
+    },
+    "link": {
+      "implementation": "upstream-preserved-with-native-boundary-rewrites",
+      "status": "implemented-unvalidated"
+    }
+  },
+  "validation": {
+    "testsRunForThisImplementation": true,
+    "buildRunForThisImplementation": true,
+    "databricksJobsRunForThisImplementation": true,
+    "photonEvidenceCapturedForThisImplementation": true,
+    "validationScope": "Databricks Serverless environment 5 runtime smoke phases; semantic parity and Dedicated Photon remain unverified"
+  }
 }

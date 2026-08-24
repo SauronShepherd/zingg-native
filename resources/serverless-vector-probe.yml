@@ -1,0 +1,23 @@
+resources:
+  jobs:
+    zingg_native_serverless_vector_probe:
+      name: zingg-native-serverless-vector-probe
+      description: Direct dense/sparse/null public VectorUDT extraction probe.
+      timeout_seconds: 600
+      tasks:
+        - task_key: vector_probe
+          spark_jar_task:
+            main_class_name: ai.zingg.nativebridge.launch.DatabricksZinggMainEntry
+            parameters:
+              - --native-vector-probe
+              - --native-mode
+              - STRICT
+          environment_key: serverless_env5
+      environments:
+        - environment_key: serverless_env5
+          spec:
+            environment_version: "5"
+            java_dependencies:
+              - ${var.serverless_launcher_jar}
+              - ${var.native_core_jar}
+              - ${var.zingg_patched_jar}

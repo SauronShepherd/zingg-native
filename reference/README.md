@@ -1,10 +1,7 @@
-# Semantic reference
+# Reference material (not production code)
 
-`zingg-0.7.0.lock` pins the upstream semantic reference used by parity tests.
-The production package must not depend on the upstream AGPL artifact merely to
-run; reference code belongs in test tooling and must be checked out at the
-locked commit before generating goldens.
+`upstream-zingg/` is the pinned Zingg 0.7.0 semantic source used while implementing the rewrite rules. Do not edit it; production integration changes belong under `integration/zingg-0.7.0-overlay/`.
 
-Run `scripts/prepare-reference.ps1` to create the detached pinned checkout.
-`scripts/check-reference.ps1` refuses to run the oracle when the checkout is
-dirty or points at another commit.
+`patches/0002-zingg-0.7.0-photon-native-integration.patch` is a focused diff of the eleven patched upstream Spark choke-point files, including the native model boundary.
+
+`legacy-connect-plugin/`, `legacy-prototype-tests/`, `legacy-prototype-examples/`, `legacy-patches/`, and `legacy-evidence/` preserve the abandoned prototype architecture and its historical material. They are explicitly excluded from the production reactor and are not validation evidence for 0.3.0.

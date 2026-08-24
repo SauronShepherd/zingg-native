@@ -1,0 +1,18 @@
+resources:
+  jobs:
+    zingg_native_serverless_model_sparkml_oracle:
+      name: zingg-native-serverless-model-sparkml-oracle
+      description: Independent Serverless Spark ML oracle for bounded native model parity
+      timeout_seconds: 600
+      tasks:
+        - task_key: sparkml_oracle
+          spark_python_task:
+            python_file: ${var.workspace_fixture_root}/databricks-model-sparkml-oracle.py
+            parameters:
+              - --model-path
+              - ${var.model_probe_path}
+          environment_key: serverless_python_env5
+      environments:
+        - environment_key: serverless_python_env5
+          spec:
+            environment_version: "5"

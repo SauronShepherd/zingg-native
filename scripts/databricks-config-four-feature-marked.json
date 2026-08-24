@@ -1,0 +1,14 @@
+{
+  "fieldDefinition": [
+    {"fieldName":"fname","matchType":"fuzzy","fields":"fname","dataType":"string"},
+    {"fieldName":"lname","matchType":"fuzzy","fields":"lname","dataType":"string"},
+    {"fieldName":"stNo","matchType":"fuzzy","fields":"stNo","dataType":"string"},
+    {"fieldName":"add1","matchType":"fuzzy","fields":"add1","dataType":"string"}
+  ],
+  "output": [{"name":"output","format":"csv","props":{"path":"/Volumes/sda_dev/default/zingg_native_e2e_volume/output-four-feature-marked","delimiter":",","header":true}}],
+  "data": [{"name":"test","format":"parquet","props":{"path":"/Volumes/sda_dev/default/zingg_native_e2e_volume/input-tiny-marked"}}],
+  "labelDataSampleSize": 1.0,
+  "numPartitions": 2,
+  "modelId": 100,
+  "zinggDir":"/Volumes/sda_dev/default/zingg_native_e2e_volume/models-four-feature-marked"
+}

@@ -1,11 +1,11 @@
 {
   "schemaVersion": "1",
-  "target": "Dedicated Photon",
-  "result": "UNVERIFIED",
-  "environment": {"sparkVersion": "", "runtimeVersion": "", "scalaVersion": "2.13", "jdkVersion": "17"},
-  "run": {"workspaceId": "", "jobId": "", "runId": "", "taskRunId": ""},
-  "plan": {"profileId": "", "operatorSummary": [], "evidenceSource": ""},
+  "target": "databricks-dedicated-photon-or-serverless",
+  "result": "NOT_RUN",
+  "environment": {},
+  "run": {},
+  "plan": {"fingerprint": null, "evidenceSource": null},
   "rewrites": [],
   "fallbacks": [],
-  "claim": "Populate only from supported Databricks plan/query-profile evidence."
+  "notes": "Template only. No validation was executed for this implementation."
 }

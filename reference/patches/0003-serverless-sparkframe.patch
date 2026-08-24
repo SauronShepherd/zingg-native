@@ -1,0 +1,11 @@
+diff --git a/spark/client/src/main/java/zingg/spark/client/SparkFrame.java b/spark/client/src/main/java/zingg/spark/client/SparkFrame.java
+index 0000000..0000000 100644
+--- a/spark/client/src/main/java/zingg/spark/client/SparkFrame.java
++++ b/spark/client/src/main/java/zingg/spark/client/SparkFrame.java
+@@ -29,6 +29,9 @@ public class SparkFrame implements ZFrame<Dataset<Row>, Row, Column> {
+     public ZFrame<Dataset<Row>, Row, Column> cache() {
++        if (Boolean.parseBoolean(System.getProperty("zingg.native.managed", "false"))) {
++            return new SparkFrame(df);
++        }
+         return new SparkFrame(df.cache());
+     }

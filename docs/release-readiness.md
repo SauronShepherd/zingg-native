@@ -1,41 +1,33 @@
 # Release readiness
 
-**ARCHITECTURE REMEDIATION IN PROGRESS — NOT RELEASE READY**
+Implementation is present. Databricks Serverless environment 5 has verified
+the real Zingg 0.7.0 launch contract and a 15-rule, 18-row STRICT differential probe
+against the pinned reference. The source contains the transparent Zingg 0.7
+integration, public-expression rule registry, blocking/tree and graph
+replacements, strict failure policy, Dedicated/Serverless launch paths,
+packaging profiles, capability metadata, and evidence hooks.
 
-## Completed implementation gates
+Do not call the result production-ready or Photon-certified yet. Dedicated
+Photon execution, semantic differential coverage, all certified phases, and
+authoritative Databricks Query Profile/operator evidence remain release gates.
+No legacy prototype evidence counts for this revision.
 
-- Shared Scala 2.13/Spark 4.1 Maven build exists.
-- Classic/Py4J gateway exists and has real local execution evidence.
-- Exact, Jaccard, and Jaro are implemented in the shared core.
-- Jaro matches pinned Zingg 0.7 / SecondString oracle vectors locally.
-- Connect Exact payload serialization and plugin compilation are covered.
-- Shared TRIM and CASE_NORMALIZE preprocessing is verified through Classic,
-  self-managed Connect, and Databricks Serverless.
-- Classic shared-core candidate, label, and update-label phases pass a real
-  local Py4J E2E example; this is adapted phase evidence, not upstream parity.
-- Labeled-record pair expansion (`buildTrainingPairs`) and genuine 5/5
-  positive/negative evidence pass the Serverless E2E; blocking-tree learning
-  and model fitting remain open.
-- Unverified Python phase shortcuts are prototype-only.
-- Versioned model and blocking-tree artifact contracts are defined and exposed
-  through the capability handshake; no trainer parity is claimed.
-- Training-evidence inspection and the five/five upstream minimum are executed
-  in the Serverless E2E; model fitting is still not implemented.
-- Python and Scala unit suites pass locally.
-- Python Ruff/Mypy gates and artifact SHA-256 generation are wired into CI and
-  pass locally.
-- The CI clean-wheel job now executes the real Classic/Py4J candidate-phase E2E
-  after installing the wheel, with the separately built shared-core JAR.
+The full-feature Serverless train gate is evidenced on the current release
+line (the authoritative production run used release 20260823-assembly-boundary1; the currently deployed regression line is
+20260823-blocking-family2). Production validation completed the full 20-feature,
+1,770-term initial fit plus five-reg/two-fold cross-validation grid, saved the
+native model, and terminated SUCCESS. An independent soak run completed the
+same 1,100 aggregate path. Bounded
+`train`, `label`, `updateLabel`, `match`, and `link` phases
+are evidenced in `docs/evidence/databricks-serverless-v5.json`. Current-release
+model fit/save/load/predict and separate cross-job load/predict also passed,
+including the full 1,770-term shape.
 
-## Open mandatory gates
+A clean bounded fixture has now completed ordinary Zingg `train`, `label`,
+`updateLabel`, `match`, and `link` on Serverless; this is phase-level bounded evidence, not full-scale
+production-grid certification.
 
-- Real Zingg 0.7 workflow integration through the native rewrite hook.
-- Dedicated Photon E2E with supported runtime evidence.
-- Serverless real Zingg E2E using only supported public Spark APIs.
-- Self-managed Spark Connect Jaro and phase E2E with the installed plugin.
-- Connect parity for Jaro and the shared phase subset.
-- Full upstream Zingg 0.7 phase/model parity.
-
-Databricks Serverless shared-core JAR execution is verified only for the
-narrow historical slice; it is not full Zingg parity or Photon evidence.
-Dedicated/Photon is a mandatory target and remains unverified.
+The materialization recovery gate is also runtime-proven: an expected failed
+Serverless job writes a UUID-scoped transient sentinel, and a separate job
+verifies that the transient root is absent afterward. This does not imply that
+published model directories or ordinary Zingg outputs are deleted.

@@ -1,17 +1,49 @@
 {
   "version": "0.7.0",
   "phases": [
-    {"id": "findTrainingData", "input": "records", "output": "labeled training pairs", "artifact": "training data"},
-    {"id": "label", "input": "records and labels", "output": "labeled records", "artifact": "labels"},
-    {"id": "train", "input": "labeled training pairs", "output": "trained model", "artifact": "model"},
-    {"id": "match", "input": "records and model", "output": "candidate matches", "artifact": "match output"},
-    {"id": "link", "input": "candidate matches", "output": "linked entities", "artifact": "link output"}
+    {
+      "id": "findTrainingData",
+      "ownership": "upstream-zingg"
+    },
+    {
+      "id": "label",
+      "ownership": "upstream-zingg"
+    },
+    {
+      "id": "train",
+      "ownership": "upstream-zingg"
+    },
+    {
+      "id": "match",
+      "ownership": "upstream-zingg"
+    },
+    {
+      "id": "link",
+      "ownership": "upstream-zingg"
+    },
+    {
+      "id": "updateLabel",
+      "ownership": "upstream-zingg"
+    }
   ],
-  "requiredOperations": [
-    "similarity.exact", "similarity.jaccard", "similarity.jaro",
-    "preprocess.trim", "preprocess.case_normalize", "blocking.hash",
-    "blocking.tree", "preprocess.stopwords", "model.vector_extraction",
-    "link.connected_components"
+  "nativeChokePoints": [
+    "similarity.udf",
+    "similarity.registration",
+    "hash.udf",
+    "hash.registration",
+    "blocking-tree.map",
+    "stopwords.udf",
+    "vector-extractor.udf",
+    "graphframes.connected-components",
+    "spark-context",
+    "model.pipeline",
+    "model.persistence",
+    "serverless.cache"
   ],
-  "activation": {"systemProperty": "zingg.native.mode", "environmentVariable": "ZINGG_NATIVE_MODE"}
+  "activation": {
+    "systemProperty": "zingg.native.mode",
+    "serverlessLauncherFlag": "--native-mode",
+    "localOrDedicatedEnvironmentFallback": "ZINGG_NATIVE_MODE",
+    "default": "STRICT"
+  }
 }

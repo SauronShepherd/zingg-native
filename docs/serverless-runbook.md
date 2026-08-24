@@ -1,51 +1,17 @@
-# Databricks Serverless E2E runbook
+# Serverless runbook skeleton
 
-This runbook reproduces the verified shared-core E2E slice using the `sda`
-Databricks CLI profile. It exercises Exact, Jaccard, and Jaro similarities,
-`preprocess`, `findTrainingData`, `buildTrainingPairs`, `label`, `updateLabel`, and persistence through a Unity
-Catalog Volume.
+Use `resources/serverless-zingg-native.yml` after building/uploading the Serverless launcher, native-core, and patched-Zingg JARs. Supply the real Zingg delegate main class and its normal arguments.
 
-It does not claim managed Spark Connect plugin activation. That feasibility
-gate is recorded separately in [databricks.md](databricks.md).
+The task invokes `DatabricksZinggMain`, which creates the managed session and delegates to real Zingg. It does not use the legacy custom Connect plugin.
 
-## Prerequisites
+Recorded Serverless evidence is maintained in [docs/evidence/databricks-serverless-v5.json](evidence/databricks-serverless-v5.json). Environment 5 evidence covers `findTrainingData`, bounded synthetic `train`, `match`, and `link` in STRICT mode. Photon evidence is based on job-linked query-history metrics and does not certify every operator. For graph phases, the launcher derives a temporary workspace below ordinary `--zinggDir`; pass `--native-graph-materialize-path` only when a different Volume location is required.
 
-- Databricks CLI authenticated as profile `sda`.
-- Serverless Environment 5 access.
-- A writable Unity Catalog Volume. The recorded run uses
-  `sda_dev.sandbox.zingg_native_e2e`.
-- JDK 17+ and Maven for building the Scala artifacts.
+## Cross-job model persistence probe
 
-## Build and upload
-
-From the repository root, build both JARs and upload them as a pair to the
-workspace artifact directory. The Connect artifact depends on the shared core
-version.
-
-```powershell
-mvn -q package -DskipTests
-databricks workspace import <workspace-core-jar> --profile sda --file <local-core-jar> --format AUTO --overwrite
-databricks workspace import <workspace-connect-jar> --profile sda --file <local-connect-jar> --format AUTO --overwrite
-```
-
-## Configure and run
-
-The checked-in job definition is `databricks-serverless-core-e2e.json`. For an
-existing job, apply `databricks-serverless-core-e2e-reset.json`, then trigger
-job `295665184144562` with the Databricks CLI.
-
-The task writes to `/Volumes/sda_dev/sandbox/zingg_native_e2e/run`. Do not
-replace this with `/tmp`: public DBFS root is disabled on the tested Serverless
-environment and fails with `DBFS_DISABLED`.
-
-## Verify
-
-Retrieve the task output with `databricks jobs get-run-output <task-run-id>`.
-The required output begins:
-
-```text
-ZINGG_NATIVE_SERVERLESS_CORE_E2E PASS similarities=exact,jaccard,jaro phases=preprocess,findTrainingData,buildTrainingPairs,label,updateLabel trainingEvidence=5/5 persistence=true spark=4.1.0
-```
-
-The authoritative recorded evidence is in
-`docs/evidence/databricks-serverless.json`.
+For an isolated public-API model boundary check, run the launcher with
+`--native-model-probe --native-model-probe-path <Volume path>`; this fits and
+saves the degree-3 model. In a separate Serverless task, use
+`--native-model-load-probe --native-model-probe-path <same Volume path>`; the
+load-only task must emit `NATIVE_MODEL_PROBE_LOAD_PASS`. The explicit path is
+for persistence validation only; ordinary probes remain run-isolated by
+default.

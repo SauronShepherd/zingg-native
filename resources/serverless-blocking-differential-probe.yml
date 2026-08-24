@@ -1,0 +1,23 @@
+resources:
+  jobs:
+    zingg_native_serverless_blocking_differential_probe:
+      name: zingg-native-serverless-blocking-differential-probe
+      description: Serverless candidate-set differential probe for the ordinary Zingg blocking tree
+      max_concurrent_runs: 1
+      tasks:
+        - task_key: blocking_differential
+          spark_jar_task:
+            main_class_name: ai.zingg.nativebridge.launch.DatabricksZinggMainEntry
+            parameters:
+              - --native-mode
+              - STRICT
+              - --native-blocking-differential-probe
+          environment_key: serverless_env5
+      environments:
+        - environment_key: serverless_env5
+          spec:
+            environment_version: "5"
+            java_dependencies:
+              - ${var.serverless_launcher_jar}
+              - ${var.native_core_jar}
+              - ${var.zingg_patched_jar}

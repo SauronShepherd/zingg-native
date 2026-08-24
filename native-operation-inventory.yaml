@@ -1,44 +1,189 @@
-version: 1
+version: 2
 upstream: zingg-0.7.0
 reference: reference/zingg-0.7.0.lock
+implementation: integration/zingg-0.7.0-overlay
+validation_status: databricks-serverless-runtime-validated-photon-unverified
 operations:
   - id: similarity.udf
     phase: feature-generation
     source: spark/core/src/main/java/zingg/spark/core/similarity/SparkBaseTransformer.java
-    construct: callUDF/UDF2
-    status: open
+    original_construct: callUDF/UDF2
+    native_replacement: NativeOperationProvider -> RewriteRegistry -> public Column expression
+    status: implemented-unvalidated
+  - id: similarity.registration
+    phase: feature-generation
+    source: spark/core/src/main/java/zingg/spark/core/similarity/SparkTransformer.java
+    original_construct: UDF2 registration
+    native_replacement: registration bypass in REWRITE/STRICT
+    status: implemented-unvalidated
   - id: hash.udf
     phase: blocking
     source: spark/core/src/main/java/zingg/spark/core/hash/SparkHashFunction.java
-    construct: callUDF/UDF1
-    status: open
+    original_construct: callUDF/UDF1
+    native_replacement: NativeOperationProvider.hash -> public Column expression
+    status: implemented-unvalidated
   - id: hash.registration
     phase: blocking
     source: spark/core/src/main/java/zingg/spark/core/util/SparkHashUtil.java
-    construct: UDF registration
-    status: open
+    original_construct: UDF registration
+    native_replacement: registration bypass in REWRITE/STRICT
+    status: implemented-unvalidated
   - id: blocking-tree.map
-    phase: findTrainingData
+    phase: findTrainingData/match/link
     source: spark/core/src/main/java/zingg/spark/core/util/SparkBlockingTreeUtil.java
-    construct: Dataset.map/Encoders.row
-    status: open
-  - id: block-function.map
-    phase: findTrainingData
-    source: spark/core/src/main/java/zingg/spark/core/block/SparkBlockFunction.java
-    construct: MapFunction<Row,Row>
-    status: open
+    related_source: spark/core/src/main/java/zingg/spark/core/block/SparkBlockFunction.java
+    original_construct: Dataset.map/MapFunction/Encoder
+    native_replacement: reflective driver-side tree compiler -> CASE/higher-order Column expression -> Java-compatible hash
+    status: implemented-unvalidated
   - id: stopwords.udf
     phase: preprocessing
     source: spark/core/src/main/java/zingg/spark/core/preprocess/stopwords/SparkStopWordsRemover.java
-    construct: callUDF/UDF2
-    status: open
+    original_construct: callUDF/UDF2
+    native_replacement: regexp_replace Column expression
+    status: implemented-unvalidated
   - id: vector-extractor.udf
-    phase: train/match
+    phase: train/match/link
     source: spark/core/src/main/java/zingg/spark/core/model/VectorValueExtractor.java
-    construct: callUDF/UDF1
-    status: open
+    original_construct: callUDF/UDF1
+    native_replacement: public Column extraction from Spark VectorUDT values struct; no Spark ML helper dependency
+    status: implemented-runtime-validated
+  - id: graphframes.connected-components
+    phase: match/link
+    source: spark/core/src/main/java/zingg/spark/core/util/SparkGraphUtil.java
+    original_construct: GraphFrame.connectedComponents
+    native_replacement: iterative relational label propagation using joins/groupBy/min
+    status: implemented-unvalidated
   - id: spark-context
     phase: runtime
     source: spark/core/src/main/java/zingg/spark/core/context/ZinggSparkContext.java
-    construct: JavaSparkContext
-    status: open
+    original_construct: JavaSparkContext lifecycle access
+    native_replacement: managed SparkSession only; no SparkContext access/stop
+    status: implemented-unvalidated
+  - id: model.pipeline
+    phase: train/match/link
+    source: spark/core/src/main/java/zingg/spark/core/model/SparkModel.java
+    original_construct: VectorAssembler + PolynomialExpansion(3) + LogisticRegression + CrossValidator
+    native_replacement: public DataFrame polynomial expressions + deterministic relational logistic/CV trainer + native predictor
+    status: implemented-unvalidated
+  - id: model.persistence
+    phase: train/match/link
+    source: spark/core/src/main/java/zingg/spark/core/model/SparkModel.java
+    original_construct: CrossValidatorModel save/load
+    native_replacement: versioned Parquet sidecar; Dedicated/local legacy CrossValidator converter provided
+    status: implemented-unvalidated
+  - id: serverless.cache
+    phase: model/graph runtime
+    source: SparkModel.java and SparkGraphUtil.java
+    original_construct: DataFrame.cache in upstream paths
+    native_replacement: no cache/persist/checkpoint calls in REWRITE/STRICT execution branches
+    status: implemented-unvalidated
+  - id: serverless.session-ownership
+    phase: runtime
+    source: serverless-launcher/src/main/scala/ai/zingg/native/launch/DatabricksZinggMain.scala
+    original_construct: application-created Spark session/lifecycle
+    native_replacement: DatabricksSession managed session; clear bindings only; observed runtime compatibility checks
+    mode_behavior: Serverless REWRITE/STRICT only
+    semantic_invariant: Databricks owns the Serverless session lifecycle
+    static_check: scripts/check-source-boundaries.py and scripts/check-serverless-bytecode.py
+    runtime_test: Serverless ordinary phase and runtime compatibility evidence
+    evidence_status: passed-serverless-environment-5
+  - id: serverless.system-exit
+    phase: runtime
+    source: common/client/src/main/java/zingg/common/client/Client.java
+    original_construct: System.exit after CLI cleanup
+    native_replacement: managed invocation guard returns control to Databricks task
+    mode_behavior: Serverless REWRITE/STRICT only
+    semantic_invariant: ordinary task success/failure remains visible to Databricks
+    static_check: scripts/check-release-metadata.py
+    runtime_test: Serverless train/match/link/label/updateLabel probes
+    evidence_status: passed-success-path-failure-path-pending
+  - id: serverless.read-laziness
+    phase: input
+    source: spark/client/src/main/java/zingg/spark/client/util/SparkDFReader.java
+    original_construct: lazy DataFrameReader.load
+    native_replacement: public DataFrameReader.load without injected action
+    mode_behavior: all modes preserve lazy read semantics
+    semantic_invariant: optional input failures remain owned by upstream phase orchestration
+    static_check: tests/test_release_contracts.py
+    runtime_test: Serverless CSV/JSON/Parquet SparkDFReader matrix
+    evidence_status: passed-serverless-input-format1
+  - id: serverless.row-id
+    phase: input
+    source: spark/client/src/main/scala/reifier/scala/DFUtil.scala
+    original_construct: RDD zipWithUniqueId
+    native_replacement: monotonically_increasing_id public Column expression
+    mode_behavior: Serverless REWRITE/STRICT
+    semantic_invariant: opaque non-null unique association key within an action; it is not a published z_zid and is not required to be stable across actions/jobs
+    static_check: scripts/check-serverless-bytecode.py
+    runtime_test: local contract test plus Serverless ordinary phase association coverage; upstream zipWithUniqueId value equality is intentionally not claimed
+    evidence_status: implemented-contract-tested-runtime-associated
+  - id: serverless.blocking-candidate-set
+    phase: findTrainingData/match/link
+    source: integration/zingg-0.7.0-overlay/spark/core/src/main/java/zingg/spark/core/util/SparkBlockingTreeUtil.java
+    original_construct: Dataset.map/MapFunction candidate hash assignment
+    native_replacement: public Column blocking-tree compiler with Java-compatible hash
+    mode_behavior: Serverless REWRITE/STRICT; STRICT rejects unsupported tree shape
+    semantic_invariant: same per-record hash and same candidate pairs after duplicate suppression
+    static_check: scripts/check-source-boundaries.py and tests/test_release_contracts.py
+    runtime_test: Serverless native-vs-pinned-legacy candidate-set differential over 7 edge rows
+    evidence_status: passed-serverless-completion-audit3
+  - id: serverless.fixture-assets
+    phase: deployment
+    source: scripts/publish-serverless-fixtures.ps1 and resources/serverless-*.yml
+    original_construct: mutable workspace-relative fixture/config/license references
+    native_replacement: deterministic fixture publication with bundle workspace/catalog/schema/volume variables
+    mode_behavior: all Serverless validation jobs
+    semantic_invariant: every referenced non-secret fixture is generated or uploaded before job submission; license remains external
+    static_check: tests/test_release_contracts.py
+    runtime_test: sda fixture publication and bundle validation
+    evidence_status: implemented-local-verified
+  - id: serverless.release-set
+    phase: deployment
+    source: scripts/publish-databricks-serverless.ps1
+    original_construct: independently overwritten versioned JAR files
+    native_replacement: immutable release directory with manifest and remote SHA-256 verification
+    mode_behavior: Serverless REWRITE/STRICT
+    semantic_invariant: core, launcher, patched Zingg assembly, and metadata are one artifact identity
+    static_check: scripts/verify-artifacts.py and tests/test_release_contracts.py
+    runtime_test: fresh sda model probe on release 20260823-lifecycle-fix
+    evidence_status: passed-serverless-environment-5
+  - id: serverless.graph-iteration
+    phase: match/link
+    source: core/src/main/scala/ai/zingg/native/NativeGraph.scala and serverless-launcher/src/main/scala/ai/zingg/native/launch/ServerlessGraphProbe.scala
+    original_construct: GraphFrames connectedComponents iteration
+    native_replacement: bounded relational label propagation with explicit max-iteration override
+    mode_behavior: Serverless REWRITE/STRICT; low bound fails closed
+    semantic_invariant: component membership is stable when converged and bounded failure is explicit
+    static_check: tests/test_release_contracts.py
+    runtime_test: Serverless graph probe and low-iteration negative probe
+    evidence_status: passed-serverless-environment-5
+  - id: serverless.phase-contract
+    phase: runtime
+    source: reference/zingg-0.7-phase-contract.json and scripts/check-phase-contract.ps1
+    original_construct: hand-maintained subset of ordinary Zingg phases
+    native_replacement: normative phase inventory including updateLabel
+    mode_behavior: Serverless REWRITE/STRICT
+    semantic_invariant: every exposed ordinary phase is classified and tested
+    static_check: scripts/check-phase-contract.ps1
+    runtime_test: Serverless findTrainingData/label/updateLabel/train/match/link suite
+    evidence_status: passed-serverless-environment-5
+  - id: similarities
+    phase: feature-generation
+    native_replacement: exact/check-null/check-blank/integer/long/double/float/date/array-cosine/jaccard/numbers-jaccard/product-code/jaro/affine-gap/email/pin/only-alphabet-exact/only-alphabet-affine/same-first-word
+    status: implemented-unvalidated
+  - id: hash-functions
+    phase: blocking
+    native_replacement: first/last chars, last word, null/empty, identities, character boxes, less-than-zero, truncate, trim-last-digits, ranges, Java round
+    status: implemented-unvalidated
+  - id: unreachable.BigramJaccSimFn
+    phase: feature-generation
+    classification: present in source but not part of the standard registered 0.7 execution path; STRICT fails if reached
+    status: classified-unreachable
+  - id: unreachable.StringLengthFunction
+    phase: feature-generation
+    classification: source-present/non-standard; STRICT fails if reached
+    status: classified-unreachable
+  - id: unreachable.SetMembershipFunction
+    phase: feature-generation
+    classification: source-present/non-standard; STRICT fails if reached
+    status: classified-unreachable

@@ -1,16 +1,14 @@
 # Zingg Native working rules
 
-- The sibling `../zingg` checkout is a read-only semantic reference.
-- Supported runtime family is Spark 4.x with Scala 2.13; do not add Spark 3 or Scala 2.12 shims.
-- This is an explicit facade/adapter, not Catalyst interception or plan rewriting.
-- Keep algorithms in the shared Spark implementation; Python is API, configuration, and transport selection.
-- Prefer built-in Spark expressions and higher-order functions. Do not use Python UDFs or opaque Scala UDFs for native replacements.
-- Every operation must preserve Zingg 0.7 semantics, including null and edge-case behavior.
-- Classic and Connect are first-class transports. Keep Py4J private handles isolated if a JVM backend is added.
-- Do not claim Photon or Fabric NEE/Velox validation without evidence from those runtimes.
-- Product targets are Databricks Dedicated compute with Photon and Databricks
-  Serverless; both are mandatory release gates.
-- Databricks Serverless production code must use supported public Spark APIs and
-  must not depend on custom Spark Connect server-plugin activation.
-- Native mode must fail closed when a known Zingg operation has no proven
-  rewrite; never silently fall back while claiming native execution.
+- `reference/upstream-zingg` is the pinned Zingg 0.7.0 semantic reference. Do not edit it; production integration belongs in `integration/zingg-0.7.0-overlay`.
+- Supported runtime family is Spark 4.x with Scala 2.13 and Java 17. Do not add Spark 3 or Scala 2.12 compatibility shims to the Databricks production artifact.
+- Product scope is **Databricks Dedicated + Photon and Databricks Serverless**. Both are mandatory; neither may be documented as out of scope.
+- Keep the product simple: ordinary Zingg constructs the job; the adapter intercepts known Spark-specific operation boundaries, replaces non-native constructs with equivalent public Spark expressions, and lets Spark execute the resulting plan.
+- Do not create a parallel entity-resolution engine or require users to rewrite normal Zingg jobs to a `zingg_native` API.
+- Upstream Zingg 0.7.0 behavior is the semantic source of truth. Rewrites change execution representation only.
+- Production rewrites must use public `Column`, `Dataset<Row>`, DataFrame, Spark SQL, and public Spark ML functions. No Python UDF, Scala UDF, Catalyst API, planner extension, SparkSessionExtension, or SparkContext dependency in the Serverless/common artifact.
+- Classic/Py4J and managed Spark Connect execution are transport variants over the same rewrite registry, not separate semantic implementations.
+- The historical custom Spark Connect expression plugin is archived under `reference/legacy-connect-plugin/` and must never be reintroduced as a production or Serverless dependency.
+- `STRICT` mode fails closed for unknown/unmapped native operations. Never silently fall back while claiming native execution.
+- Actual Photon execution is an evidence question, not a configuration inference. Do not call a path Photon-native until real Databricks runtime/query-profile evidence proves it.
+- Every rewrite must be observable and individually disable-able through the rule registry/evidence system.

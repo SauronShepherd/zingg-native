@@ -1,0 +1,38 @@
+resources:
+  jobs:
+    zingg_native_serverless_full_parquet_diagnostic:
+      name: zingg-native-serverless-full-parquet-diagnostic
+      description: Full-feature native train diagnostic over a Unity Catalog Parquet input
+      max_concurrent_runs: 1
+      timeout_seconds: 1200
+      tasks:
+        - task_key: full_parquet_train
+          spark_jar_task:
+            main_class_name: ai.zingg.nativebridge.launch.DatabricksZinggMainEntry
+            parameters:
+              - --delegate-main
+              - ${var.zingg_main_class}
+              - --native-mode
+              - STRICT
+              - --native-plan-guard
+              - "true"
+              - --native-model-max-iter
+              - "1"
+              - --native-model-bounded-probe
+              - --phase
+              - train
+              - --conf
+              - ${var.workspace_fixture_root}/config-full-parquet.json
+              - --zinggDir
+              - /Volumes/${var.catalog}/${var.schema}/${var.volume}/models-job-v10
+              - --license
+              - ${var.workspace_fixture_root}/LICENSE
+          environment_key: serverless_env5
+      environments:
+        - environment_key: serverless_env5
+          spec:
+            environment_version: "5"
+            java_dependencies:
+              - ${var.serverless_launcher_jar}
+              - ${var.native_core_jar}
+              - ${var.zingg_patched_jar}

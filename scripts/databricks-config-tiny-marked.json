@@ -1,0 +1,11 @@
+{
+  "fieldDefinition": [
+    {"fieldName":"fname","matchType":"exact","fields":"fname","dataType":"string"}
+  ],
+  "output": [{"name":"output","format":"csv","props":{"path":"/Volumes/sda_dev/default/zingg_native_e2e_volume/output-tiny-marked","delimiter":",","header":true}}],
+  "data": [{"name":"test","format":"parquet","props":{"path":"/Volumes/sda_dev/default/zingg_native_e2e_volume/input-tiny-marked"}}],
+  "labelDataSampleSize": 0.5,
+  "numPartitions": 2,
+  "modelId": 100,
+  "zinggDir":"/Volumes/sda_dev/default/zingg_native_e2e_volume/models-tiny-marked"
+}

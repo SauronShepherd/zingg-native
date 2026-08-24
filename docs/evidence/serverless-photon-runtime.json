@@ -1,0 +1,61 @@
+{
+  "schemaVersion": "1",
+  "target": "databricks-serverless-photon",
+  "profile": "sda",
+  "collectedAtUtc": "2026-08-23T18:18:22.4470532Z",
+  "source": "Databricks query-history API with include_metrics=true",
+  "environmentKey": "serverless_env5",
+  "tasks": {
+    "1019426486943125": {
+      "queryCount": 16,
+      "queriesWithPhotonTime": 1,
+      "zeroPhotonQueries": 15,
+      "photonTotalTimeMs": 1,
+      "queryIds": [
+        "d1f2a941-0261-4052-9eba-06865fdf4e11",
+        "b0983c5f-d32e-4429-a9c4-9f7e6dcdd7c5",
+        "5626dfae-6253-4b8e-9934-6626738ff90f",
+        "4d800307-8766-4741-8a80-2186d276e9db",
+        "77fa3d54-ab7b-4492-9a5d-a0b75c8ab325",
+        "59e8bc3a-92de-4940-99d5-17bd0b2cc81e",
+        "ed0fe7ee-5b65-4a11-a08b-ba2895fba40e",
+        "2393475e-7775-4f2c-a619-bb322070e70f",
+        "7f44d702-25c9-41d6-bdee-55c6e695a199",
+        "56a7acf8-05ab-48a0-9310-603fc9f01b28",
+        "7ed20d23-4595-4979-a9d6-43854584a611",
+        "4b6d4ed0-f49c-4205-98d2-43cabc2e30d0",
+        "9c78e9dd-786f-4352-a848-d611868dc8c1",
+        "b0f2c4a7-b6a5-46e4-b258-d9499082052f",
+        "421b37e1-3f18-4487-aeb3-1297e04d95dc",
+        "abb5e513-0d88-4863-9579-8b3e0e0316c0"
+      ]
+    },
+    "263410239119101": {
+      "queryCount": 17,
+      "queriesWithPhotonTime": 17,
+      "zeroPhotonQueries": 0,
+      "photonTotalTimeMs": 9217,
+      "queryIds": [
+        "f80eb675-889e-429e-befb-6b2e706028da",
+        "396aa768-a41e-4d8f-a1a5-080947aba745",
+        "a0f2aa9e-af98-4a83-821e-0d7ccce5181a",
+        "6ced2d27-26df-46ab-b8b2-35e03f72a96d",
+        "bbc7afbe-cdca-47fb-b618-220bcd9d9c6e",
+        "f34ca9cb-5491-4446-a826-185402042f0b",
+        "0c8516f4-0da7-4cab-b47b-33ffa451e095",
+        "16471d7e-53ed-4dde-b352-881e6e335524",
+        "5d01f763-cd54-4d9a-a256-7f80a18bb391",
+        "897602f7-30ba-4ae1-b42d-968083593ce6",
+        "64098b9a-bf57-4d1f-a339-14f3d1710446",
+        "a32dc8eb-30f3-4c4a-a93f-750ce1b27329",
+        "b70ea58c-2bfc-40c0-a22e-c7b2173532b5",
+        "11482580-11b4-46c0-aa02-31772337065c",
+        "e0c59178-02ab-4cb4-93f7-953e4fb1d77e",
+        "79c44736-017d-4227-bfe2-77a9dc5cb1a2",
+        "3816dc18-7615-4145-8fa9-aedd91141dae"
+      ]
+    }
+  },
+  "operatorLevelPhoton": "unverified",
+  "interpretation": "Photon timing proves runtime participation for matched queries only; query-history metrics do not attribute operators to individual rewrite rules."
+}

@@ -1,0 +1,71 @@
+resources:
+  jobs:
+    zingg_native_serverless_production_validation:
+      name: zingg-native-serverless-production-validation
+      description: "Production validation class: ordinary full-feature training with default native convergence settings"
+      max_concurrent_runs: 1
+      timeout_seconds: 14400
+      tasks:
+        - task_key: production_train
+          spark_jar_task:
+            main_class_name: ai.zingg.nativebridge.launch.DatabricksZinggMainEntry
+            parameters:
+              - --delegate-main
+              - ${var.zingg_main_class}
+              - --native-mode
+              - STRICT
+              - --native-plan-guard
+              - "true"
+              - --phase
+              - train
+              - --conf
+              - ${var.workspace_fixture_root}/config-full-parquet.json
+              - --zinggDir
+              - /Volumes/${var.catalog}/${var.schema}/${var.volume}/models-job-v10
+              - --license
+              - ${var.license_path}
+          environment_key: serverless_env5
+      environments:
+        - environment_key: serverless_env5
+          spec:
+            environment_version: "5"
+            java_dependencies:
+              - ${var.serverless_launcher_jar}
+              - ${var.native_core_jar}
+              - ${var.zingg_patched_jar}
+
+    zingg_native_serverless_performance_soak:
+      name: zingg-native-serverless-performance-soak
+      description: "Performance/soak class: bounded repeated full-feature train boundary without quick-probe overrides"
+      max_concurrent_runs: 1
+      timeout_seconds: 14400
+      tasks:
+        - task_key: soak_train
+          max_retries: 2
+          min_retry_interval_millis: 30000
+          spark_jar_task:
+            main_class_name: ai.zingg.nativebridge.launch.DatabricksZinggMainEntry
+            parameters:
+              - --delegate-main
+              - ${var.zingg_main_class}
+              - --native-mode
+              - STRICT
+              - --native-plan-guard
+              - "true"
+              - --phase
+              - train
+              - --conf
+              - ${var.workspace_fixture_root}/config-full-parquet.json
+              - --zinggDir
+              - /Volumes/${var.catalog}/${var.schema}/${var.volume}/models-job-v10
+              - --license
+              - ${var.license_path}
+          environment_key: serverless_env5
+      environments:
+        - environment_key: serverless_env5
+          spec:
+            environment_version: "5"
+            java_dependencies:
+              - ${var.serverless_launcher_jar}
+              - ${var.native_core_jar}
+              - ${var.zingg_patched_jar}

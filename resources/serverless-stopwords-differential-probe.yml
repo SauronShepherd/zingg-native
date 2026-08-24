@@ -1,0 +1,23 @@
+resources:
+  jobs:
+    zingg_native_serverless_stopwords_differential_probe:
+      name: zingg-native-serverless-stopwords-differential-probe
+      description: STRICT stop-word preprocessing differential against pinned Zingg 0.7 UDF.
+      timeout_seconds: 300
+      tasks:
+        - task_key: stopwords_differential
+          spark_jar_task:
+            main_class_name: ai.zingg.nativebridge.launch.DatabricksZinggMainEntry
+            parameters:
+              - --native-mode
+              - STRICT
+              - --native-stopwords-differential-probe
+          environment_key: serverless_env5
+      environments:
+        - environment_key: serverless_env5
+          spec:
+            environment_version: "5"
+            java_dependencies:
+              - ${var.serverless_launcher_jar}
+              - ${var.native_core_jar}
+              - ${var.zingg_patched_jar}

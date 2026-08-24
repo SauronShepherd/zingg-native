@@ -1,0 +1,430 @@
+resources:
+  jobs:
+    zingg_native_serverless:
+      name: zingg-native-serverless
+      description: Real Zingg 0.7.0 execution through the public-expression native adapter on Serverless environment 5
+      max_concurrent_runs: 1
+      tasks:
+        - task_key: zingg_serverless
+          spark_jar_task:
+            main_class_name: ai.zingg.nativebridge.launch.DatabricksZinggMainEntry
+            parameters:
+              - --delegate-main
+              - ${var.zingg_main_class}
+              - --native-mode
+              - STRICT
+              - --native-plan-guard
+              - "true"
+              - --phase
+              - findTrainingData
+              - --conf
+              - ${var.workspace_fixture_root}/config-volume.json
+              - --zinggDir
+              - /Volumes/${var.catalog}/${var.schema}/${var.volume}/models-job
+              - --license
+              - ${var.license_path}
+          environment_key: serverless_env5
+      environments:
+        - environment_key: serverless_env5
+          spec:
+            environment_version: "5"
+            java_dependencies:
+              - ${var.serverless_launcher_jar}
+              - ${var.native_core_jar}
+              - ${var.zingg_patched_jar}
+    zingg_native_serverless_minimal_train:
+      name: zingg-native-serverless-minimal-train
+      description: Minimal real-Zingg Serverless train/persistence proof using the same native integration
+      max_concurrent_runs: 1
+      tasks:
+        - task_key: prepare_input
+          spark_python_task:
+            python_file: ${var.workspace_fixture_root}/prepare-minimal-parquet.py
+          environment_key: serverless_python_env5
+        - task_key: find_training_data
+          depends_on:
+            - task_key: prepare_input
+          spark_jar_task:
+            main_class_name: ai.zingg.nativebridge.launch.DatabricksZinggMainEntry
+            parameters:
+              - --delegate-main
+              - ${var.zingg_main_class}
+              - --native-mode
+              - STRICT
+              - --phase
+              - findTrainingData
+              - --conf
+              - ${var.workspace_fixture_root}/config-minimal-parquet.json
+              - --zinggDir
+              - /Volumes/${var.catalog}/${var.schema}/${var.volume}/models-minimal-parquet
+              - --license
+              - ${var.license_path}
+          environment_key: serverless_env5
+        - task_key: seed_labels
+          depends_on:
+            - task_key: find_training_data
+          spark_python_task:
+            python_file: ${var.workspace_fixture_root}/seed-minimal-parquet-labels.py
+          environment_key: serverless_python_env5
+        - task_key: train
+          depends_on:
+            - task_key: seed_labels
+          spark_jar_task:
+            main_class_name: ai.zingg.nativebridge.launch.DatabricksZinggMainEntry
+            parameters:
+              - --delegate-main
+              - ${var.zingg_main_class}
+              - --native-mode
+              - STRICT
+              - --native-plan-guard
+              - "true"
+              - --native-model-max-iter
+              - "1"
+              - --phase
+              - train
+              - --conf
+              - ${var.workspace_fixture_root}/config-minimal-parquet.json
+              - --zinggDir
+              - /Volumes/${var.catalog}/${var.schema}/${var.volume}/models-minimal-parquet
+              - --license
+              - ${var.license_path}
+          environment_key: serverless_env5
+      environments:
+        - environment_key: serverless_env5
+          spec:
+            environment_version: "5"
+            java_dependencies:
+              - ${var.serverless_launcher_jar}
+              - ${var.native_core_jar}
+              - ${var.zingg_patched_jar}
+        - environment_key: serverless_python_env5
+          spec:
+            environment_version: "5"
+
+    zingg_native_serverless_differential:
+      name: zingg-native-serverless-differential
+      description: Differential parity probe for public-expression rules against the pinned Zingg 0.7.0 implementation
+      max_concurrent_runs: 1
+      tasks:
+        - task_key: differential
+          spark_jar_task:
+            main_class_name: ai.zingg.nativebridge.launch.DatabricksZinggMainEntry
+            parameters:
+              - --native-differential-probe
+              - --native-differential-rules
+              - exact,string_base,jaccard,numbers_jaccard,jaro,ajaro,affine_gap,product_code,check_null,check_blank_or_null,email,pin,only_alpha_exact,only_alpha_affine,same_first_word
+              - --native-mode
+              - STRICT
+          environment_key: serverless_env5
+      environments:
+        - environment_key: serverless_env5
+          spec:
+            environment_version: "5"
+            java_dependencies:
+              - ${var.serverless_launcher_jar}
+              - ${var.native_core_jar}
+              - ${var.zingg_patched_jar}
+
+    zingg_native_serverless_train_only:
+      name: zingg-native-serverless-train-only
+      description: Serverless-only train diagnostic over an existing UC training-data artifact
+      max_concurrent_runs: 1
+      tasks:
+        - task_key: seed_labels
+          spark_python_task:
+            python_file: ${var.workspace_fixture_root}/seed-minimal-labels.py
+          environment_key: serverless_python_env5
+        - task_key: train
+          depends_on:
+            - task_key: seed_labels
+          spark_jar_task:
+            main_class_name: ai.zingg.nativebridge.launch.DatabricksZinggMainEntry
+            parameters:
+              - --delegate-main
+              - ${var.zingg_main_class}
+              - --native-mode
+              - STRICT
+              - --native-plan-guard
+              - "true"
+              - --native-model-max-iter
+              - "1"
+              - --native-model-quick-probe
+              - "true"
+              - --phase
+              - train
+              - --conf
+              - ${var.workspace_fixture_root}/config-minimal.json
+              - --zinggDir
+              - /Volumes/${var.catalog}/${var.schema}/${var.volume}/models-minimal
+              - --license
+              - ${var.license_path}
+          environment_key: serverless_env5
+      environments:
+        - environment_key: serverless_env5
+          spec:
+            environment_version: "5"
+            java_dependencies:
+              - ${var.serverless_launcher_jar}
+              - ${var.native_core_jar}
+              - ${var.zingg_patched_jar}
+        - environment_key: serverless_python_env5
+          spec:
+            environment_version: "5"
+
+    zingg_native_serverless_train_diagnostic:
+      name: zingg-native-serverless-train-diagnostic
+      description: Bounded real-Zingg train diagnostic for the Serverless similarity-feature boundary
+      max_concurrent_runs: 1
+      tasks:
+        - task_key: train_diagnostic
+          spark_jar_task:
+            main_class_name: ai.zingg.nativebridge.launch.DatabricksZinggMainEntry
+            parameters:
+              - --delegate-main
+              - ${var.zingg_main_class}
+              - --native-mode
+              - STRICT
+              - --native-plan-guard
+              - "true"
+              - --native-model-max-iter
+              - "1"
+              - --native-model-quick-probe
+              - "true"
+              - --phase
+              - train
+              - --conf
+              - ${var.workspace_fixture_root}/config-volume.json
+              - --zinggDir
+              - /Volumes/${var.catalog}/${var.schema}/${var.volume}/models-job-v9
+              - --license
+              - ${var.license_path}
+          environment_key: serverless_env5
+      environments:
+        - environment_key: serverless_env5
+          spec:
+            environment_version: "5"
+            java_dependencies:
+              - ${var.serverless_launcher_jar}
+              - ${var.native_core_jar}
+              - ${var.zingg_patched_jar}
+
+    zingg_native_serverless_model_probe:
+      name: zingg-native-serverless-model-probe
+      description: Bounded public-API model fit/save/load/predict probe on Serverless
+      max_concurrent_runs: 1
+      tasks:
+        - task_key: model_probe
+          spark_jar_task:
+            main_class_name: ai.zingg.nativebridge.launch.DatabricksZinggMainEntry
+            parameters:
+              - --native-model-probe
+              - --native-mode
+              - STRICT
+              - --native-model-max-iter
+              - "1"
+              - --native-model-bounded-probe
+          environment_key: serverless_env5
+      environments:
+        - environment_key: serverless_env5
+          spec:
+            environment_version: "5"
+            java_dependencies:
+              - ${var.serverless_launcher_jar}
+              - ${var.native_core_jar}
+              - ${var.zingg_patched_jar}
+    zingg_native_serverless_materialized_train_probe:
+      name: zingg-native-serverless-materialized-train-probe
+      description: Real Zingg Serverless train probe exercising the materialized full-term gradient path
+      max_concurrent_runs: 1
+      tasks:
+        - task_key: materialized_train
+          spark_jar_task:
+            main_class_name: ai.zingg.nativebridge.launch.DatabricksZinggMainEntry
+            parameters:
+              - --delegate-main
+              - ${var.zingg_main_class}
+              - --native-mode
+              - STRICT
+              - --native-plan-guard
+              - "true"
+              - --native-model-max-iter
+              - "1"
+              - --phase
+              - train
+              - --conf
+              - ${var.workspace_fixture_root}/config-volume.json
+              - --zinggDir
+              - /Volumes/${var.catalog}/${var.schema}/${var.volume}/models-job-v9
+              - --license
+              - ${var.license_path}
+          environment_key: serverless_env5
+      environments:
+        - environment_key: serverless_env5
+          spec:
+            environment_version: "5"
+            java_dependencies:
+              - ${var.serverless_launcher_jar}
+              - ${var.native_core_jar}
+              - ${var.zingg_patched_jar}
+    zingg_native_serverless_tiny_marked_train_probe:
+      name: zingg-native-serverless-tiny-marked-train-probe
+      description: Serverless ordinary Zingg train probe over a copied marked Volume fixture with one exact feature
+      max_concurrent_runs: 1
+      tasks:
+        - task_key: tiny_marked_train
+          spark_jar_task:
+            main_class_name: ai.zingg.nativebridge.launch.DatabricksZinggMainEntry
+            parameters:
+              - --delegate-main
+              - ${var.zingg_main_class}
+              - --native-mode
+              - STRICT
+              - --native-plan-guard
+              - "true"
+              - --native-model-max-iter
+              - "1"
+              - --phase
+              - train
+              - --conf
+              - ${var.workspace_fixture_root}/config-tiny-marked.json
+              - --zinggDir
+              - /Volumes/${var.catalog}/${var.schema}/${var.volume}/models-tiny-marked
+              - --license
+              - ${var.license_path}
+          environment_key: serverless_env5
+      environments:
+        - environment_key: serverless_env5
+          spec:
+            environment_version: "5"
+            java_dependencies:
+              - ${var.serverless_launcher_jar}
+              - ${var.native_core_jar}
+              - ${var.zingg_patched_jar}
+    zingg_native_serverless_tiny_marked_match_probe:
+      name: zingg-native-serverless-tiny-marked-match-probe
+      description: Serverless ordinary Zingg match probe using the native-trained tiny fixture model
+      max_concurrent_runs: 1
+      tasks:
+        - task_key: tiny_marked_match
+          spark_jar_task:
+            main_class_name: ai.zingg.nativebridge.launch.DatabricksZinggMainEntry
+            parameters:
+              - --delegate-main
+              - ${var.zingg_main_class}
+              - --native-mode
+              - STRICT
+              - --native-plan-guard
+              - "true"
+              - --phase
+              - match
+              - --conf
+              - ${var.workspace_fixture_root}/config-tiny-marked.json
+              - --zinggDir
+              - /Volumes/${var.catalog}/${var.schema}/${var.volume}/models-tiny-marked
+              - --license
+              - ${var.license_path}
+          environment_key: serverless_env5
+      environments:
+        - environment_key: serverless_env5
+          spec:
+            environment_version: "5"
+            java_dependencies:
+              - ${var.serverless_launcher_jar}
+              - ${var.native_core_jar}
+              - ${var.zingg_patched_jar}
+    zingg_native_serverless_tiny_marked_link_probe:
+      name: zingg-native-serverless-tiny-marked-link-probe
+      description: Serverless ordinary Zingg link probe using the native-trained tiny fixture model
+      max_concurrent_runs: 1
+      tasks:
+        - task_key: tiny_marked_link
+          spark_jar_task:
+            main_class_name: ai.zingg.nativebridge.launch.DatabricksZinggMainEntry
+            parameters:
+              - --delegate-main
+              - ${var.zingg_main_class}
+              - --native-mode
+              - STRICT
+              - --native-plan-guard
+              - "true"
+              - --phase
+              - link
+              - --conf
+              - ${var.workspace_fixture_root}/config-tiny-marked.json
+              - --zinggDir
+              - /Volumes/${var.catalog}/${var.schema}/${var.volume}/models-tiny-marked
+              - --license
+              - ${var.license_path}
+          environment_key: serverless_env5
+      environments:
+        - environment_key: serverless_env5
+          spec:
+            environment_version: "5"
+            java_dependencies:
+              - ${var.serverless_launcher_jar}
+              - ${var.native_core_jar}
+              - ${var.zingg_patched_jar}
+    zingg_native_serverless_tiny_marked_label_probe:
+      name: zingg-native-serverless-tiny-marked-label-probe
+      description: Serverless ordinary Zingg label-phase compatibility probe using the tiny fixture
+      max_concurrent_runs: 1
+      tasks:
+        - task_key: tiny_marked_label
+          spark_jar_task:
+            main_class_name: ai.zingg.nativebridge.launch.DatabricksZinggMainEntry
+            parameters:
+              - --delegate-main
+              - ${var.zingg_main_class}
+              - --native-mode
+              - STRICT
+              - --native-interactive-input
+              - "9"
+              - --phase
+              - label
+              - --conf
+              - ${var.workspace_fixture_root}/config-tiny-marked.json
+              - --zinggDir
+              - /Volumes/${var.catalog}/${var.schema}/${var.volume}/models-tiny-marked
+              - --license
+              - ${var.license_path}
+          environment_key: serverless_env5
+      environments:
+        - environment_key: serverless_env5
+          spec:
+            environment_version: "5"
+            java_dependencies:
+              - ${var.serverless_launcher_jar}
+              - ${var.native_core_jar}
+              - ${var.zingg_patched_jar}
+    zingg_native_serverless_tiny_marked_update_label_probe:
+      name: zingg-native-serverless-tiny-marked-update-label-probe
+      description: Serverless ordinary Zingg updateLabel probe using the native headless input seam
+      max_concurrent_runs: 1
+      tasks:
+        - task_key: tiny_marked_update_label
+          spark_jar_task:
+            main_class_name: ai.zingg.nativebridge.launch.DatabricksZinggMainEntry
+            parameters:
+              - --delegate-main
+              - ${var.zingg_main_class}
+              - --native-mode
+              - STRICT
+              - --native-interactive-input
+              - "9"
+              - --phase
+              - updateLabel
+              - --conf
+              - ${var.workspace_fixture_root}/config-tiny-marked.json
+              - --zinggDir
+              - /Volumes/${var.catalog}/${var.schema}/${var.volume}/models-tiny-marked
+              - --license
+              - ${var.license_path}
+          environment_key: serverless_env5
+      environments:
+        - environment_key: serverless_env5
+          spec:
+            environment_version: "5"
+            java_dependencies:
+              - ${var.serverless_launcher_jar}
+              - ${var.native_core_jar}
+              - ${var.zingg_patched_jar}

@@ -1,44 +1,30 @@
 package ai.zingg.native.gateway
 
-import ai.zingg.native.{ArtifactSchema, Core}
+import ai.zingg.native.{Core, NativeRewriteRegistry}
 import org.apache.spark.sql.DataFrame
 import scala.jdk.CollectionConverters._
 
-/** Deliberately small Java/Py4J-friendly gateway; Spark dependencies stay provided. */
+/**
+ * Optional Py4J transport for Dedicated/Classic clients.  It exposes the same
+ * rewrite registry as the Zingg integration provider and no Zingg phase logic.
+ */
 class ClassicGateway {
   def libraryVersion: String = Core.libraryVersion
   def protocolVersion: String = Core.protocolVersion
-  def modelArtifactSchemaVersion: Int = ArtifactSchema.currentVersion
-  def blockingTreeArtifactSchemaVersion: Int = ArtifactSchema.currentVersion
-  def capabilityMetadata: String = "shared-core;EXACT_SIMILARITY;JACCARD_SIMILARITY;JARO_SIMILARITY;TRIM;CASE_NORMALIZE;CLASSIC_FIND_TRAINING_DATA;CLASSIC_BUILD_TRAINING_PAIRS;CLASSIC_LABEL;CLASSIC_UPDATE_LABEL;model-artifact-schema-v1;blocking-tree-artifact-schema-v1;phase-parity-not-certified"
+  def capabilityMetadata: String =
+    "native-rewrite-registry;public-spark-api;classic-py4j-transport;photon-proof-requires-runtime-evidence"
   def sparkVersion(df: DataFrame): String = df.sparkSession.version
-  def supportedOperations: Array[String] = Array("EXACT_SIMILARITY", "JACCARD_SIMILARITY", "JARO_SIMILARITY")
-  def supportedPhases: Array[String] = Array("preprocess", "findTrainingData", "buildTrainingPairs", "label", "updateLabel")
+  def supportedOperations: Array[String] = NativeRewriteRegistry.default.operationIds.toArray
+  def supportedPhases: Array[String] = Array.empty[String]
+
   def preprocess(df: DataFrame, operationId: String, columns: java.util.List[String]): DataFrame =
     Core.preprocess(df, operationId, columns.asScala.toSeq)
-  def transform(df: DataFrame, operationId: String, left: String, right: String, output: String): DataFrame = Core.transform(df, operationId, left, right, output)
-  def findTrainingData(df: DataFrame, idColumn: String, keys: java.util.List[String]): DataFrame =
-    Core.findTrainingData(df, idColumn, keys.asScala.toSeq)
-  def buildTrainingPairs(df: DataFrame, idColumn: String): DataFrame = Core.buildTrainingPairs(df, idColumn)
-  /** Explicitly experimental MLlib fit; never part of SAFE capability claims. */
-  def fitExperimentalModel(
+
+  def transform(
       df: DataFrame,
-      featureColumns: java.util.List[String],
-      modelPath: String,
-      modelChecksum: String,
-      blockingTreePath: String,
-      blockingTreeChecksum: String
-  ): String = {
-    val tree = ai.zingg.native.BlockingTreeArtifact(1, blockingTreePath, blockingTreeChecksum)
-    val artifact = ai.zingg.native.ExperimentalModelTrainer.fit(
-      df, featureColumns.asScala.toSeq, modelPath, modelChecksum, tree)
-    s"{\"schemaVersion\":${artifact.schemaVersion},\"modelType\":\"${artifact.modelType}\",\"artifactPath\":\"${artifact.artifactPath}\",\"positivePairs\":${artifact.positivePairs},\"negativePairs\":${artifact.negativePairs}}"
-  }
-  def label(df: DataFrame, threshold: Double): DataFrame = Core.label(df, threshold)
-  def updateLabel(pairs: DataFrame, labels: DataFrame): DataFrame = Core.updateLabel(pairs, labels)
-  def inspectTrainingEvidence(df: DataFrame): Array[Long] = {
-    val evidence = Core.inspectTrainingEvidence(df)
-    Array(evidence.positivePairs, evidence.negativePairs)
-  }
-  def persist(df: DataFrame, outputPath: String): DataFrame = Core.persist(df, outputPath)
+      operationId: String,
+      left: String,
+      right: String,
+      output: String): DataFrame =
+    Core.transform(df, operationId, left, right, output)
 }

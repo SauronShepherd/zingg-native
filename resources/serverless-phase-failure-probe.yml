@@ -1,0 +1,28 @@
+resources:
+  jobs:
+    zingg_native_serverless_phase_failure_probe:
+      name: zingg-native-serverless-phase-failure-probe
+      description: Expected-failure ordinary Zingg phase proving managed failure summaries are emitted.
+      timeout_seconds: 300
+      tasks:
+        - task_key: ordinary_train_failure
+          spark_jar_task:
+            main_class_name: ai.zingg.nativebridge.launch.DatabricksZinggMainEntry
+            parameters:
+              - --native-mode
+              - STRICT
+              - --delegate-main
+              - zingg.spark.client.SparkClient
+              - --phase
+              - train
+              - --conf
+              - /Volumes/${var.catalog}/${var.schema}/${var.volume}/does-not-exist/config.json
+          environment_key: serverless_env5
+      environments:
+        - environment_key: serverless_env5
+          spec:
+            environment_version: "5"
+            java_dependencies:
+              - ${var.serverless_launcher_jar}
+              - ${var.native_core_jar}
+              - ${var.zingg_patched_jar}

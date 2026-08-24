@@ -1,0 +1,5 @@
+<dependency>
+  <groupId>ai.zingg</groupId>
+  <artifactId>zingg-native-core_2.13</artifactId>
+  <version>0.3.0-SNAPSHOT</version>
+</dependency>
