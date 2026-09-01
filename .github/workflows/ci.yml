@@ -26,6 +26,9 @@ jobs:
       - name: Verify architecture boundaries
         shell: pwsh
         run: ./scripts/check-architecture.ps1
+      - name: Prepare pinned Zingg 0.7 reference
+        shell: pwsh
+        run: ./scripts/prepare-reference.ps1
       - name: Verify pinned upstream operation inventory
         shell: pwsh
         run: ./scripts/check-upstream-inventory.ps1
@@ -55,6 +58,7 @@ jobs:
           pwsh ./scripts/check-artifacts.ps1
           pwsh ./scripts/check-phase-contract.ps1
           pwsh ./scripts/check-upstream-native-patch.ps1
+          pwsh ./scripts/prepare-reference.ps1
           pwsh ./scripts/check-source-context.ps1
           python scripts/check-source-boundaries.py
           pwsh ./scripts/build-patched-zingg.ps1 -Output dist/zingg-0.7.0-spark4-native.jar
