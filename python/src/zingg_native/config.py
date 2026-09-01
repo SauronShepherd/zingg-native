@@ -1,6 +1,7 @@
 """Native execution policy shared by Classic/Py4J and Spark Connect clients."""
-from dataclasses import dataclass, field
 import os
+from dataclasses import dataclass, field
+
 
 @dataclass(frozen=True)
 class NativeConfig:

@@ -8,6 +8,7 @@ capabilities. It does not construct semantic rewrites; ordinary Zingg remains
 JVM-owned.
 """
 from __future__ import annotations
+
 from typing import Any
 
 from .adapter import activate

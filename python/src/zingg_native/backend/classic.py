@@ -1,5 +1,6 @@
 """Classic/Py4J transport for the shared public-expression rewrite registry."""
 from __future__ import annotations
+
 from typing import Any
 
 from ..errors import BackendUnavailableError

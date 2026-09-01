@@ -2,6 +2,7 @@
 from dataclasses import dataclass
 from typing import Any
 
+
 @dataclass(frozen=True)
 class RuntimeInfo:
     spark_version: str
@@ -15,9 +16,12 @@ def detect_runtime(spark: Any) -> RuntimeInfo:
     version = str(getattr(spark, "version", "unknown"))
     conf = getattr(spark, "conf", None)
     def get(key: str, default: str = "") -> str:
-        if conf is None: return default
-        try: return str(conf.get(key, default))
-        except Exception: return default
+        if conf is None:
+            return default
+        try:
+            return str(conf.get(key, default))
+        except (AttributeError, TypeError):
+            return default
     module=f"{type(spark).__module__}.{type(spark).__name__}".lower()
     configured=get("spark.api.mode", "").lower()
     api_mode=configured if configured in {"classic","connect"} else ("connect" if "connect" in module else "classic")

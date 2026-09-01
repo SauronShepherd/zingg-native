@@ -10,9 +10,10 @@ if (-not (Test-Path (Join-Path $checkout '.git'))) {
   git clone --no-checkout $lock.repository $checkout
   git -C $checkout config core.longpaths true
   git -C $checkout sparse-checkout init --no-cone
-  git -C $checkout sparse-checkout set '/common/core/src/main/**' '/common/client/src/main/**' '/spark/core/src/main/**' '/thirdParty/**'
+  git -C $checkout sparse-checkout set '/common/core/src/main/**' '/common/client/src/main/**' '/spark/core/src/main/**' '/spark/client/src/main/**' '/thirdParty/**'
 }
 git -C $checkout fetch --tags --quiet
+git -C $checkout config core.autocrlf false
 git -C $checkout checkout --quiet --detach $lock.commit
 $actual = (git -C $checkout rev-parse HEAD).Trim()
 if (-not $actual.StartsWith($lock.commit)) { throw "Reference SHA mismatch: expected prefix $($lock.commit), got $actual" }

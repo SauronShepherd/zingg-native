@@ -5,9 +5,11 @@ Python launchers that want to select policy before constructing a Classic JVM
 Zingg job or a Spark Connect expression helper.
 """
 from __future__ import annotations
+
 import os
 from dataclasses import asdict
 from typing import Any
+
 from .config import NativeConfig
 from .errors import BackendUnavailableError
 from .runtime import detect_runtime

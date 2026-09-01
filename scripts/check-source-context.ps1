@@ -17,9 +17,17 @@ if ($lock['commit'] -ne $actualCommit) { throw "Reference commit drift: lock=$($
 
 function Get-TreeDigest([string]$root) {
   $entries = @()
-  Get-ChildItem -LiteralPath $root -Recurse -File | Sort-Object FullName | ForEach-Object {
+  Get-ChildItem -LiteralPath $root -Recurse -File |
+    Where-Object { $_.FullName -notmatch '[\\/]\.git([\\/]|$)' } |
+    Sort-Object FullName | ForEach-Object {
     $relative = $_.FullName.Substring($root.Length).TrimStart('\','/') -replace '\\','/'
-    $hash = (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+    # Hash logical text content so the lock is stable across Windows CRLF and
+    # Linux LF checkouts. These trees contain source/configuration files only.
+    $content = [Text.Encoding]::UTF8.GetString([IO.File]::ReadAllBytes($_.FullName)) -replace "`r`n?", "`n"
+    $contentBytes = [Text.Encoding]::UTF8.GetBytes($content)
+    $hashAlgorithm = [Security.Cryptography.SHA256]::Create()
+    try { $hash = ([BitConverter]::ToString($hashAlgorithm.ComputeHash($contentBytes)) -replace '-','').ToLowerInvariant() }
+    finally { $hashAlgorithm.Dispose() }
     $entries += "$relative`0$hash"
   }
   $bytes = [Text.Encoding]::UTF8.GetBytes(($entries -join "`n"))

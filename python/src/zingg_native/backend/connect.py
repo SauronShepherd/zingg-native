@@ -1,6 +1,8 @@
 """Spark Connect transport using only ordinary public PySpark expressions."""
 from typing import Any
+
 from .base import PublicExpressionBackend
+
 
 class ConnectBackend(PublicExpressionBackend):
     name="connect-public-expressions"

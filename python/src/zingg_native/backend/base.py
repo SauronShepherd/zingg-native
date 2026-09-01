@@ -1,6 +1,7 @@
 """Transport selection for the JVM-owned ordinary Zingg implementation."""
 from typing import Any, Protocol
 
+
 class ExecutionBackend(Protocol):
     name: str
     def transform(self, df: Any, operation: str, **options: Any) -> Any: ...
@@ -23,7 +24,8 @@ def resolve_backend(spark:Any,requested:str|None=None)->ExecutionBackend:
     if requested is None:
         from ..runtime import detect_runtime
         mode=detect_runtime(spark).api_mode
-    else: mode=requested.lower()
+    else:
+        mode = requested.lower()
     if mode=="classic":
         from .classic import ClassicBackend
         return ClassicBackend(spark)

@@ -1,7 +1,7 @@
 package ai.zingg.native
 
 import java.util.UUID
-import java.nio.file.{FileVisitOption, FileVisitResult, Files, Path, Paths, SimpleFileVisitor}
+import java.nio.file.{FileVisitResult, Files, Path, Paths, SimpleFileVisitor}
 import java.nio.file.attribute.BasicFileAttributes
 
 /** Owns only the short-lived UUID-scoped workspace used by native rewrites. */
@@ -41,8 +41,7 @@ object NativeMaterializationLifecycle {
 
   private def deleteTree(path: Path): Boolean = {
     val canonicalRoot = path.toRealPath()
-    Files.walkFileTree(canonicalRoot, java.util.EnumSet.of(FileVisitOption.NOFOLLOW_LINKS),
-      Int.MaxValue, new SimpleFileVisitor[Path] {
+    Files.walkFileTree(canonicalRoot, Int.MaxValue, new SimpleFileVisitor[Path] {
         private def verify(path: Path): Unit = {
           require(!Files.isSymbolicLink(path), s"Refusing to traverse symbolic link: $path")
           val canonical = path.toRealPath()
