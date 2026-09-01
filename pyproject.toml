@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=68,<82"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -13,19 +13,19 @@ dependencies = []
 
 [project.optional-dependencies]
 dev = [
-  "pytest>=8",
-  "pytest-cov>=5",
-  "hypothesis>=6",
-  "ruff>=0.6",
-  "mypy>=1.11",
-  "build>=1.2",
+  "pytest>=8,<10",
+  "pytest-cov>=5,<8",
+  "hypothesis>=6,<7",
+  "ruff>=0.6,<0.17",
+  "mypy>=1.11,<2.4",
+  "build>=1.2,<2",
 ]
 connect = [
-  "pandas>=2.2",
-  "pyarrow>=15",
-  "grpcio>=1.67",
-  "grpcio-status>=1.48.1",
-  "zstandard>=0.25",
+  "pandas>=2.2,<4",
+  "pyarrow>=15,<24",
+  "grpcio>=1.67,<2",
+  "grpcio-status>=1.48.1,<2",
+  "zstandard>=0.25,<1",
 ]
 
 [tool.setuptools.packages.find]
