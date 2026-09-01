@@ -1,0 +1,16 @@
+name: Fork PR policy
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+permissions:
+  contents: read
+jobs:
+  require-fork:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require pull requests from forks
+        env:
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          BASE_REPO: ${{ github.repository }}
+        run: test "$HEAD_REPO" != "$BASE_REPO"
+
