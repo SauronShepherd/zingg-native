@@ -31,6 +31,9 @@ def test_graph_iteration_and_containment_contracts_are_explicit_in_source():
     launcher = (ROOT / "serverless-launcher/src/main/scala/ai/zingg/native/launch/DatabricksZinggMain.scala").read_text(encoding="utf-8")
     assert 'require(maxIterations > 0, "maxIterations must be positive")' in graph
     assert "did not converge" in graph
+    assert 'sys.props.get("zingg.native.graph.materializePath")' in graph
+    assert "refusing an unmanaged fallback" in graph
+    assert "dbfs:/tmp/zingg-native-graph" not in graph
     assert "explicit graph materialization requires --zinggDir" in launcher
     assert 'val scopedPrefix = scopedRoot.stripSuffix("/") + "/"' in launcher
     assert "configured == scopedRoot || configured.startsWith(scopedPrefix)" in launcher
