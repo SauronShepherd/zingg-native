@@ -16,7 +16,7 @@
          while its Scala/JVM Maven coordinate is 18.0.0. Keep the two
          contracts distinct instead of using the Python patch version as a
          Maven artifact version. -->
-    <databricks.connect.version>18.0.0</databricks.connect.version>
+    <databricks.connect.version>19.1</databricks.connect.version>
     <maven.compiler.release>17</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
