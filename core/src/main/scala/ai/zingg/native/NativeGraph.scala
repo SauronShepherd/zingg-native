@@ -1,67 +1,69 @@
 package ai.zingg.native
 
-import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.{Column, DataFrame}
 import org.apache.spark.sql.functions._
+import org.apache.spark.sql.types.DecimalType
 import java.util.UUID
 
-/** GraphFrames-free connected components built only with relational operators. */
+/** GraphFrames-compatible connected components using public relational Spark APIs. */
 object NativeGraph {
-  def connectedComponents(
-      vertices:DataFrame,
-      edges:DataFrame,
-      idColumn:String,
-      rightIdColumn:String,
-      clusterColumn:String,
-      context:RewriteContext,
-      maxIterations:Int=128):DataFrame={
-    require(maxIterations>0,"maxIterations must be positive")
-    val effectiveMaxIterations = sys.props.get("zingg.native.graph.maxIterations")
-      .map(_.trim).filter(_.nonEmpty).map(_.toInt).map { overrideValue =>
-        require(overrideValue > 0, "zingg.native.graph.maxIterations must be positive")
-        math.min(maxIterations, overrideValue)
-      }.getOrElse(maxIterations)
-    val original=vertices
-    val ids=original.select(col(idColumn).alias("_id")).distinct()
-    val directed=edges.select(col(idColumn).alias("src"),col(rightIdColumn).alias("dst"))
-      .unionByName(edges.select(col(rightIdColumn).alias("src"),col(idColumn).alias("dst"))).filter(col("src").isNotNull&&col("dst").isNotNull).distinct()
-    val materializationRoot=sys.props.getOrElse(
-      "zingg.native.graph.materializePath", "dbfs:/tmp/zingg-native-graph")
-    val materializationPath=s"$materializationRoot/${UUID.randomUUID().toString}"
-    // Cut the upstream prediction lineage once before fixed-point iteration.
-    // Without this boundary, every convergence action re-plans the complete
-    // match/link feature and prediction graph through Spark Connect.
-    val stableIdsPath=s"$materializationPath/ids"
-    val stableDirectedPath=s"$materializationPath/directed"
-    ids.write.mode("overwrite").parquet(stableIdsPath)
-    directed.write.mode("overwrite").parquet(stableDirectedPath)
-    val stableIds=vertices.sparkSession.read.parquet(stableIdsPath)
-    val stableDirected=vertices.sparkSession.read.parquet(stableDirectedPath)
-    var labels=stableIds.withColumn("_component",col("_id"))
-    var i=0
-    var done=false
-    // Materialize each fixed-point step through the public DataFrame writer.
-    // This keeps the Spark Connect plan bounded instead of nesting one full
-    // join lineage inside the next iteration.
-    while(i<effectiveMaxIterations && !done){
-      val propagated=stableDirected.alias("e").join(labels.alias("l"),col("e.src")===col("l._id"),"inner")
-        .select(col("e.dst").alias("_id"),col("l._component"))
-      val next=labels.select("_id","_component").unionByName(propagated)
-        .groupBy("_id").agg(min(col("_component")).alias("_component"))
-      val stepPath=s"$materializationPath/labels-$i"
-      // Persist the computed step before convergence inspection. The old
-      // order executed the complete join/groupBy once for convergence and a
-      // second time for the write, which is especially costly on Serverless.
-      next.write.mode("overwrite").parquet(stepPath)
-      val materializedNext=vertices.sparkSession.read.parquet(stepPath)
-      done=materializedNext.alias("n").join(labels.alias("o"),col("n._id")===col("o._id"),"inner")
-        .filter(!(col("n._component") <=> col("o._component"))).limit(1).count()==0
-      labels=materializedNext
-      i+=1
+  private val Src = "src"
+  private val Dst = "dst"
+  private val MinNbr = "min_nbr"
+  private val Count = "cnt"
+  private def minValue(x: Column, y: Column): Column = when(x < y, x).otherwise(y)
+  private def maxValue(x: Column, y: Column): Column = when(x > y, x).otherwise(y)
+  private def symmetrize(e: DataFrame): DataFrame = e.select(explode(array(
+    struct(col(Src), col(Dst)), struct(col(Dst).alias(Src), col(Src).alias(Dst)))).alias("edge"))
+    .select(col("edge.src").alias(Src), col("edge.dst").alias(Dst))
+  private def minNbrs(e: DataFrame): DataFrame = symmetrize(e).groupBy(Src)
+    .agg(min(col(Dst)).alias(MinNbr), count(lit(1)).alias(Count))
+    .withColumn(MinNbr, minValue(col(Src), col(MinNbr)))
+  private def minNbrSum(e: DataFrame): Any =
+    e.select(sum(col(MinNbr).cast(DecimalType(38, 0))).alias("sum_min_nbr")).first().get(0)
+
+  /** Port of GraphFrames' default two_phase (large-star/small-star) algorithm. */
+  def connectedComponents(vertices: DataFrame, edges: DataFrame, idColumn: String,
+      rightIdColumn: String, clusterColumn: String, context: RewriteContext,
+      maxIterations: Int = Int.MaxValue): DataFrame = {
+    require(maxIterations > 0, "maxIterations must be positive")
+    require(sys.props.getOrElse("zingg.native.graph.strategy", "two_phase").trim.toLowerCase == "two_phase",
+      "zingg.native.graph.strategy must be two_phase")
+    val spark = vertices.sparkSession
+    val root = s"${sys.props.getOrElse("zingg.native.graph.materializePath", "dbfs:/tmp/zingg-native-graph")}/${UUID.randomUUID()}"
+    val ids = vertices.select(col(idColumn).alias("id")).distinct()
+    val initial = edges.select(col(idColumn).alias(Src), col(rightIdColumn).alias(Dst))
+      .unionByName(edges.select(col(rightIdColumn).alias(Src), col(idColumn).alias(Dst)))
+      .filter(col(Src).isNotNull && col(Dst).isNotNull && col(Src) =!= col(Dst))
+      .select(minValue(col(Src), col(Dst)).alias(Src), maxValue(col(Src), col(Dst)).alias(Dst)).distinct()
+    initial.write.mode("overwrite").parquet(s"$root/edges-0")
+    var ee = spark.read.parquet(s"$root/edges-0")
+    var nbrs = minNbrs(ee)
+    var previousSum = minNbrSum(nbrs)
+    var iteration = 1
+    var converged = false
+    while (!converged && iteration <= maxIterations) {
+      val large = ee.join(nbrs, Seq(Src)).select(col(Dst).alias(Src), col(MinNbr).alias(Dst)).distinct()
+      val smallNbrs = large.groupBy(Src).agg(min(col(Dst)).alias(MinNbr), count(lit(1)).alias(Count))
+      val next = large.join(smallNbrs, Seq(Src)).select(col(MinNbr).alias(Src), col(Dst))
+        .filter(col(Src) =!= col(Dst))
+        .unionByName(smallNbrs.select(col(MinNbr).alias(Src), col(Src).alias(Dst))).distinct()
+      next.write.mode("overwrite").parquet(s"$root/edges-$iteration")
+      ee = spark.read.parquet(s"$root/edges-$iteration")
+      val nextNbrs = minNbrs(ee)
+      val currentSum = minNbrSum(nextNbrs)
+      converged = currentSum == previousSum
+      previousSum = currentSum
+      NativeDiagnostics.graphIteration(context, iteration, converged)
+      nbrs = nextNbrs
+      iteration += 1
     }
-    if(!done && context.mode==NativeExecutionMode.STRICT)
-      throw new NativeRewriteUnsupportedException(s"Connected-components did not converge within $effectiveMaxIterations iterations")
-    NativeEvidenceCollector.recordRule(context,"rewrite.graph.connected_components")
-    NativePlanGuard.guardDataFrame(
-      original.join(labels,original(idColumn)===labels("_id"),"left").drop("_id").withColumnRenamed("_component",clusterColumn), context)
+    if (!converged)
+      throw new NativeRewriteUnsupportedException(s"Connected-components did not converge within $maxIterations iterations")
+    val labels = ids.join(nbrs, ids("id") === nbrs(Src), "left")
+      .select(ids("id"), coalesce(nbrs(MinNbr), ids("id")).alias("_component"))
+    NativeEvidenceCollector.recordRule(context, "rewrite.graph.connected_components")
+    NativePlanGuard.guardDataFrame(vertices.join(labels, vertices(idColumn) === labels("id"), "left")
+      .drop("id").withColumnRenamed("_component", clusterColumn), context)
   }
 }
