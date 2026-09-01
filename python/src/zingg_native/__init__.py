@@ -14,13 +14,13 @@ from .runtime import RuntimeInfo, detect_runtime
 from .zingg import NativeAdapter, Zingg
 
 __all__ = [
-    "Zingg",
-    "NativeAdapter",
-    "activate",
-    "RuntimeInfo",
-    "detect_runtime",
-    "NativeConfig",
-    "ZinggNativeError",
     "BackendUnavailableError",
+    "NativeAdapter",
+    "NativeConfig",
+    "RuntimeInfo",
     "UnsupportedOperationError",
+    "Zingg",
+    "ZinggNativeError",
+    "activate",
+    "detect_runtime",
 ]

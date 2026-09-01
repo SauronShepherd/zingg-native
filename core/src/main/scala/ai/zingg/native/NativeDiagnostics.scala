@@ -48,6 +48,12 @@ object NativeDiagnostics {
         s"stage=$stage detail=$detail mode=${context.mode.id} nativeVersion=${Core.libraryVersion} " +
         s"zinggVersion=$upstreamZinggVersion")
 
+  def graphIteration(context: RewriteContext, iteration: Int, frontierEmpty: Boolean): Unit =
+    logger.info(
+      s"zingg-native graph iteration run=${context.correlationId} phase=${context.phase} " +
+        s"iteration=$iteration frontierEmpty=$frontierEmpty mode=${context.mode.id} " +
+        s"nativeVersion=${Core.libraryVersion} zinggVersion=$upstreamZinggVersion")
+
   def unsupported(
       context: RewriteContext,
       operationId: String,

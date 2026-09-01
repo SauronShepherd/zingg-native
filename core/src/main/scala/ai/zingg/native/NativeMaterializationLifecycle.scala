@@ -41,7 +41,7 @@ object NativeMaterializationLifecycle {
 
   private def deleteTree(path: Path): Boolean = {
     val canonicalRoot = path.toRealPath()
-    Files.walkFileTree(canonicalRoot, Int.MaxValue, new SimpleFileVisitor[Path] {
+    Files.walkFileTree(canonicalRoot, new SimpleFileVisitor[Path] {
         private def verify(path: Path): Unit = {
           require(!Files.isSymbolicLink(path), s"Refusing to traverse symbolic link: $path")
           val canonical = path.toRealPath()
