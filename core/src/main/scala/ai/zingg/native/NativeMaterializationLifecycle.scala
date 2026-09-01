@@ -34,9 +34,14 @@ object NativeMaterializationLifecycle {
 
   def exists(root: String): Boolean = {
     val normalized = Option(root).map(_.trim).getOrElse("")
-    require(normalized.matches(".*\\/.native-transient\\/[0-9a-fA-F-]{36}$"),
+    require(normalized.matches(".*[\\\\/].native-transient[\\\\/][0-9a-fA-F-]{36}$"),
       s"Refusing to inspect non-run-scoped native materialization path: $normalized")
-    Files.exists(Paths.get(normalized))
+    val candidate = Paths.get(normalized).toAbsolutePath.normalize()
+    require(candidate.getParent.getFileName.toString == ".native-transient",
+      s"Refusing to inspect non-run-scoped native materialization path: $normalized")
+    UUID.fromString(candidate.getFileName.toString)
+    rejectSymlinkAncestors(candidate)
+    Files.exists(candidate, java.nio.file.LinkOption.NOFOLLOW_LINKS)
   }
 
   private def deleteTree(path: Path): Boolean = {
