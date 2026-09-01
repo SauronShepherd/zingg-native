@@ -38,6 +38,7 @@ object DatabricksZinggMain {
   private val NativeModelParityProbeFlag = "--native-model-parity-probe"
   private val NativeGraphMaxIterationsFlag = "--native-graph-max-iterations"
   private val NativeGraphMaterializePathFlag = "--native-graph-materialize-path"
+  private val NativeGraphStrategyFlag = "--native-graph-strategy"
   private val NativeDifferentialProbeFlag = "--native-differential-probe"
   private val NativeDifferentialRulesFlag = "--native-differential-rules"
   private val NativeModelProbeFlag = "--native-model-probe"
@@ -45,6 +46,13 @@ object DatabricksZinggMain {
   private val NativeModelCorruptionProbeFlag = "--native-model-corruption-probe"
   private val NativeModelProbePathFlag = "--native-model-probe-path"
   private val NativeGraphProbeFlag = "--native-graph-probe"
+  private val NativeGraphBenchmarkFlag = "--native-graph-benchmark"
+  private val NativeLdbcStressFlag = "--native-ldbc-stress"
+  private val NativeLdbcVerticesFlag = "--native-ldbc-vertices"
+  private val NativeLdbcEdgesFlag = "--native-ldbc-edges"
+  private val NativeLdbcExpectedFlag = "--native-ldbc-expected"
+  private val NativeLdbcDatasetFlag = "--native-ldbc-dataset"
+  private val NativeLdbcOutputFlag = "--native-ldbc-output"
   private val NativeHashDifferentialProbeFlag = "--native-hash-differential-probe"
   private val NativeNumericDifferentialProbeFlag = "--native-numeric-differential-probe"
   private val NativeDateArrayDifferentialProbeFlag = "--native-date-array-differential-probe"
@@ -76,6 +84,8 @@ object DatabricksZinggMain {
       modelCorruptionProbe: Boolean,
       modelProbePath: Option[String],
       graphProbe: Boolean,
+      graphBenchmark: Boolean,
+      ldbcStress: Boolean,
       hashDifferentialProbe: Boolean,
       numericDifferentialProbe: Boolean,
       dateArrayDifferentialProbe: Boolean,
@@ -132,6 +142,7 @@ object DatabricksZinggMain {
     def emitOrdinaryPhaseSummary(): Unit = {
       val isProbe = launch.differentialProbe || launch.modelProbe || launch.modelLoadProbe ||
         launch.modelCorruptionProbe || launch.graphProbe || launch.hashDifferentialProbe ||
+        launch.graphBenchmark || launch.ldbcStress ||
         launch.numericDifferentialProbe || launch.dateArrayDifferentialProbe ||
         launch.stopWordsDifferentialProbe || launch.inputFormatProbe || launch.vectorProbe ||
         launch.blockingDifferentialProbe || launch.rowIdProbe || launch.fuzzyActionProbe ||
@@ -158,6 +169,15 @@ object DatabricksZinggMain {
         ServerlessDifferentialProbe.run(spark, launch.differentialRules)
       } else if (launch.graphProbe) {
         ServerlessGraphProbe.run(spark)
+      } else if (launch.graphBenchmark) {
+        ServerlessGraphBenchmark.run(spark)
+      } else if (launch.ldbcStress) {
+        LdbcGraphStress.run(spark, LdbcGraphStress.Config(
+          System.getProperty("zingg.native.ldbc.dataset", "ldbc"),
+          System.getProperty("zingg.native.ldbc.vertices"),
+          System.getProperty("zingg.native.ldbc.edges"),
+          Option(System.getProperty("zingg.native.ldbc.expected")).filter(_.nonEmpty)),
+          System.getProperty("zingg.native.ldbc.output"))
       } else if (launch.hashDifferentialProbe) {
         ServerlessHashDifferentialProbe.run(spark, None)
       } else if (launch.numericDifferentialProbe) {
@@ -210,7 +230,7 @@ object DatabricksZinggMain {
 
   private def phaseName(launch: LaunchArguments): String =
     if (launch.differentialProbe) "differential"
-    else if (launch.graphProbe) "graph-probe"
+    else if (launch.graphProbe || launch.graphBenchmark) "graph-probe"
     else if (launch.hashDifferentialProbe) "hash-differential"
     else if (launch.numericDifferentialProbe) "numeric-differential"
     else if (launch.dateArrayDifferentialProbe) "date-array-differential"
@@ -257,8 +277,10 @@ object DatabricksZinggMain {
     val graphPath = launch.graphMaterializePath.map(path => s"${path.stripSuffix("/")}/$runId")
       .orElse(runRoot.map(v => s"$v/graph"))
     graphPath.foreach(v => System.setProperty("zingg.native.graph.materializePath", v))
-    val materializationRoot = runRoot.map(path => s"$path/base")
-      .getOrElse("/Volumes/sda_dev/default/zingg_native_e2e_volume/.native-transient/base")
+    val materializationRoot = runRoot
+      .map(path => s"$path/base")
+      .getOrElse(throw new IllegalArgumentException(
+        "native materialization requires --zinggDir; refusing an unmanaged fallback path"))
     System.setProperty("zingg.native.model.materializePath", materializationRoot)
     System.setProperty("zingg.native.margin.materializePath", s"$materializationRoot/margins")
     System.setProperty("zingg.native.similarity.materializePath", s"$materializationRoot/similarity")
@@ -307,6 +329,8 @@ object DatabricksZinggMain {
     var modelCorruptionProbe = false
     var modelProbePath: Option[String] = None
     var graphProbe = false
+    var graphBenchmark = false
+    var ldbcStress = false
     var hashDifferentialProbe = false
     var numericDifferentialProbe = false
     var dateArrayDifferentialProbe = false
@@ -351,12 +375,20 @@ object DatabricksZinggMain {
         case "--native-fuzzy-model-only" => System.setProperty("zingg.native.fuzzy.modelOnly", "true")
         case NativeGraphMaxIterationsFlag => graphMaxIterations = Some(valueFor(NativeGraphMaxIterationsFlag))
         case NativeGraphMaterializePathFlag => graphMaterializePath = Some(valueFor(NativeGraphMaterializePathFlag))
+        case NativeGraphStrategyFlag => System.setProperty("zingg.native.graph.strategy", valueFor(NativeGraphStrategyFlag))
         case NativeDifferentialProbeFlag => differentialProbe = true
         case NativeModelProbeFlag => modelProbe = true
         case NativeModelLoadProbeFlag => modelLoadProbe = true
         case NativeModelCorruptionProbeFlag => modelCorruptionProbe = true
         case NativeModelProbePathFlag => modelProbePath = Some(valueFor(NativeModelProbePathFlag))
         case NativeGraphProbeFlag => graphProbe = true
+        case NativeGraphBenchmarkFlag => graphBenchmark = true
+        case NativeLdbcStressFlag => ldbcStress = true
+        case NativeLdbcDatasetFlag => System.setProperty("zingg.native.ldbc.dataset", valueFor(NativeLdbcDatasetFlag))
+        case NativeLdbcVerticesFlag => System.setProperty("zingg.native.ldbc.vertices", valueFor(NativeLdbcVerticesFlag))
+        case NativeLdbcEdgesFlag => System.setProperty("zingg.native.ldbc.edges", valueFor(NativeLdbcEdgesFlag))
+        case NativeLdbcExpectedFlag => System.setProperty("zingg.native.ldbc.expected", valueFor(NativeLdbcExpectedFlag))
+        case NativeLdbcOutputFlag => System.setProperty("zingg.native.ldbc.output", valueFor(NativeLdbcOutputFlag))
         case NativeHashDifferentialProbeFlag => hashDifferentialProbe = true
         case NativeNumericDifferentialProbeFlag => numericDifferentialProbe = true
         case NativeDateArrayDifferentialProbeFlag => dateArrayDifferentialProbe = true
@@ -377,7 +409,7 @@ object DatabricksZinggMain {
 
     val propertyDelegate = Option(System.getProperty("zingg.native.delegate.main")).map(_.trim).filter(_.nonEmpty)
     val resolvedDelegate = delegate.orElse(propertyDelegate).orElse {
-      if (differentialProbe || modelProbe || modelLoadProbe || modelCorruptionProbe || graphProbe || hashDifferentialProbe || numericDifferentialProbe || dateArrayDifferentialProbe || stopWordsDifferentialProbe || inputFormatProbe || vectorProbe || blockingDifferentialProbe || rowIdProbe || fuzzyActionProbe || materializationFailureProbe || materializationRecoveryProbe) Some("") else None
+      if (differentialProbe || modelProbe || modelLoadProbe || modelCorruptionProbe || graphProbe || graphBenchmark || ldbcStress || hashDifferentialProbe || numericDifferentialProbe || dateArrayDifferentialProbe || stopWordsDifferentialProbe || inputFormatProbe || vectorProbe || blockingDifferentialProbe || rowIdProbe || fuzzyActionProbe || materializationFailureProbe || materializationRecoveryProbe) Some("") else None
     }.getOrElse {
       throw new IllegalArgumentException(
         s"Missing Zingg delegate main class. Supply '$DelegateFlag <class>' or -Dzingg.native.delegate.main=<class>.")
@@ -401,6 +433,8 @@ object DatabricksZinggMain {
       modelCorruptionProbe,
       modelProbePath,
       graphProbe,
+      graphBenchmark,
+      ldbcStress,
       hashDifferentialProbe,
       numericDifferentialProbe,
       dateArrayDifferentialProbe,

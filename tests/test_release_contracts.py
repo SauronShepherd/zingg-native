@@ -429,6 +429,12 @@ def test_graph_nonconvergence_fails_closed_in_every_mode():
     assert "Connected-components did not converge" in graph
 
 
+def test_launcher_refuses_unmanaged_materialization_fallback():
+    launcher = (ROOT / "serverless-launcher/src/main/scala/ai/zingg/native/launch/DatabricksZinggMain.scala").read_text()
+    assert "requires --zinggDir" in launcher
+    assert "/Volumes/sda_dev/default/zingg_native_e2e_volume/.native-transient/base" not in launcher
+
+
 def test_graph_materialization_is_under_the_run_scoped_transient_root():
     launcher = (ROOT / "serverless-launcher/src/main/scala/ai/zingg/native/launch/DatabricksZinggMain.scala").read_text()
     assert 'orElse(runRoot.map(v => s"$v/graph"))' in launcher
