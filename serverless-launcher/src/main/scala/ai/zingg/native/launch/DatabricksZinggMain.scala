@@ -274,8 +274,15 @@ object DatabricksZinggMain {
     val runId = sys.props.getOrElse("zingg.native.run.id", UUID.randomUUID().toString)
     val runRoot = optionValue(launch.forwarded, "--zinggDir")
       .map(path => ai.zingg.native.NativeMaterializationLifecycle.runRoot(path, runId))
-    val graphPath = launch.graphMaterializePath.map(path => s"${path.stripSuffix("/")}/$runId")
-      .orElse(runRoot.map(v => s"$v/graph"))
+    val graphPath = launch.graphMaterializePath.map { path =>
+      val configured = path.stripSuffix("/")
+      val scopedRoot = runRoot.getOrElse(throw new IllegalArgumentException(
+        "explicit graph materialization requires --zinggDir"))
+      val scopedPrefix = scopedRoot.stripSuffix("/") + "/"
+      require(configured == scopedRoot || configured.startsWith(scopedPrefix),
+        s"explicit graph materialization must be beneath the native run root: $configured")
+      s"$configured/$runId"
+    }.orElse(runRoot.map(v => s"$v/graph"))
     graphPath.foreach(v => System.setProperty("zingg.native.graph.materializePath", v))
     val materializationRoot = runRoot
       .map(path => s"$path/base")

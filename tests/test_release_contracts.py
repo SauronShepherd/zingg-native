@@ -435,6 +435,12 @@ def test_launcher_refuses_unmanaged_materialization_fallback():
     assert "/Volumes/sda_dev/default/zingg_native_e2e_volume/.native-transient/base" not in launcher
 
 
+def test_launcher_rejects_graph_materialization_outside_run_root():
+    launcher = (ROOT / "serverless-launcher/src/main/scala/ai/zingg/native/launch/DatabricksZinggMain.scala").read_text()
+    assert "explicit graph materialization must be beneath the native run root" in launcher
+    assert "explicit graph materialization requires --zinggDir" in launcher
+
+
 def test_graph_materialization_is_under_the_run_scoped_transient_root():
     launcher = (ROOT / "serverless-launcher/src/main/scala/ai/zingg/native/launch/DatabricksZinggMain.scala").read_text()
     assert 'orElse(runRoot.map(v => s"$v/graph"))' in launcher
