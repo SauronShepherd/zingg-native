@@ -408,12 +408,17 @@ def test_model_validation_jobs_have_bounded_serverless_timeouts():
         assert "timeout_seconds:" in resource
 
 
-def test_native_transient_materialization_is_uuid_scoped_and_cleaned_once():
+def test_native_transient_materialization_is_uuid_scoped_and_safe_to_retry():
     lifecycle = (ROOT / "core/src/main/scala/ai/zingg/native/NativeMaterializationLifecycle.scala").read_text()
     launcher = (ROOT / "serverless-launcher/src/main/scala/ai/zingg/native/launch/DatabricksZinggMain.scala").read_text()
     assert "UUID.fromString(safeRunId)" in lifecycle
     assert ".native-transient" in lifecycle
-    assert "cleaned.getAndSet(true)" in lifecycle
+    assert "walkFileTree" in lifecycle
+    assert "NOFOLLOW_LINKS" in lifecycle
+    assert "toRealPath" in lifecycle
+    assert "isSymbolicLink" in lifecycle
+    assert "rejectSymlinkAncestors" in lifecycle
+    assert "cleaned.getAndSet(true)" not in lifecycle
     assert "NativeMaterializationLifecycle.cleanup(root)" in launcher
     assert "spark.stop()" not in launcher
 
