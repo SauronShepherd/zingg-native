@@ -36,7 +36,16 @@ function Get-TreeDigest([string]$root) {
   finally { $sha.Dispose() }
 }
 
-$referenceDigest = Get-TreeDigest $reference
+function Get-GitTreeDigest([string]$root) {
+  $lines = @(git -C $root ls-tree -r --full-tree HEAD)
+  if ($LASTEXITCODE -ne 0 -or $lines.Count -eq 0) { throw "Unable to read pinned reference tree: $root" }
+  $bytes = [Text.Encoding]::UTF8.GetBytes(($lines -join "`n"))
+  $sha = [Security.Cryptography.SHA256]::Create()
+  try { return ([BitConverter]::ToString($sha.ComputeHash($bytes)) -replace '-','').ToLowerInvariant() }
+  finally { $sha.Dispose() }
+}
+
+$referenceDigest = Get-GitTreeDigest $reference
 $overlayDigest = Get-TreeDigest $overlay
 if ($lock['referenceTreeDigest'] -ne $referenceDigest) {
   throw "Reference tree drift: lock=$($lock['referenceTreeDigest']) actual=$referenceDigest"
