@@ -8,7 +8,7 @@ GRAPH = ROOT / "core/src/main/scala/ai/zingg/native/NativeGraph.scala"
 def _same_assignments_body() -> str:
     source = GRAPH.read_text(encoding="utf-8")
     match = re.search(
-        r"private def sameAssignments\(left: DataFrame, right: DataFrame\): Boolean = \{(?P<body>.*?)\n  \}",
+        r"private(?:\[native\])? def sameAssignments\(left: DataFrame, right: DataFrame\): Boolean = \{(?P<body>.*?)\n  \}",
         source,
         flags=re.DOTALL,
     )
