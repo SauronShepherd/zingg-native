@@ -26,6 +26,9 @@ jobs:
       - name: Verify architecture boundaries
         shell: pwsh
         run: ./scripts/check-architecture.ps1
+      - name: Prepare pinned Zingg 0.7 reference
+        shell: pwsh
+        run: ./scripts/prepare-reference.ps1
       - name: Verify pinned upstream operation inventory
         shell: pwsh
         run: ./scripts/check-upstream-inventory.ps1
