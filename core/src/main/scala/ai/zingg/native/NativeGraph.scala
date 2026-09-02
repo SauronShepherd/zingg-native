@@ -2,7 +2,6 @@ package ai.zingg.native
 
 import org.apache.spark.sql.{Column, DataFrame}
 import org.apache.spark.sql.functions._
-import org.apache.spark.sql.types.DecimalType
 import java.util.UUID
 
 /** GraphFrames-compatible connected components using public relational Spark APIs. */
@@ -19,8 +18,11 @@ object NativeGraph {
   private def minNbrs(e: DataFrame): DataFrame = symmetrize(e).groupBy(Src)
     .agg(min(col(Dst)).alias(MinNbr), count(lit(1)).alias(Count))
     .withColumn(MinNbr, minValue(col(Src), col(MinNbr)))
-  private def minNbrSum(e: DataFrame): Any =
-    e.select(sum(col(MinNbr).cast(DecimalType(38, 0))).alias("sum_min_nbr")).first().get(0)
+  private def sameAssignments(left: DataFrame, right: DataFrame): Boolean = {
+    val leftAssignments = left.select(col(Src), col(MinNbr))
+    val rightAssignments = right.select(col(Src), col(MinNbr))
+    leftAssignments.except(rightAssignments).isEmpty && rightAssignments.except(leftAssignments).isEmpty
+  }
 
   /** Port of GraphFrames' default two_phase (large-star/small-star) algorithm. */
   def connectedComponents(vertices: DataFrame, edges: DataFrame, idColumn: String,
@@ -39,7 +41,6 @@ object NativeGraph {
     initial.write.mode("overwrite").parquet(s"$root/edges-0")
     var ee = spark.read.parquet(s"$root/edges-0")
     var nbrs = minNbrs(ee)
-    var previousSum = minNbrSum(nbrs)
     var iteration = 1
     var converged = false
     while (!converged && iteration <= maxIterations) {
@@ -51,9 +52,7 @@ object NativeGraph {
       next.write.mode("overwrite").parquet(s"$root/edges-$iteration")
       ee = spark.read.parquet(s"$root/edges-$iteration")
       val nextNbrs = minNbrs(ee)
-      val currentSum = minNbrSum(nextNbrs)
-      converged = currentSum == previousSum
-      previousSum = currentSum
+      converged = sameAssignments(nbrs, nextNbrs)
       NativeDiagnostics.graphIteration(context, iteration, converged)
       nbrs = nextNbrs
       iteration += 1
