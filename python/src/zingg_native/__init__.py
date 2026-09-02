@@ -5,7 +5,7 @@ import socketserver
 # PySpark 4.x on Windows may import this Unix-only symbol during initialization.
 # Classic/Connect clients use TCP there, so this compatibility alias is harmless.
 if not hasattr(socketserver, "UnixStreamServer"):
-    socketserver.UnixStreamServer = socketserver.TCPServer  # type: ignore[attr-defined, assignment]
+    setattr(socketserver, "UnixStreamServer", socketserver.TCPServer)
 
 from .adapter import activate
 from .config import NativeConfig
