@@ -50,6 +50,8 @@ jobs:
           distribution: temurin
           java-version: '17'
           cache: maven
+      - name: Run core JVM unit tests
+        run: mvn -B test -pl core
       - name: Prepare pinned Zingg 0.7 reference
         shell: pwsh
         run: ./scripts/prepare-reference.ps1
