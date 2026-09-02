@@ -66,7 +66,7 @@ jobs:
           pwsh ./scripts/build-patched-zingg.ps1 -Output dist/zingg-0.7.0-spark4-native.jar
           python scripts/check-serverless-bytecode.py core/target/zingg-native-core_2.13-0.3.0-SNAPSHOT.jar serverless-launcher/target/zingg-native-serverless-launcher_2.13-0.3.0-SNAPSHOT.jar dist/zingg-0.7.0-spark4-native.jar
           python scripts/check-release-metadata.py
-          python scripts/verify-artifacts.py
+          python scripts/verify-artifacts.py --core core/target/zingg-native-core_2.13-0.3.0-SNAPSHOT.jar --serverless-launcher serverless-launcher/target/zingg-native-serverless-launcher_2.13-0.3.0-SNAPSHOT.jar
           python scripts/artifact-checksums.py | tee artifact-sha256.txt
           test $(wc -l < artifact-sha256.txt) -eq 2
       - name: Upload artifact checksums
