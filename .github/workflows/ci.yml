@@ -47,6 +47,9 @@ jobs:
           distribution: temurin
           java-version: '17'
           cache: maven
+      - name: Prepare pinned Zingg 0.7 reference
+        shell: pwsh
+        run: ./scripts/prepare-reference.ps1
       - name: Build production Spark 4 Serverless artifacts
         run: |
           mvn -B -Dmaven.test.skip=true -Pdatabricks-serverless-env5 package -pl serverless-launcher -am
