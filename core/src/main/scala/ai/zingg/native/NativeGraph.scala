@@ -18,7 +18,7 @@ object NativeGraph {
   private def minNbrs(e: DataFrame): DataFrame = symmetrize(e).groupBy(Src)
     .agg(min(col(Dst)).alias(MinNbr), count(lit(1)).alias(Count))
     .withColumn(MinNbr, minValue(col(Src), col(MinNbr)))
-  private def sameAssignments(left: DataFrame, right: DataFrame): Boolean = {
+  private[native] def sameAssignments(left: DataFrame, right: DataFrame): Boolean = {
     val leftAssignments = left.select(col(Src), col(MinNbr))
     val rightAssignments = right.select(col(Src), col(MinNbr))
     leftAssignments.except(rightAssignments).isEmpty && rightAssignments.except(leftAssignments).isEmpty
