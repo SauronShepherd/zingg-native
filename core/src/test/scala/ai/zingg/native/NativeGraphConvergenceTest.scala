@@ -39,7 +39,7 @@ class NativeGraphConvergenceTest {
       .getOrCreate()
     try {
       import spark.implicits._
-      val vertices = Seq(1L, 2L, 3L, 4L).toDF("id")
+      val vertices = Seq(1L, 2L, 3L, 4L).toDF("left")
       val edges = Seq((1L, 2L), (2L, 3L), (3L, 4L)).toDF("left", "right")
       val context = RewriteContext(
         spark,
