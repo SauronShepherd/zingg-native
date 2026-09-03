@@ -1,7 +1,8 @@
 package ai.zingg.native
 
+import java.nio.file.Files
 import org.apache.spark.sql.SparkSession
-import org.junit.jupiter.api.Assertions.{assertFalse, assertTrue}
+import org.junit.jupiter.api.Assertions.{assertFalse, assertThrows, assertTrue}
 import org.junit.jupiter.api.Test
 
 class NativeGraphConvergenceTest {
@@ -23,6 +24,46 @@ class NativeGraphConvergenceTest {
       assertTrue(NativeGraph.sameAssignments(left, same))
     } finally {
       spark.stop()
+    }
+  }
+
+  @Test def connectedComponentsHonorsIterationBudgetBeforeFalseConvergence(): Unit = {
+    val materializeRoot = Files.createTempDirectory("zingg-native-graph-").toUri.toString
+    val previous = sys.props.get("zingg.native.graph.materializePath")
+    sys.props.put("zingg.native.graph.materializePath", materializeRoot)
+    val spark = SparkSession.builder()
+      .master("local[1]")
+      .appName("NativeGraphConvergenceBudgetTest")
+      .config("spark.ui.enabled", "false")
+      .config("spark.sql.shuffle.partitions", "1")
+      .getOrCreate()
+    try {
+      import spark.implicits._
+      val vertices = Seq(1L, 2L, 3L, 4L).toDF("left")
+      val edges = Seq((1L, 2L), (2L, 3L), (3L, 4L)).toDF("left", "right")
+      val context = RewriteContext(
+        spark,
+        NativeExecutionMode.STRICT,
+        RuntimeDescriptor(spark.version, "2.13"),
+        "graph-convergence-test",
+        "collision-budget-test")
+
+      val error = assertThrows(classOf[NativeRewriteUnsupportedException], () =>
+        NativeGraph.connectedComponents(
+          vertices,
+          edges,
+          "left",
+          "right",
+          "cluster",
+          context,
+          maxIterations = 1))
+      assertTrue(error.getMessage.contains("did not converge within 1 iterations"))
+    } finally {
+      spark.stop()
+      previous match {
+        case Some(value) => sys.props.put("zingg.native.graph.materializePath", value)
+        case None => sys.props.remove("zingg.native.graph.materializePath")
+      }
     }
   }
 }
