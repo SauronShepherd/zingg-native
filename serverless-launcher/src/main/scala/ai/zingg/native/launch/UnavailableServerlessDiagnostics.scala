@@ -25,9 +25,7 @@ private[launch] object ServerlessGraphBenchmark {
     require(spark != null, "Spark session is required")
     val provider = NativeOperationProvider.fromSpark(spark, "graph-benchmark")
     val scenarios = Seq(16, 64).flatMap { size =>
-      Seq(
-        chain(size),
-        star(size))
+      Seq(chain(size), star(size))
     }
 
     var totalElapsedMs = 0L
@@ -57,11 +55,21 @@ private[launch] object ServerlessGraphBenchmark {
         s"NATIVE_GRAPH_BENCHMARK_CASE topology=${scenario.name} " +
           s"vertices=${scenario.vertexCount} edges=${scenario.edges.size} " +
           s"maxIterations=${scenario.maxIterations} components=$components elapsedMs=$elapsedMs")
+      println(
+        s"NATIVE_GRAPH_BENCHMARK_JSON {\"kind\":\"case\",\"schemaVersion\":1," +
+          s"\"topology\":\"${scenario.name}\",\"vertices\":${scenario.vertexCount}," +
+          s"\"edges\":${scenario.edges.size},\"maxIterations\":${scenario.maxIterations}," +
+          s"\"components\":$components,\"elapsedMs\":$elapsedMs}")
     }
 
+    val maxVertices = scenarios.map(_.vertexCount).max
     println(
-      s"NATIVE_GRAPH_BENCHMARK_PASS cases=${scenarios.size} maxVertices=${scenarios.map(_.vertexCount).max} " +
+      s"NATIVE_GRAPH_BENCHMARK_PASS cases=${scenarios.size} maxVertices=$maxVertices " +
         s"totalElapsedMs=$totalElapsedMs thresholds=none")
+    println(
+      s"NATIVE_GRAPH_BENCHMARK_JSON {\"kind\":\"summary\",\"schemaVersion\":1," +
+        s"\"cases\":${scenarios.size},\"maxVertices\":$maxVertices," +
+        s"\"totalElapsedMs\":$totalElapsedMs,\"thresholds\":null}")
   }
 
   private def chain(size: Int): Scenario =
