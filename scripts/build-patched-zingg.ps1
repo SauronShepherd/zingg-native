@@ -142,7 +142,13 @@ public ZFrame<Dataset<Row>, Row, Column> cache() {
   Set-Content -LiteralPath $sparkPomPath -Value $sparkPom -NoNewline
   Push-Location $tempRoot
   try {
-    & $mvn '-DskipTests' '-Dmaven.test.skip=true' "-Dscala.version=$lockScalaVersion" "-Djava.version=$lockJavaRelease" 'clean' 'package'
+    # Spark modules declare test classifiers from both common-client and
+    # common-core. Build and install only those fixture paths with tests
+    # skipped, avoiding incompatible legacy Spark test sources while keeping
+    # the production build deterministic.
+    & $mvn '-DskipTests' "-Dscala.version=$lockScalaVersion" "-Djava.version=$lockJavaRelease" '-pl' 'common/client,common/core' '-am' 'install'
+    if ($LASTEXITCODE -ne 0) { throw "Unable to install required upstream test fixtures: $LASTEXITCODE" }
+    & $mvn '-Dmaven.test.skip=true' "-Dscala.version=$lockScalaVersion" "-Djava.version=$lockJavaRelease" 'clean' 'package'
     if ($LASTEXITCODE -ne 0) { throw "Patched Zingg Maven build failed: $LASTEXITCODE" }
   } finally { Pop-Location }
   $staging = Join-Path $tempRoot 'serverless-assembly-staging'
