@@ -64,7 +64,7 @@ jobs:
           python scripts/artifact-checksums.py | tee artifact-sha256.txt
           test $(wc -l < artifact-sha256.txt) -eq 2
       - name: Upload artifact checksums
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: zingg-native-sha256
           path: artifact-sha256.txt
