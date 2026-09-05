@@ -1,5 +1,6 @@
 package ai.zingg.native.launch
 
+import ai.zingg.native.NativeDiagnostics
 import ai.zingg.nativebridge.NativeOperationProvider
 import java.util.ArrayList
 import org.apache.spark.sql.{Row, RowFactory, SparkSession}
@@ -25,9 +26,7 @@ private[launch] object ServerlessGraphBenchmark {
     require(spark != null, "Spark session is required")
     val provider = NativeOperationProvider.fromSpark(spark, "graph-benchmark")
     val scenarios = Seq(16, 64).flatMap { size =>
-      Seq(
-        chain(size),
-        star(size))
+      Seq(chain(size), star(size))
     }
 
     var totalElapsedMs = 0L
@@ -40,28 +39,49 @@ private[launch] object ServerlessGraphBenchmark {
       val vertexFrame = spark.createDataFrame(vertices, VertexSchema)
       val edgeFrame = spark.createDataFrame(edges, EdgeSchema)
       val started = System.nanoTime()
-      val result = provider
-        .connectedComponents(vertexFrame, edgeFrame, "id", "right_id", "cluster", scenario.maxIterations)
-        .select("id", "cluster")
-        .collect()
+      val (result, iterationEvidence) = NativeDiagnostics.captureGraphIterations {
+        provider
+          .connectedComponents(vertexFrame, edgeFrame, "id", "right_id", "cluster", scenario.maxIterations)
+          .select("id", "cluster")
+          .collect()
+      }
       val elapsedMs = (System.nanoTime() - started) / 1000000L
       totalElapsedMs += elapsedMs
+      val finalIteration = iterationEvidence.lastOption
+      val iterations = finalIteration.map(_.iteration).getOrElse(0)
+      val converged = finalIteration.exists(_.frontierEmpty)
 
       require(result.length == scenario.vertexCount,
         s"Graph benchmark ${scenario.name} lost vertices: ${result.length}/${scenario.vertexCount}")
       val components = result.iterator.map(_.getString(1)).toSet.size
       require(components == 1,
         s"Graph benchmark ${scenario.name} expected one component, observed $components")
+      require(iterationEvidence.nonEmpty,
+        s"Graph benchmark ${scenario.name} emitted no convergence evidence")
+      require(converged,
+        s"Graph benchmark ${scenario.name} did not report convergence")
 
       println(
         s"NATIVE_GRAPH_BENCHMARK_CASE topology=${scenario.name} " +
           s"vertices=${scenario.vertexCount} edges=${scenario.edges.size} " +
-          s"maxIterations=${scenario.maxIterations} components=$components elapsedMs=$elapsedMs")
+          s"maxIterations=${scenario.maxIterations} iterations=$iterations " +
+          s"converged=$converged components=$components elapsedMs=$elapsedMs")
+      println(
+        s"NATIVE_GRAPH_BENCHMARK_JSON {\"kind\":\"case\",\"schemaVersion\":1," +
+          s"\"topology\":\"${scenario.name}\",\"vertices\":${scenario.vertexCount}," +
+          s"\"edges\":${scenario.edges.size},\"maxIterations\":${scenario.maxIterations}," +
+          s"\"iterations\":$iterations,\"converged\":$converged," +
+          s"\"components\":$components,\"elapsedMs\":$elapsedMs}")
     }
 
+    val maxVertices = scenarios.map(_.vertexCount).max
     println(
-      s"NATIVE_GRAPH_BENCHMARK_PASS cases=${scenarios.size} maxVertices=${scenarios.map(_.vertexCount).max} " +
+      s"NATIVE_GRAPH_BENCHMARK_PASS cases=${scenarios.size} maxVertices=$maxVertices " +
         s"totalElapsedMs=$totalElapsedMs thresholds=none")
+    println(
+      s"NATIVE_GRAPH_BENCHMARK_JSON {\"kind\":\"summary\",\"schemaVersion\":1," +
+        s"\"cases\":${scenarios.size},\"maxVertices\":$maxVertices," +
+        s"\"totalElapsedMs\":$totalElapsedMs,\"thresholds\":null}")
   }
 
   private def chain(size: Int): Scenario =

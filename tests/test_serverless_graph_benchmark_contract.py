@@ -17,10 +17,33 @@ def test_serverless_graph_benchmark_is_real_and_bounded() -> None:
         / "launch"
         / "UnavailableServerlessDiagnostics.scala"
     ).read_text(encoding="utf-8")
+    diagnostics = (
+        root
+        / "core"
+        / "src"
+        / "main"
+        / "scala"
+        / "ai"
+        / "zingg"
+        / "native"
+        / "NativeDiagnostics.scala"
+    ).read_text(encoding="utf-8")
 
     assert "--native-graph-benchmark is not available" not in source
     assert "NATIVE_GRAPH_BENCHMARK_CASE" in source
     assert "NATIVE_GRAPH_BENCHMARK_PASS" in source
+    assert "NATIVE_GRAPH_BENCHMARK_JSON" in source
+    assert '\\"schemaVersion\\":1' in source
+    assert '\\"kind\\":\\"case\\"' in source
+    assert '\\"kind\\":\\"summary\\"' in source
+    assert '\\"thresholds\\":null' in source
+    assert '\\"iterations\\":$iterations' in source
+    assert '\\"converged\\":$converged' in source
+    assert "captureGraphIterations" in source
+    assert "iterationEvidence.nonEmpty" in source
+    assert "require(converged" in source
+    assert "ThreadLocal[GraphIterationEvidence => Unit]" in diagnostics
+    assert "graphIterationObserver.remove()" in diagnostics
     assert 'Scenario("chain"' in source
     assert 'Scenario("star"' in source
     assert "Seq(16, 64)" in source
