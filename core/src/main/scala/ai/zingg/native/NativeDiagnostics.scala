@@ -2,11 +2,15 @@ package ai.zingg.native
 
 import java.util.logging.Logger
 import scala.collection.concurrent.TrieMap
+import scala.collection.mutable.ArrayBuffer
 
 /** Privacy-safe, plan-level diagnostics. Never logs row values. */
 object NativeDiagnostics {
+  final case class GraphIterationEvidence(iteration: Int, frontierEmpty: Boolean)
+
   private val logger = Logger.getLogger("ai.zingg.native")
   private val once = TrieMap.empty[String, Boolean]
+  private val graphIterationObserver = new ThreadLocal[GraphIterationEvidence => Unit]()
   val upstreamZinggVersion = "0.7.0"
 
   private def key(context: RewriteContext, kind: String, id: String): String =
@@ -48,11 +52,26 @@ object NativeDiagnostics {
         s"stage=$stage detail=$detail mode=${context.mode.id} nativeVersion=${Core.libraryVersion} " +
         s"zinggVersion=$upstreamZinggVersion")
 
-  def graphIteration(context: RewriteContext, iteration: Int, frontierEmpty: Boolean): Unit =
+  def captureGraphIterations[A](operation: => A): (A, Vector[GraphIterationEvidence]) = {
+    val evidence = ArrayBuffer.empty[GraphIterationEvidence]
+    val previous = graphIterationObserver.get()
+    graphIterationObserver.set(item => evidence += item)
+    try (operation, evidence.toVector)
+    finally {
+      if (previous == null) graphIterationObserver.remove()
+      else graphIterationObserver.set(previous)
+    }
+  }
+
+  def graphIteration(context: RewriteContext, iteration: Int, frontierEmpty: Boolean): Unit = {
+    val evidence = GraphIterationEvidence(iteration, frontierEmpty)
+    val observer = graphIterationObserver.get()
+    if (observer != null) observer(evidence)
     logger.info(
       s"zingg-native graph iteration run=${context.correlationId} phase=${context.phase} " +
         s"iteration=$iteration frontierEmpty=$frontierEmpty mode=${context.mode.id} " +
         s"nativeVersion=${Core.libraryVersion} zinggVersion=$upstreamZinggVersion")
+  }
 
   def unsupported(
       context: RewriteContext,
