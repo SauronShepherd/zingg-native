@@ -1,6 +1,8 @@
 package ai.zingg.native
 
 import java.nio.file.Files
+import scala.collection.mutable
+import scala.util.Random
 import org.apache.spark.sql.SparkSession
 import org.junit.jupiter.api.Assertions.{assertEquals, assertFalse, assertThrows, assertTrue}
 import org.junit.jupiter.api.Test
@@ -111,5 +113,75 @@ class NativeGraphConvergenceTest {
         case None => sys.props.remove("zingg.native.graph.materializePath")
       }
     }
+  }
+
+  @Test def connectedComponentsMatchesReferenceUnionFindForSeededGraphs(): Unit = {
+    val materializeRoot = Files.createTempDirectory("zingg-native-graph-differential-").toUri.toString
+    val previous = sys.props.get("zingg.native.graph.materializePath")
+    sys.props.put("zingg.native.graph.materializePath", materializeRoot)
+    val spark = SparkSession.builder()
+      .master("local[1]")
+      .appName("NativeGraphDifferentialTest")
+      .config("spark.ui.enabled", "false")
+      .config("spark.sql.shuffle.partitions", "1")
+      .getOrCreate()
+    try {
+      import spark.implicits._
+      val random = new Random(20260903L)
+      val vertices = (1L to 8L).toVector
+      (0 until 8).foreach { caseIndex =>
+        val edges = (for {
+          left <- vertices
+          right <- vertices
+          if left < right && random.nextDouble() < 0.28
+        } yield (left, right)).toVector
+        val context = RewriteContext(
+          spark,
+          NativeExecutionMode.STRICT,
+          RuntimeDescriptor(spark.version, "2.13"),
+          "graph-convergence-test",
+          s"seeded-differential-$caseIndex")
+
+        val actual = NativeGraph.connectedComponents(
+          vertices.toDF("left"),
+          edges.toDF("left", "right"),
+          "left",
+          "right",
+          "cluster",
+          context,
+          maxIterations = 16)
+          .select("left", "cluster")
+          .as[(Long, Long)]
+          .collect()
+          .toMap
+
+        assertEquals(referenceComponents(vertices, edges), actual, s"seeded graph case $caseIndex")
+      }
+    } finally {
+      spark.stop()
+      previous match {
+        case Some(value) => sys.props.put("zingg.native.graph.materializePath", value)
+        case None => sys.props.remove("zingg.native.graph.materializePath")
+      }
+    }
+  }
+
+  private def referenceComponents(vertices: Seq[Long], edges: Seq[(Long, Long)]): Map[Long, Long] = {
+    val parent = mutable.Map.from(vertices.map(value => value -> value))
+    def find(value: Long): Long = {
+      val current = parent(value)
+      if (current == value) value
+      else {
+        val root = find(current)
+        parent.update(value, root)
+        root
+      }
+    }
+    edges.foreach { case (left, right) =>
+      val leftRoot = find(left)
+      val rightRoot = find(right)
+      if (leftRoot != rightRoot) parent.update(math.max(leftRoot, rightRoot), math.min(leftRoot, rightRoot))
+    }
+    vertices.map(value => value -> find(value)).toMap
   }
 }
