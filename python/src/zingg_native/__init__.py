@@ -1,11 +1,12 @@
 """Thin control surface for the transparent Zingg 0.7 native adapter."""
 
 import socketserver
+from typing import Any, cast
 
 # PySpark 4.x on Windows may import this Unix-only symbol during initialization.
 # Classic/Connect clients use TCP there, so this compatibility alias is harmless.
 if not hasattr(socketserver, "UnixStreamServer"):
-    socketserver.UnixStreamServer = socketserver.TCPServer  # type: ignore[attr-defined, assignment]
+    cast(Any, socketserver).UnixStreamServer = socketserver.TCPServer
 
 from .adapter import activate
 from .config import NativeConfig
