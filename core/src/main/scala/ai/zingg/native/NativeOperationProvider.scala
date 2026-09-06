@@ -14,7 +14,6 @@ final class NativeOperationProvider private (val spark:SparkSession,val context:
   def shouldAudit:Boolean=context.mode.audits
   def strict:Boolean=context.mode==NativeExecutionMode.STRICT
 
-  private def semanticSimpleName(value:String):String=Option(value).getOrElse("").split('.').lastOption.getOrElse("")
   private def withParameters(parameters:Map[String,String]):RewriteContext=context.copy(parameters=context.parameters++parameters)
 
   def similarity(input:Dataset[Row],operationId:String,leftColumn:String,rightColumn:String,outputColumn:String):Dataset[Row]=
@@ -27,31 +26,7 @@ final class NativeOperationProvider private (val spark:SparkSession,val context:
       leftColumns.length == rightColumns.length && rightColumns.length == outputColumns.length,
       "Similarity batch arrays must have equal lengths")
     val operations = semanticClassNames.indices.map { index =>
-      val simple = semanticSimpleName(semanticClassNames(index))
-      val alias = simple match {
-        case "SimilarityFunctionExact" => "SimilarityFunctionExact"
-        case "StringSimilarityFunction" => "StringSimilarityFunction"
-        case "CheckNullFunction" => "CheckNullFunction"
-        case "CheckBlankOrNullFunction" => "CheckBlankOrNullFunction"
-        case "IntegerSimilarityFunction" => "IntegerSimilarityFunction"
-        case "LongSimilarityFunction" => "LongSimilarityFunction"
-        case "DoubleSimilarityFunction" => "DoubleSimilarityFunction"
-        case "FloatSimilarityFunction" => "FloatSimilarityFunction"
-        case "DateSimilarityFunction" => "DateSimilarityFunction"
-        case "ArrayDoubleSimilarityFunction" => "ArrayDoubleSimilarityFunction"
-        case "JaccSimFunction" => "JaccSimFunction"
-        case "NumbersJaccardFunction" => "NumbersJaccardFunction"
-        case "ProductCodeFunction" => "ProductCodeFunction"
-        case "JaroWinklerFunction" => "JaroWinklerFunction"
-        case "AJaroWinklerFunction" => "AJaroWinklerFunction"
-        case "AffineGapSimilarityFunction" => "AffineGapSimilarityFunction"
-        case "EmailMatchTypeFunction" => "EmailMatchTypeFunction"
-        case "PinCodeMatchTypeFunction" => "PinCodeMatchTypeFunction"
-        case "OnlyAlphabetsExactSimilarity" => "OnlyAlphabetsExactSimilarity"
-        case "OnlyAlphabetsAffineGapSimilarity" => "OnlyAlphabetsAffineGapSimilarity"
-        case "SameFirstWordFunction" => "SameFirstWordFunction"
-        case other => throw new NativeRewriteUnsupportedException(s"No native similarity mapping for upstream class '$semanticClassNames(index)' ($other)")
-      }
+      val alias = NativeOperationProvider.similarityAlias(semanticClassNames(index))
       (s"similarity.$alias", leftColumns(index), Some(rightColumns(index)), outputColumns(index))
     }
     // On managed Connect, a single batch containing both dynamic-programming
@@ -83,32 +58,10 @@ final class NativeOperationProvider private (val spark:SparkSession,val context:
 
   /** Map the concrete upstream SimFunction class, never the UDF registration name. */
   def similarityByZinggName(input:Dataset[Row],semanticClassName:String,leftColumn:String,rightColumn:String,outputColumn:String):Dataset[Row]={
-    val simple=semanticSimpleName(semanticClassName)
-    val alias=simple match {
-      case "SimilarityFunctionExact" => "SimilarityFunctionExact"
-      case "StringSimilarityFunction" => "StringSimilarityFunction"
-      case "CheckNullFunction" => "CheckNullFunction"
-      case "CheckBlankOrNullFunction" => "CheckBlankOrNullFunction"
-      case "IntegerSimilarityFunction" => "IntegerSimilarityFunction"
-      case "LongSimilarityFunction" => "LongSimilarityFunction"
-      case "DoubleSimilarityFunction" => "DoubleSimilarityFunction"
-      case "FloatSimilarityFunction" => "FloatSimilarityFunction"
-      case "DateSimilarityFunction" => "DateSimilarityFunction"
-      case "ArrayDoubleSimilarityFunction" => "ArrayDoubleSimilarityFunction"
-      case "JaccSimFunction" => "JaccSimFunction"
-      case "NumbersJaccardFunction" => "NumbersJaccardFunction"
-      case "ProductCodeFunction" => "ProductCodeFunction"
-      case "JaroWinklerFunction" => "JaroWinklerFunction"
-      case "AJaroWinklerFunction" => "AJaroWinklerFunction"
-      case "AffineGapSimilarityFunction" => "AffineGapSimilarityFunction"
-      case "EmailMatchTypeFunction" => "EmailMatchTypeFunction"
-      case "PinCodeMatchTypeFunction" => "PinCodeMatchTypeFunction"
-      case "OnlyAlphabetsExactSimilarity" => "OnlyAlphabetsExactSimilarity"
-      case "OnlyAlphabetsAffineGapSimilarity" => "OnlyAlphabetsAffineGapSimilarity"
-      case "SameFirstWordFunction" => "SameFirstWordFunction"
-      case "BigramJaccSimFn" => throw new NativeRewriteUnsupportedException("BigramJaccSimFn is not part of the supported Zingg 0.7 execution path")
-      case other => throw new NativeRewriteUnsupportedException(s"No native similarity mapping for upstream class '$semanticClassName' ($other)")
-    }
+    val simple=NativeOperationProvider.semanticSimpleName(semanticClassName)
+    if(simple=="BigramJaccSimFn")
+      throw new NativeRewriteUnsupportedException("BigramJaccSimFn is not part of the supported Zingg 0.7 execution path")
+    val alias=NativeOperationProvider.similarityAlias(semanticClassName)
     similarity(input,s"similarity.$alias",leftColumn,rightColumn,outputColumn)
   }
 
@@ -172,6 +125,39 @@ final class NativeOperationProvider private (val spark:SparkSession,val context:
 }
 
 object NativeOperationProvider{
+  private[native] val SupportedSimilarityAliases:Set[String]=Set(
+    "SimilarityFunctionExact",
+    "StringSimilarityFunction",
+    "CheckNullFunction",
+    "CheckBlankOrNullFunction",
+    "IntegerSimilarityFunction",
+    "LongSimilarityFunction",
+    "DoubleSimilarityFunction",
+    "FloatSimilarityFunction",
+    "DateSimilarityFunction",
+    "ArrayDoubleSimilarityFunction",
+    "JaccSimFunction",
+    "NumbersJaccardFunction",
+    "ProductCodeFunction",
+    "JaroWinklerFunction",
+    "AJaroWinklerFunction",
+    "AffineGapSimilarityFunction",
+    "EmailMatchTypeFunction",
+    "PinCodeMatchTypeFunction",
+    "OnlyAlphabetsExactSimilarity",
+    "OnlyAlphabetsAffineGapSimilarity",
+    "SameFirstWordFunction")
+
+  private[native] def semanticSimpleName(value:String):String=
+    Option(value).getOrElse("").split('.').lastOption.getOrElse("")
+
+  private[native] def similarityAlias(semanticClassName:String):String={
+    val simple=semanticSimpleName(semanticClassName)
+    if(SupportedSimilarityAliases.contains(simple)) simple
+    else throw new NativeRewriteUnsupportedException(
+      s"No native similarity mapping for upstream class '$semanticClassName' ($simple)")
+  }
+
   def fromSpark(spark:SparkSession,phase:String):NativeOperationProvider={
     val modeValue=sys.props.get("zingg.native.mode").orElse(sys.env.get("ZINGG_NATIVE_MODE")).getOrElse("STRICT")
     val correlationId=sys.props.get("zingg.native.run.id").orElse(sys.env.get("ZINGG_NATIVE_RUN_ID")).getOrElse(java.util.UUID.randomUUID().toString)
