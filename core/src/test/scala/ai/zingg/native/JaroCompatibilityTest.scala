@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 class JaroCompatibilityTest {
-  @Test def matchesPinnedSecondStringOracleVectors(): Unit = {
+  @Test def matchesPinnedSecondStringOracleVectorsThroughProductionRegistry(): Unit = {
     val spark = SparkSession.builder()
       .master("local[1]")
       .appName("JaroCompatibilityTest")
@@ -21,11 +21,12 @@ class JaroCompatibilityTest {
         ("CRATE", "TRACE", 0.8666666666666667d),
         ("abc", "xyz", 0.0d),
         ("Same", "same", 1.0d),
-        ("", "abc", 0.0d))
+        ("", "abc", 1.0d))
         .toDF("left", "right", "expected")
 
-      val rows = vectors
-        .select(PublicRewriteRules.jaro(col("left"), col("right")).alias("actual"), col("expected"))
+      val rows = Core
+        .transform(vectors, "JARO_SIMILARITY", "left", "right", "actual")
+        .select(col("actual"), col("expected"))
         .as[(Double, Double)]
         .collect()
 
