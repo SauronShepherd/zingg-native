@@ -33,6 +33,22 @@ object ServerlessGraphProbe {
     }
     require(rejected, "STRICT graph probe must reject an insufficient iteration bound")
 
+    val previousMode = sys.props.get("zingg.native.mode")
+    var rewriteRejected = false
+    try {
+      System.setProperty("zingg.native.mode", "REWRITE")
+      val rewriteProvider = NativeOperationProvider.fromSpark(spark, "graph-probe-rewrite")
+      rewriteProvider.connectedComponents(vertexFrame, edgeFrame, "id", "right_id", "cluster", 1).collect()
+    } catch {
+      case _: NativeRewriteUnsupportedException => rewriteRejected = true
+    } finally {
+      previousMode match {
+        case Some(value) => System.setProperty("zingg.native.mode", value)
+        case None => System.clearProperty("zingg.native.mode")
+      }
+    }
+    require(rewriteRejected, "REWRITE graph probe must reject an insufficient iteration bound")
+
     val previousLimit = sys.props.get("zingg.native.graph.maxIterations")
     var propertyRejected = false
     try {
@@ -54,6 +70,6 @@ object ServerlessGraphProbe {
     val expected = Set(Set("a", "b", "c"), Set("d", "e"), Set("f", "g", "h", "i"),
       Set("j", "k", "l", "m"))
     require(groups == expected, s"Graph component mismatch: actual=$groups expected=$expected")
-    println("NATIVE_GRAPH_PROBE_PASS cases=isolated,single-edge,chain,cycle,star,duplicate,reverse,self-edge iterationFailure=true propertyIterationFailure=true")
+    println("NATIVE_GRAPH_PROBE_PASS cases=isolated,single-edge,chain,cycle,star,duplicate,reverse,self-edge iterationFailure=true rewriteIterationFailure=true propertyIterationFailure=true")
   }
 }
