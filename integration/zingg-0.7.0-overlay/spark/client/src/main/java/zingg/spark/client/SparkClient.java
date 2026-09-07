@@ -1,6 +1,5 @@
 package zingg.spark.client;
 
-import org.apache.spark.SparkContext;
 import org.apache.spark.sql.Column;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
@@ -70,11 +69,24 @@ public class SparkClient extends Client<SparkSession, Dataset<Row>, Row, Column,
         return session;
     }
 
-    /** Preserve the pinned 0.7 test/client checkpoint contract under Spark 4. */
+    /**
+     * Preserve the pinned 0.7 test/client checkpoint contract without linking
+     * the Serverless artifact directly to SparkContext. Managed runtimes forbid
+     * that bytecode dependency, while upstream test compilation still expects
+     * this public method to exist.
+     */
     public void checkAndSetCheckpoint(SparkSession sparkSession) {
-        SparkContext sparkContext = sparkSession.sparkContext();
-        if (sparkContext.getCheckpointDir().isEmpty()) {
-            sparkContext.setCheckpointDir(DEFAULT_CHECKPOINT_DIR);
+        try {
+            Object sparkContext = sparkSession.getClass().getMethod("sparkContext").invoke(sparkSession);
+            Object checkpointDir = sparkContext.getClass().getMethod("getCheckpointDir").invoke(sparkContext);
+            boolean empty = (Boolean) checkpointDir.getClass().getMethod("isEmpty").invoke(checkpointDir);
+            if (empty) {
+                sparkContext.getClass()
+                        .getMethod("setCheckpointDir", String.class)
+                        .invoke(sparkContext, DEFAULT_CHECKPOINT_DIR);
+            }
+        } catch (ReflectiveOperationException failure) {
+            throw new IllegalStateException("Unable to configure Spark checkpoint directory", failure);
         }
     }
 
