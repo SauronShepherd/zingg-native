@@ -1,5 +1,6 @@
 package zingg.spark.client;
 
+import org.apache.spark.SparkContext;
 import org.apache.spark.sql.Column;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
@@ -19,6 +20,7 @@ import zingg.spark.client.util.SparkPipeUtil;
 public class SparkClient extends Client<SparkSession, Dataset<Row>, Row, Column, DataType> {
     private static final long serialVersionUID = 1L;
     protected static final String zFactoryClassName = "zingg.spark.core.executor.SparkZFactory";
+    private static final String DEFAULT_CHECKPOINT_DIR = "/tmp/checkpoint";
 
     public SparkClient(IZArgs args, ClientOptions options) throws ZinggClientException { this(args, options, zFactoryClassName); }
     public SparkClient(IZArgs args, ClientOptions options, SparkSession s) throws ZinggClientException {
@@ -66,6 +68,14 @@ public class SparkClient extends Client<SparkSession, Dataset<Row>, Row, Column,
             setSession(active != null ? active : SparkSession.builder().appName("Zingg").getOrCreate());
         }
         return session;
+    }
+
+    /** Preserve the pinned 0.7 test/client checkpoint contract under Spark 4. */
+    public void checkAndSetCheckpoint(SparkSession sparkSession) {
+        SparkContext sparkContext = sparkSession.sparkContext();
+        if (sparkContext.getCheckpointDir().isEmpty()) {
+            sparkContext.setCheckpointDir(DEFAULT_CHECKPOINT_DIR);
+        }
     }
 
     @Override
