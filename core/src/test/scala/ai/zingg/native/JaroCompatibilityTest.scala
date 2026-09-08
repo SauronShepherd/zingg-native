@@ -15,13 +15,19 @@ class JaroCompatibilityTest {
       .getOrCreate()
     try {
       import spark.implicits._
-      val vectors = Seq(
+      val oracle = Seq(
         ("MARTHA", "MARHTA", 0.9444444444444445d),
         ("DWAYNE", "DUANE", 0.8222222222222223d),
         ("CRATE", "TRACE", 0.8666666666666667d),
         ("abc", "xyz", 0.0d),
         ("Same", "same", 1.0d),
         ("", "abc", 1.0d))
+      val vectors = oracle
+        .flatMap { case (left, right, expected) =>
+          Seq(
+            (left, right, expected),
+            (right, left, expected))
+        }
         .toDF("left", "right", "expected")
 
       val rows = Core
@@ -30,6 +36,7 @@ class JaroCompatibilityTest {
         .as[(Double, Double)]
         .collect()
 
+      assertEquals(oracle.size * 2, rows.length)
       rows.foreach { case (actual, expected) =>
         assertEquals(expected, actual, 1e-12)
       }
