@@ -6,11 +6,12 @@ $lock = @{}
 Get-Content $lockPath | Where-Object { $_ -match '^(\w+)=(.*)$' } | ForEach-Object { $lock[$Matches[1]] = $Matches[2] }
 if (-not (Test-Path (Join-Path $checkout '.git'))) {
   # The upstream repository contains generated fixtures with Windows-hostile
-  # paths. Keep the semantic source only; never check out the fixture tree.
+  # paths. Keep the semantic source plus the one test helper consumed by the
+  # Scala 2.13 patched-build qualification; never check out the fixture tree.
   git clone --no-checkout $lock.repository $checkout
   git -C $checkout config core.longpaths true
   git -C $checkout sparse-checkout init --no-cone
-  git -C $checkout sparse-checkout set '/common/core/src/main/**' '/common/client/src/main/**' '/spark/core/src/main/**' '/spark/client/src/main/**' '/thirdParty/**'
+  git -C $checkout sparse-checkout set '/common/core/src/main/**' '/common/client/src/main/**' '/spark/core/src/main/**' '/spark/client/src/main/**' '/spark/core/src/test/java/zingg/spark/core/TestUDFDoubleWrappedArr.java' '/thirdParty/**'
 }
 git -C $checkout fetch --tags --quiet
 git -C $checkout config core.autocrlf false
