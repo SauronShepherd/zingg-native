@@ -15,10 +15,13 @@ class JaroCompatibilityTest {
       .getOrCreate()
     try {
       import spark.implicits._
+      // Zingg 0.7.0's SJaroWinkler extends SecondString Jaro directly.  These
+      // values therefore lock its historical matching-window semantics rather
+      // than a generic textbook Jaro implementation.
       val oracle = Seq(
         ("MARTHA", "MARHTA", 0.9444444444444445d),
         ("DWAYNE", "DUANE", 0.8222222222222223d),
-        ("CRATE", "TRACE", 0.8666666666666667d),
+        ("CRATE", "TRACE", 0.9333333333333332d),
         ("abc", "xyz", 0.0d),
         ("Same", "same", 1.0d),
         ("", "abc", 1.0d))
