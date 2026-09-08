@@ -166,7 +166,7 @@ object NativeExpressions {
       emptyIntArray.alias("targets"))
     val matches = aggregate(indexArray(size(chars1)), initialMatches, (state, i) => {
       val start = greatest(lit(0), i - half)
-      val stop = least(size(chars2) - lit(1), i + half - lit(1))
+      val stop = least(size(chars2) - lit(1), i + half)
       val sourceValue = element_at(chars1, i + lit(1))
       // The Jaro window is already bounded by [start, stop].  Building and
       // filtering the complete right-hand index array here makes every row
