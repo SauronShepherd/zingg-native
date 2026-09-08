@@ -67,6 +67,8 @@ jobs:
           python scripts/verify-artifacts.py --core core/target/zingg-native-core_2.13-0.3.0-SNAPSHOT.jar --serverless-launcher serverless-launcher/target/zingg-native-serverless-launcher_2.13-0.3.0-SNAPSHOT.jar
           python scripts/artifact-checksums.py | tee artifact-sha256.txt
           test $(wc -l < artifact-sha256.txt) -eq 2
+      - name: Qualify pinned Jaro compatibility
+        run: mvn -B -Pdatabricks-serverless-env5 -pl core -Dtest=JaroCompatibilityTest test
       - name: Upload artifact checksums
         uses: actions/upload-artifact@v4
         with:
