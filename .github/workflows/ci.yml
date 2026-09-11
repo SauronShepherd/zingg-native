@@ -45,11 +45,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
           cache: maven
+      - name: Check Scala formatting
+        run: mvn -B -Pdatabricks-serverless-env5 spotless:check
       - name: Build production Spark 4 Serverless artifacts
         run: |
           mvn -B -Dmaven.test.skip=true -Pdatabricks-serverless-env5 package -pl serverless-launcher -am
