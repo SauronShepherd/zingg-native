@@ -32,7 +32,12 @@ object NativeGraph {
     require(sys.props.getOrElse("zingg.native.graph.strategy", "two_phase").trim.toLowerCase == "two_phase",
       "zingg.native.graph.strategy must be two_phase")
     val spark = vertices.sparkSession
-    val root = s"${sys.props.getOrElse("zingg.native.graph.materializePath", "dbfs:/tmp/zingg-native-graph")}/${UUID.randomUUID()}"
+    val materializePath = sys.props.get("zingg.native.graph.materializePath")
+      .map(_.stripSuffix("/"))
+      .filter(_.nonEmpty)
+      .getOrElse(throw new IllegalArgumentException(
+        "native graph materialization requires a validated run-scoped path; refusing an unmanaged fallback"))
+    val root = s"$materializePath/${UUID.randomUUID()}"
     val ids = vertices.select(col(idColumn).alias("id")).distinct()
     val initial = edges.select(col(idColumn).alias(Src), col(rightIdColumn).alias(Dst))
       .unionByName(edges.select(col(rightIdColumn).alias(Src), col(idColumn).alias(Dst)))

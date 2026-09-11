@@ -9,6 +9,13 @@ import org.apache.spark.sql.types.{DataTypes, StructField, StructType}
 /** Isolates fuzzy feature execution from model construction and CV. */
 object ServerlessFuzzyActionProbe {
   def run(spark: SparkSession): Unit = {
+    val runRoot = sys.props.get("zingg.native.materialization.runRoot")
+      .map(_.stripSuffix("/"))
+      .filter(_.nonEmpty)
+      .getOrElse(throw new IllegalArgumentException(
+        "fuzzy action probe requires --zinggDir; refusing an unmanaged fallback path"))
+    def probePath(name: String): String = s"$runRoot/probes/$name"
+
     val schema = StructType(Seq(
       StructField("left", DataTypes.StringType, false),
       StructField("right", DataTypes.StringType, false)))
@@ -29,7 +36,7 @@ object ServerlessFuzzyActionProbe {
     if (modelOnly) {
       System.setProperty("zingg.native.model.maxIter", "1")
       System.setProperty("zingg.native.model.boundedProbe", "true")
-      System.setProperty("zingg.native.model.materializePath", "/Volumes/sda_dev/default/zingg_native_e2e_volume/probes/fuzzy-action-model-only")
+      System.setProperty("zingg.native.model.materializePath", probePath("fuzzy-action-model-only"))
       val modeled = provider.similarityBatchByZinggName(
         input.withColumn("label", (monotonically_increasing_id() % 2L).cast("double")),
         Array("JaroWinklerFunction", "AffineGapSimilarityFunction"),
@@ -45,17 +52,19 @@ object ServerlessFuzzyActionProbe {
     require(runJaro || runAffine, s"Unsupported fuzzy action rule: ${onlyRule.getOrElse("")}")
     val stages = scala.collection.mutable.ArrayBuffer.empty[String]
     if (runJaro) {
+      val path = probePath("fuzzy-action-jaro")
       val jaro = provider.similarityByZinggName(input, "JaroWinklerFunction", "left", "right", "jaro")
-      jaro.select("jaro").write.mode("overwrite").parquet("/Volumes/sda_dev/default/zingg_native_e2e_volume/probes/fuzzy-action-jaro")
-      val jaroRows = spark.read.parquet("/Volumes/sda_dev/default/zingg_native_e2e_volume/probes/fuzzy-action-jaro").count()
+      jaro.select("jaro").write.mode("overwrite").parquet(path)
+      val jaroRows = spark.read.parquet(path).count()
       require(jaroRows == rowCount, s"Jaro probe row count mismatch: $jaroRows")
       stages += "jaro"
       println(s"FUZZY_ACTION_STAGE_PASS stage=jaro rows=$rowCount")
     }
     if (runAffine) {
+      val path = probePath("fuzzy-action-affine")
       val affine = provider.similarityByZinggName(input, "AffineGapSimilarityFunction", "left", "right", "affine")
-      affine.select("affine").write.mode("overwrite").parquet("/Volumes/sda_dev/default/zingg_native_e2e_volume/probes/fuzzy-action-affine")
-      val affineRows = spark.read.parquet("/Volumes/sda_dev/default/zingg_native_e2e_volume/probes/fuzzy-action-affine").count()
+      affine.select("affine").write.mode("overwrite").parquet(path)
+      val affineRows = spark.read.parquet(path).count()
       require(affineRows == rowCount, s"Affine probe row count mismatch: $affineRows")
       stages += "affine"
       println(s"FUZZY_ACTION_STAGE_PASS stage=affine rows=$rowCount")
@@ -64,7 +73,7 @@ object ServerlessFuzzyActionProbe {
     if (sys.props.get("zingg.native.fuzzy.actionsOnly").exists(_.equalsIgnoreCase("true"))) return
     System.setProperty("zingg.native.model.maxIter", "1")
     System.setProperty("zingg.native.model.boundedProbe", "true")
-    System.setProperty("zingg.native.model.materializePath", "/Volumes/sda_dev/default/zingg_native_e2e_volume/probes/fuzzy-action-model")
+    System.setProperty("zingg.native.model.materializePath", probePath("fuzzy-action-model"))
     val modeled = provider.similarityBatchByZinggName(
       input.withColumn("label", (monotonically_increasing_id() % 2L).cast("double")),
       Array("JaroWinklerFunction", "AffineGapSimilarityFunction"),
