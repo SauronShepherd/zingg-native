@@ -143,22 +143,10 @@ object NativeExpressions {
   /** SecondString Jaro implementation used by Zingg's SJaroWinkler class. */
   def jaro(left: Column, right: Column): Column = {
     val first = left.cast("string"); val second = right.cast("string")
-    // SecondString's Jaro implementation normalizes case before matching.
-    // Apply the same public-expression normalization to UTF-16 units so the
-    // reference behavior is preserved for mixed-case inputs.
     val chars1 = transform(utf16Units(first), unit => lowerAffineUnit(unit))
     val chars2 = transform(utf16Units(second), unit => lowerAffineUnit(unit))
     val n = size(chars1); val m = size(chars2)
     val half = floor(least(n,m) / lit(2)).cast("int") + lit(1)
-    // The working arrays contain UTF-16 code units encoded as four hex
-    // characters. Do not use 002A as the marker: that is a real '*' code unit
-    // and would incorrectly consume literal asterisks in input data.
-    val marker = lit("__NATIVE_JARO_USED__")
-
-    // SecondString greedily scans the first string and consumes the first
-    // unused equal character in the second string's match window. Carry the
-    // consumed positions as relational array state so duplicate and combining
-    // characters have the same one-to-one behavior without a UDF/RDD.
     val emptyIntArray = array().cast("array<int>")
     val initialMatches = struct(
       emptyIntArray.alias("used"),
@@ -168,12 +156,6 @@ object NativeExpressions {
       val start = greatest(lit(0), i - half)
       val stop = least(size(chars2) - lit(1), i + half)
       val sourceValue = element_at(chars1, i + lit(1))
-      // The Jaro window is already bounded by [start, stop].  Building and
-      // filtering the complete right-hand index array here makes every row
-      // pay O(|right|) work for every source character and produces a very
-      // large higher-order Connect plan.  Scan only window offsets and map
-      // them back to the original zero-based target indexes.  This preserves
-      // the greedy first-unused candidate semantics exactly.
       val windowLength = greatest(lit(0), stop - start + lit(1))
       val candidates = transform(filter(indexArray(windowLength), offset => {
         val j = start + offset
@@ -195,17 +177,9 @@ object NativeExpressions {
     val transpositions = floor(mismatches.cast("double") / lit(2.0))
     val score = (count.cast("double")/n.cast("double") + count.cast("double")/m.cast("double") +
       (count.cast("double")-transpositions)/count.cast("double")) / lit(3.0)
-    // Avoid evaluating the bounded matching scan for the common exact-value
-    // case.  The normalized arrays preserve the reference case-insensitive
-    // semantics, and stringBase still owns null/blank handling.
     stringBase(left,right) { when(chars1 === chars2, lit(1.0)).otherwise(when(size(c1) =!= size(c2) || count === 0, lit(0.0)).otherwise(score)) }
   }
 
-  // MongeElkan calls Character.toLowerCase(char) before equality/group tests.
-  // Preserve surrogate code units as-is; for normal BMP chars Spark lower() is
-  // a public expression and gives the required case-insensitive comparison.
-  // Normalize each source array once rather than repeating decode/lower inside
-  // every affine dynamic-programming cell.
   private def lowerAffineUnit(unit: Column): Column = {
     val c = conv(unit, 16, 10).cast("int")
     when(c >= 0xD800 && c <= 0xDFFF, unit)
@@ -215,10 +189,6 @@ object NativeExpressions {
   private def affineCharScore(aUnit: Column, bUnit: Column): Column = {
     def code(unit: Column): Column = conv(unit, 16, 10).cast("int")
     val x = aUnit; val y = bUnit
-    // Keep the same MongeElkan approximate-character groups, but express
-    // membership as scalar public predicates. Constructing two temporary
-    // arrays for every dynamic-programming cell creates avoidable higher-order
-    // work on Serverless while being semantically identical.
     val approximateGroups = Seq("dt","gj","rl","mn","pbv","aeuio",",.")
       .map(_.toCharArray.map(ch => f"${ch.toInt}%04X").toVector)
     val approximate = approximateGroups.map { group =>
@@ -229,11 +199,6 @@ object NativeExpressions {
     when(x === y, lit(5.0)).when(approximate, lit(3.0)).otherwise(lit(-3.0))
   }
 
-  /**
-   * SecondString AffineGap/MongeElkan score expressed as higher-order Spark SQL.
-   * State contains the previous M/S rows and the best score; the inner fold
-   * builds the current M/S/T rows. No JVM row callback is used.
-   */
   def affineGap(left:Column,right:Column):Column={
     val a = utf16Units(left.cast("string")); val b = utf16Units(right.cast("string")); val n=size(a); val m=size(b)
     val normalizedA = transform(a, unit => lowerAffineUnit(unit))
@@ -256,8 +221,6 @@ object NativeExpressions {
       struct(row.getField("mrow").alias("mrow"),row.getField("srow").alias("srow"),row.getField("best").alias("best"))
     })
     val denominator=least(n,m).cast("double")*5.0
-    // Exact normalized strings have the reference maximum score and do not
-    // need the quadratic dynamic-programming state at runtime.
     stringBase(left,right){when(normalizedA === normalizedB, lit(1.0)).otherwise(when(denominator<=0.0,lit(0.0)).otherwise(rows.getField("best")/denominator))}
   }
 
@@ -276,7 +239,9 @@ object NativeExpressions {
     affineGap(regexp_replace(left.cast("string"),"[0-9.]",""),regexp_replace(right.cast("string"),"[0-9.]",""))
   }
   def sameFirstWord(left:Column,right:Column):Column=stringBase(left,right){
-    affineGap(element_at(split(left.cast("string"),"-",-1),1),element_at(split(right.cast("string"),"-",-1),1))
+    // SameFirstWordFunction compares the first space-delimited word. A hyphen is
+    // part of that word; splitting on '-' changed the upstream similarity contract.
+    affineGap(element_at(split(left.cast("string")," ",-1),1),element_at(split(right.cast("string")," ",-1),1))
   }
 
   def javaLastWord(value:Column):Column={
@@ -305,19 +270,11 @@ object NativeExpressions {
       .otherwise(floor(x+0.5).cast("long"))
   }
   def stopWords(value:Column,pattern:String):Column=when(value.isNull || lit(pattern).isNull,lit(null).cast("string")).otherwise(regexp_replace(value.cast("string"),pattern,""))
-  // Spark's public VectorUDT is represented as a struct. Read index 2 with
-  // public Column operations, handling both dense and sparse encodings; this
-  // avoids the optional ML helper class and unavailable Serverless SQL routine.
   def vectorValue(value:Column):Column={
     val vectorType=value.getField("type")
     val size=value.getField("size")
     val indices=value.getField("indices")
     val values=value.getField("values")
-    // Spark 4 Serverless evaluates both branches under ANSI array bounds.
-    // Sparse vectors commonly store fewer than three values, so direct
-    // element_at(values, 3) can fail even when the sparse branch is selected.
-    // Safe access preserves null/missing entries without changing the vector
-    // contract or introducing a UDF.
     val dense=try_element_at(values,lit(3))
     val sparse=aggregate(sequence(lit(1),size),lit(0.0),(acc,pos)=>
       when(try_element_at(indices,pos.cast("int"))===lit(2),try_element_at(values,pos.cast("int"))).otherwise(acc))
