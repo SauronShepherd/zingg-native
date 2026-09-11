@@ -288,7 +288,7 @@ object NativeExpressions {
   def lastChars(value:Column,n:Int):Column=utf16Suffix(value,n)
   def first2Box(value:Column):Column={val s=value.cast("string");val p=utf16Prefix(s,2);when(s.isNull || utf16Length(s)<=2,0).when(p>="aa"&&p<"jz",1).when(p>="jz"&&p<"oz",2).when(p>="oz",3).otherwise(4)}
   def first3Box(value:Column):Column={val s=value.cast("string");val p=utf16Prefix(s,3);when(s.isNull || utf16Length(s)<=3,0).when(p>="aaa"&&p<"ezz",1).when(p>="ezz"&&p<"izz",2).when(p>="izz"&&p<"mzz",3).when(p>="mzz"&&p<"qzz",4).when(p>="qzz"&&p<"uzz",5).when(p>="uzz",6).otherwise(7)}
-  def truncate(value:Column,places:Int,dataType:String):Column={val scale=math.pow(10,places);when(value.isNull,value).otherwise((floor(value.cast("double")*scale)/scale).cast(dataType))}
+  def truncate(value:Column,places:Int,dataType:String):Column={val scale=math.pow(10,places);val scaled=value.cast("double")*scale;when(value.isNull,value).otherwise((when(scaled>=0.0,floor(scaled)).otherwise(ceil(scaled))/scale).cast(dataType))}
   def trimDigits(value:Column,digits:Int,dataType:String):Column={
     val scale=BigDecimal(10).pow(digits)
     if(dataType=="int"||dataType=="long") {
