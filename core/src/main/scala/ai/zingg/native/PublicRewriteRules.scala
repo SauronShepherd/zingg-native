@@ -276,7 +276,9 @@ object NativeExpressions {
     affineGap(regexp_replace(left.cast("string"),"[0-9.]",""),regexp_replace(right.cast("string"),"[0-9.]",""))
   }
   def sameFirstWord(left:Column,right:Column):Column=stringBase(left,right){
-    affineGap(element_at(split(left.cast("string"),"-",-1),1),element_at(split(right.cast("string"),"-",-1),1))
+    // SameFirstWordFunction compares the first space-delimited word. A hyphen is
+    // part of that word; splitting on '-' changed the upstream similarity contract.
+    affineGap(element_at(split(left.cast("string")," ",-1),1),element_at(split(right.cast("string")," ",-1),1))
   }
 
   def javaLastWord(value:Column):Column={
