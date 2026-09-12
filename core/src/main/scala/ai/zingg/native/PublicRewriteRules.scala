@@ -307,23 +307,22 @@ object NativeExpressions {
       .otherwise(floor(x+0.5).cast("long"))
   }
   def stopWords(value:Column,pattern:String):Column=when(value.isNull || lit(pattern).isNull,lit(null).cast("string")).otherwise(regexp_replace(value.cast("string"),pattern,""))
-  // Spark's public VectorUDT is represented as a struct. Read index 2 with
-  // public Column operations, handling both dense and sparse encodings; this
-  // avoids the optional ML helper class and unavailable Serverless SQL routine.
+  // Zingg 0.7 VectorValueExtractor returns v.toArray()[1]: the second logical
+  // coordinate. Spark element_at is one-based for arrays, and sparse VectorUDT
+  // stores only materialized positions, so scan paired index/value entries
+  // rather than the declared vector dimension.
   def vectorValue(value:Column):Column={
     val vectorType=value.getField("type")
-    val size=value.getField("size")
     val indices=value.getField("indices")
     val values=value.getField("values")
-    // Spark 4 Serverless evaluates both branches under ANSI array bounds.
-    // Sparse vectors commonly store fewer than three values, so direct
-    // element_at(values, 3) can fail even when the sparse branch is selected.
-    // Safe access preserves null/missing entries without changing the vector
-    // contract or introducing a UDF.
-    val dense=try_element_at(values,lit(3))
-    val sparse=aggregate(sequence(lit(1),size),lit(0.0),(acc,pos)=>
-      when(try_element_at(indices,pos.cast("int"))===lit(2),try_element_at(values,pos.cast("int"))).otherwise(acc))
-    when(vectorType===lit(0),sparse).otherwise(dense)
+    val dense=try_element_at(values,lit(2))
+    val sparse=aggregate(
+      zip_with(indices,values,(index,entry)=>struct(index.alias("index"),entry.alias("value"))),
+      lit(0.0),
+      (acc,pair)=>when(pair.getField("index")===lit(1),pair.getField("value")).otherwise(acc))
+    when(value.isNull,lit(null).cast("double"))
+      .when(vectorType===lit(0),sparse)
+      .otherwise(dense)
   }
 }
 
