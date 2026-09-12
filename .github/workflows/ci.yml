@@ -74,7 +74,7 @@ jobs:
       - name: Qualify pinned similarity compatibility
         run: mvn -B -Pdatabricks-serverless-env5 -pl core -Dtest=JaroCompatibilityTest,NativeOperationProviderTest test
       - name: Upload artifact checksums
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: zingg-native-sha256
           path: artifact-sha256.txt
