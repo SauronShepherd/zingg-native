@@ -19,6 +19,7 @@
     <databricks.connect.version>18.0.0</databricks.connect.version>
     <maven.compiler.release>17</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <spotless.version>3.6.0</spotless.version>
   </properties>
 
   <dependencyManagement><dependencies>
@@ -27,6 +28,25 @@
     <dependency><groupId>org.apache.spark</groupId><artifactId>spark-mllib_2.13</artifactId><version>${spark.version}</version></dependency>
     <dependency><groupId>com.databricks</groupId><artifactId>databricks-connect_2.13</artifactId><version>${databricks.connect.version}</version></dependency>
   </dependencies></dependencyManagement>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>com.diffplug.spotless</groupId>
+        <artifactId>spotless-maven-plugin</artifactId>
+        <version>${spotless.version}</version>
+        <configuration>
+          <ratchetFrom>origin/main</ratchetFrom>
+          <scala>
+            <scalafmt>
+              <file>${maven.multiModuleProjectDirectory}/.scalafmt.conf</file>
+              <scalaMajorVersion>2.13</scalaMajorVersion>
+            </scalafmt>
+          </scala>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 
   <profiles>
     <profile>
