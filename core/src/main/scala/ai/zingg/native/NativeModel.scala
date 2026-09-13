@@ -152,23 +152,45 @@ object NativeModelEngine {
   private def probability(margin: Column): Column =
     lit(1.0d) / (lit(1.0d) + exp(-margin))
 
-  private def finiteDouble(row: Row, index: Int): Double = {
+  private def numericValue(value: Any): Double = value match {
+    case n: java.lang.Number => n.doubleValue()
+    case other => other.toString.toDouble
+  }
+
+  private[native] def finiteValueForMode(
+      value: Any,
+      mode: NativeExecutionMode,
+      stage: String): Double = {
+    val numeric = numericValue(value)
+    if (numeric.isFinite) numeric
+    else if (mode == NativeExecutionMode.STRICT)
+      throw new NativeRewriteUnsupportedException(
+        s"STRICT native model rejected a non-finite numeric result at stage '$stage'")
+    else 0.0d
+  }
+
+  private def finiteValue(value: Any, context: RewriteContext, stage: String): Double = {
+    val numeric = numericValue(value)
+    if (!numeric.isFinite) {
+      val action = if (context.mode == NativeExecutionMode.STRICT) "reject" else "coerce-zero"
+      NativeDiagnostics.modelStage(context, "non-finite-result", s"stage=$stage action=$action")
+    }
+    finiteValueForMode(numeric, context.mode, stage)
+  }
+
+  private def finiteDouble(row: Row, index: Int, context: RewriteContext, stage: String): Double = {
     if (row.isNullAt(index)) 0.0d
-    else finiteValue(row.get(index))
+    else finiteValue(row.get(index), context, stage)
   }
 
-  private def finiteValue(value: Any): Double = value match {
-      case n: java.lang.Number =>
-        val d = n.doubleValue()
-        if (d.isNaN || d.isInfinity) 0.0d else d
-      case value =>
-        val d = value.toString.toDouble
-        if (d.isNaN || d.isInfinity) 0.0d else d
-  }
-
-  private def finiteArray(row: Row, index: Int, length: Int): Vector[Double] = {
+  private def finiteArray(
+      row: Row,
+      index: Int,
+      length: Int,
+      context: RewriteContext,
+      stage: String): Vector[Double] = {
     if (row.isNullAt(index)) Vector.fill(length)(0.0d)
-    else row.getSeq[Any](index).toVector.map(finiteValue).padTo(length, 0.0d).take(length)
+    else row.getSeq[Any](index).toVector.map(value => finiteValue(value, context, stage)).padTo(length, 0.0d).take(length)
   }
 
   /**
@@ -214,8 +236,8 @@ object NativeModelEngine {
       }.toArray
       val row = input.agg(aggregateColumns.head, aggregateColumns.tail: _*).head()
       batch.indices.map { index =>
-        val mean = finiteDouble(row, index * 2)
-        val standardDeviation = finiteDouble(row, index * 2 + 1)
+        val mean = finiteDouble(row, index * 2, context, "feature-mean")
+        val standardDeviation = finiteDouble(row, index * 2 + 1, context, "feature-stddev")
         (mean, if (standardDeviation.isFinite && standardDeviation > 0.0d) standardDeviation else 1.0d)
       }
     }.toVector
@@ -234,7 +256,7 @@ object NativeModelEngine {
       sum(input.col(labelColumn).cast("double")).as("_native_positive"),
       count(lit(1)).as("_native_rows")).head()
     val rowCount = if (labelSummary.isNullAt(1)) 0L else labelSummary.getLong(1)
-    val positives = if (labelSummary.isNullAt(0)) 0.0d else finiteDouble(labelSummary, 0)
+    val positives = if (labelSummary.isNullAt(0)) 0.0d else finiteDouble(labelSummary, 0, context, "label-positive-count")
     val negatives = math.max(0.0d, rowCount.toDouble - positives)
     var weights = Vector.fill(terms.length)(0.0d)
     var intercept = math.log((positives + 1.0e-12d) / (negatives + 1.0e-12d))
@@ -258,7 +280,7 @@ object NativeModelEngine {
       val row = frame.withColumn("_native_objective_loss", stableLogLoss -
         col(labelColumn).cast("double") * margin)
         .agg(avg(col("_native_objective_loss")).as("_native_log_loss")).head()
-      val dataLoss = finiteDouble(row, 0)
+      val dataLoss = finiteDouble(row, 0, context, "objective-loss")
       dataLoss + 0.5d * regParam * candidateWeights.map(weight => weight * weight).sum
     }
     val useMaterializedMargin = sys.props.get("zingg.native.margin.materializePath")
@@ -390,7 +412,7 @@ object NativeModelEngine {
             count(lit(1)).alias("_native_gradient_rows")).head()
           val rows = if (row.isNullAt(2)) 0L else row.getLong(2)
           val divisor = if (rows == 0L) 1.0d else rows.toDouble
-          (finiteArray(row, 0, gradientTerms.length).map(_ / divisor), finiteDouble(row, 1))
+          (finiteArray(row, 0, gradientTerms.length, context, "gradient-array").map(_ / divisor), finiteDouble(row, 1, context, "gradient-intercept"))
         case None =>
           // For small non-materialized probes, bounded scalar aggregates keep
           // the result narrow and preserve the exact source term ordering.
@@ -402,8 +424,8 @@ object NativeModelEngine {
             }
             val aggregateColumns = (gradientColumns :+ avg(col("_native_error")).as("_native_intercept_gradient")).toArray
             val row = gradientFrame.agg(aggregateColumns.head, aggregateColumns.tail: _*).head()
-            if (batchIndex == 0) intercept = finiteDouble(row, batch.length)
-            batch.indices.foreach(index => gradientBuilder += finiteDouble(row, index))
+            if (batchIndex == 0) intercept = finiteDouble(row, batch.length, context, "gradient-intercept")
+            batch.indices.foreach(index => gradientBuilder += finiteDouble(row, index, context, "gradient-scalar"))
           }
           (gradientBuilder.result(), intercept)
         }
@@ -503,7 +525,11 @@ object NativeModelEngine {
   }
 
   /** Area under ROC computed relationally, including half-credit for ties. */
-  private def areaUnderRoc(scoredInput: DataFrame, scoreColumn: String, labelColumn: String): Double = {
+  private def areaUnderRoc(
+      scoredInput: DataFrame,
+      scoreColumn: String,
+      labelColumn: String,
+      context: RewriteContext): Double = {
     // A cumulative Window over grouped scores is mathematically compact but
     // can leave a managed Serverless Scala kernel waiting indefinitely after
     // a large native fit. Compare positive/negative score pairs instead. The
@@ -526,7 +552,7 @@ object NativeModelEngine {
     val positives = positiveCount.toDouble
     val negatives = negativeCount.toDouble
     if (positives == 0.0d || negatives == 0.0d) 0.5d
-    else finiteDouble(pairResult.get, 0) / (positives * negatives)
+    else finiteDouble(pairResult.get, 0, context, "auc-wins") / (positives * negatives)
   }
 
   private def withFold(input: DataFrame, labelColumn: String): DataFrame = {
@@ -622,7 +648,7 @@ object NativeModelEngine {
         // production CV/AUC semantics untouched; the diagnostic metric avoids
         // conflating a remote window action with the model fit boundary.
         foldMetric += (if (boundedProbe) 0.5d
-          else areaUnderRoc(validationScored, "_zingg_native_cv_score", labelColumn))
+          else areaUnderRoc(validationScored, "_zingg_native_cv_score", labelColumn, context))
         fold += 1
       }
       val metric = foldMetric / effectiveNumFolds.toDouble
