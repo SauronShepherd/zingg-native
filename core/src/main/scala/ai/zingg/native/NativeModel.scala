@@ -52,6 +52,11 @@ object NativeModelEngine {
     .flatMap(v => scala.util.Try(v.toInt).toOption)
     .filter(_ > 0)
     .getOrElse(MaxIter)
+  private def effectiveTolerance: Double = sys.props
+    .get("zingg.native.model.tol")
+    .flatMap(value => scala.util.Try(value.toDouble).toOption)
+    .filter(value => value > 0.0d && value.isFinite)
+    .getOrElse(1.0e-6d)
   private def quickProbe: Boolean = sys.props
     .get("zingg.native.model.quickProbe")
     .exists(_.equalsIgnoreCase("true"))
@@ -227,6 +232,14 @@ object NativeModelEngine {
   private def probability(margin: Column): Column =
     lit(1.0d) / (lit(1.0d) + exp(-margin))
 
+  private def logisticLoss(margin: Column, label: Column): Column = {
+    val logNormalizer = when(
+      margin > lit(0.0d),
+      margin + log(lit(1.0d) + exp(-margin))
+    ).otherwise(log(lit(1.0d) + exp(margin)))
+    logNormalizer - label.cast("double") * margin
+  }
+
   private def numericValue(value: Any): Double = value match {
     case n: java.lang.Number => n.doubleValue()
     case other               => other.toString.toDouble
@@ -385,6 +398,7 @@ object NativeModelEngine {
     var weights = Vector.fill(terms.length)(0.0d)
     var intercept = math.log((positives + 1.0e-12d) / (negatives + 1.0e-12d))
     var iteration = 0
+    var converged = false
     var previousParameters: Option[Vector[Double]] = None
     var previousGradient: Option[Vector[Double]] = None
     var sHistory = Vector.empty[Vector[Double]]
@@ -395,26 +409,30 @@ object NativeModelEngine {
     def dot(left: Vector[Double], right: Vector[Double]): Double =
       left.indices.map(index => left(index) * right(index)).sum
 
-    def objective(
+    def candidateObjective(
         frame: DataFrame,
         frameTerms: Vector[Column],
         candidateWeights: Vector[Double],
-        candidateIntercept: Double
+        candidateIntercept: Double,
+        materializedTerms: Boolean
     ): Double = {
       val margin =
-        linearMargin(frameTerms, candidateWeights, candidateIntercept)
-      val stableLogLoss =
-        when(margin > lit(0.0d), margin + log(lit(1.0d) + exp(-margin)))
-          .otherwise(log(lit(1.0d) + exp(margin)))
+        if (materializedTerms)
+          arrayLinearMargin(
+            frame.col("_native_terms"),
+            candidateWeights,
+            candidateIntercept
+          )
+        else linearMargin(frameTerms, candidateWeights, candidateIntercept)
       val row = frame
         .withColumn(
-          "_native_objective_loss",
-          stableLogLoss -
-            col(labelColumn).cast("double") * margin
+          "_native_candidate_loss",
+          logisticLoss(margin, col(labelColumn))
         )
-        .agg(avg(col("_native_objective_loss")).as("_native_log_loss"))
+        .agg(avg(col("_native_candidate_loss")).as("_native_log_loss"))
         .head()
-      val dataLoss = finiteDouble(row, 0, context, "objective-loss")
+      val dataLoss =
+        finiteDouble(row, 0, context, "candidate-objective-loss")
       dataLoss + 0.5d * regParam * candidateWeights
         .map(weight => weight * weight)
         .sum
@@ -459,7 +477,7 @@ object NativeModelEngine {
       }
     } else None
 
-    while (iteration < maxIter) {
+    while (iteration < maxIter && !converged) {
       // The materialized-term path below does not consume `withMargin` at
       // all.  Do not construct the large margin/contribution plan in that
       // case: merely building that unused Connect plan on every iteration
@@ -540,30 +558,34 @@ object NativeModelEngine {
           val persistedTerms = terms.indices
             .map(i => persisted.col("_native_terms").getItem(i))
             .toVector
-          val scored = persisted.withColumn(
-            "_native_error",
-            probability(
-              arrayLinearMargin(
-                persisted.col("_native_terms"),
-                weights,
-                intercept
-              )
-            ) - col(labelColumn).cast("double")
-          )
-          // The term array is already a narrow, remote Parquet boundary. Do
-          // not write and reread another Parquet dataset for every optimizer
-          // iteration: in CV this multiplies the workload by every fold and
-          // regularization value, and can leave a managed Serverless task
-          // waiting indefinitely on the second fit. Each iteration starts
-          // from the same materialized frame and constructs a fresh public
-          // expression plan, so the extra round trip provides no semantic or
-          // lineage benefit.
+          val margin =
+            arrayLinearMargin(
+              persisted.col("_native_terms"),
+              weights,
+              intercept
+            )
+          val scored = persisted
+            .withColumn("_native_margin", margin)
+            .withColumn(
+              "_native_error",
+              probability(col("_native_margin")) - col(labelColumn)
+                .cast("double")
+            )
+            .withColumn(
+              "_native_objective_loss",
+              logisticLoss(col("_native_margin"), col(labelColumn))
+            )
           (scored, persistedTerms)
         case None if useMaterializedTerms =>
-          val arrayFrame = withMargin.withColumn(
-            "_native_terms",
-            standardizedExpanded(baseNames.map(withMargin.col))
-          )
+          val arrayFrame = withMargin
+            .withColumn(
+              "_native_terms",
+              standardizedExpanded(baseNames.map(withMargin.col))
+            )
+            .withColumn(
+              "_native_objective_loss",
+              logisticLoss(col("_native_margin"), col(labelColumn))
+            )
           (
             arrayFrame,
             terms.indices
@@ -571,184 +593,200 @@ object NativeModelEngine {
               .toVector
           )
         case None =>
-          // Name the terms before the action so the aggregate references only
-          // columns in the final frame, rather than carrying Columns captured
-          // from an earlier projection through Spark Connect.
           val named = standardizedTerms.zipWithIndex.foldLeft(withMargin) {
             case (frame, (term, index)) =>
               frame.withColumn(s"_native_term_$index", term)
           }
-          val persisted = if (terms.length > 164) {
-            named
-          } else named
-          (persisted, terms.indices.map(i => col(s"_native_term_$i")).toVector)
+          val scored = named.withColumn(
+            "_native_objective_loss",
+            logisticLoss(col("_native_margin"), col(labelColumn))
+          )
+          (scored, terms.indices.map(i => col(s"_native_term_$i")).toVector)
       }
       NativeDiagnostics.modelStage(
         context,
         "gradient-aggregate-start",
         s"iteration=$iteration terms=${gradientTerms.length}"
       )
-      val (gradients, interceptGradient) = materializedTermFrame match {
-        case Some(_) =>
-          // Reduce each materialized coefficient gradient by feature position in
-          // Spark. The driver receives O(number of expanded features) rows,
-          // never a collect_list containing every training observation.
-          val byPosition = gradientFrame
-            .select(
-              col("_native_error"),
-              posexplode(col("_native_terms"))
-                .as(Seq("_native_position", "_native_term"))
-            )
-            .groupBy(col("_native_position"))
-            .agg(
-              sum(col("_native_term") * col("_native_error"))
-                .as("_native_gradient_sum"),
-              sum(col("_native_error")).as("_native_error_sum"),
-              count(lit(1)).as("_native_gradient_rows")
-            )
-            .orderBy(col("_native_position"))
-            .collect()
-          if (byPosition.isEmpty) {
-            (Vector.fill(gradientTerms.length)(0.0d), 0.0d)
-          } else {
-            if (byPosition.length != gradientTerms.length)
-              throw new NativeRewriteUnsupportedException(
-                s"Native gradient reduction returned ${byPosition.length} positions for ${gradientTerms.length} terms"
+      val (gradients, interceptGradient, currentDataLoss) =
+        materializedTermFrame match {
+          case Some(_) =>
+            val byPosition = gradientFrame
+              .select(
+                col("_native_error"),
+                col("_native_objective_loss"),
+                posexplode(col("_native_terms"))
+                  .as(Seq("_native_position", "_native_term"))
               )
-            val gradients = byPosition.zipWithIndex.map {
-              case (row, expectedPosition) =>
-                val position = row.getInt(0)
-                if (position != expectedPosition)
-                  throw new NativeRewriteUnsupportedException(
-                    s"Native gradient reduction expected position $expectedPosition but received $position"
-                  )
-                val rows = if (row.isNullAt(3)) 0L else row.getLong(3)
-                val divisor = if (rows == 0L) 1.0d else rows.toDouble
-                finiteDouble(row, 1, context, "gradient-sum") / divisor
-            }.toVector
-            val first = byPosition.head
-            val rows = if (first.isNullAt(3)) 0L else first.getLong(3)
-            val divisor = if (rows == 0L) 1.0d else rows.toDouble
-            val interceptGradient =
-              finiteDouble(
-                first,
-                2,
-                context,
-                "gradient-intercept-sum"
-              ) / divisor
-            (gradients, interceptGradient)
-          }
-        case None =>
-          // For small non-materialized probes, bounded scalar aggregates keep
-          // the result narrow and preserve the exact source term ordering.
-          val gradientBuilder = Vector.newBuilder[Double]
-          var intercept = 0.0d
-          gradientTerms.grouped(256).zipWithIndex.foreach {
-            case (batch, batchIndex) =>
-              val gradientColumns = batch.zipWithIndex.map {
-                case (term, termIndex) =>
-                  avg(col("_native_error") * term)
-                    .as(s"_native_gradient_${batchIndex}_$termIndex")
-              }
-              val aggregateColumns = (gradientColumns :+ avg(
-                col("_native_error")
-              ).as("_native_intercept_gradient")).toArray
-              val row = gradientFrame
-                .agg(aggregateColumns.head, aggregateColumns.tail: _*)
-                .head()
-              if (batchIndex == 0)
-                intercept =
-                  finiteDouble(row, batch.length, context, "gradient-intercept")
-              batch.indices.foreach(index =>
-                gradientBuilder += finiteDouble(
-                  row,
-                  index,
-                  context,
-                  "gradient-scalar"
+              .groupBy(col("_native_position"))
+              .agg(
+                sum(col("_native_term") * col("_native_error"))
+                  .as("_native_gradient_sum"),
+                sum(col("_native_error")).as("_native_error_sum"),
+                sum(col("_native_objective_loss")).as("_native_loss_sum"),
+                count(lit(1)).as("_native_gradient_rows")
+              )
+              .orderBy(col("_native_position"))
+              .collect()
+            if (byPosition.isEmpty) {
+              (Vector.fill(gradientTerms.length)(0.0d), 0.0d, 0.0d)
+            } else {
+              if (byPosition.length != gradientTerms.length)
+                throw new NativeRewriteUnsupportedException(
+                  s"Native gradient reduction returned ${byPosition.length} positions for ${gradientTerms.length} terms"
                 )
-              )
-          }
-          (gradientBuilder.result(), intercept)
-      }
+              val gradients = byPosition.zipWithIndex.map {
+                case (row, expectedPosition) =>
+                  val position = row.getInt(0)
+                  if (position != expectedPosition)
+                    throw new NativeRewriteUnsupportedException(
+                      s"Native gradient reduction expected position $expectedPosition but received $position"
+                    )
+                  val rows = if (row.isNullAt(4)) 0L else row.getLong(4)
+                  val divisor = if (rows == 0L) 1.0d else rows.toDouble
+                  finiteDouble(row, 1, context, "gradient-sum") / divisor
+              }.toVector
+              val first = byPosition.head
+              val rows = if (first.isNullAt(4)) 0L else first.getLong(4)
+              val divisor = if (rows == 0L) 1.0d else rows.toDouble
+              val interceptGradient =
+                finiteDouble(
+                  first,
+                  2,
+                  context,
+                  "gradient-intercept-sum"
+                ) / divisor
+              val dataLoss =
+                finiteDouble(first, 3, context, "objective-loss-sum") / divisor
+              (gradients, interceptGradient, dataLoss)
+            }
+          case None =>
+            val gradientBuilder = Vector.newBuilder[Double]
+            var interceptGradient = 0.0d
+            var dataLoss = 0.0d
+            gradientTerms.grouped(256).zipWithIndex.foreach {
+              case (batch, batchIndex) =>
+                val gradientColumns = batch.zipWithIndex.map {
+                  case (term, termIndex) =>
+                    avg(col("_native_error") * term)
+                      .as(s"_native_gradient_${batchIndex}_$termIndex")
+                }
+                val aggregateColumns = (gradientColumns ++ Seq(
+                  avg(col("_native_error")).as("_native_intercept_gradient"),
+                  avg(col("_native_objective_loss")).as("_native_log_loss")
+                )).toArray
+                val row = gradientFrame
+                  .agg(aggregateColumns.head, aggregateColumns.tail: _*)
+                  .head()
+                if (batchIndex == 0) {
+                  interceptGradient = finiteDouble(
+                    row,
+                    batch.length,
+                    context,
+                    "gradient-intercept"
+                  )
+                  dataLoss = finiteDouble(
+                    row,
+                    batch.length + 1,
+                    context,
+                    "objective-loss"
+                  )
+                }
+                batch.indices.foreach(index =>
+                  gradientBuilder += finiteDouble(
+                    row,
+                    index,
+                    context,
+                    "gradient-scalar"
+                  )
+                )
+            }
+            (gradientBuilder.result(), interceptGradient, dataLoss)
+        }
       NativeDiagnostics.modelStage(
         context,
         "gradient-aggregate-complete",
         s"iteration=$iteration terms=${gradientTerms.length}"
       )
-      // L-BFGS is implemented in the driver only for its small parameter
-      // vectors; all loss and gradient evaluation remains public Spark SQL.
-      // This matches Spark ML's optimization contract much more closely than
-      // the former decaying gradient step, while remaining Connect-safe.
+      // Fuse the current loss with the gradient action. Armijo candidate
+      // evaluations remain bounded remote actions, but the current objective is
+      // no longer a second full pass over the training frame.
       val gradient = gradients.zip(weights).map { case (value, weight) =>
         value + regParam * weight
       } :+ interceptGradient
-      val parameters = weights :+ intercept
-      previousParameters.zip(previousGradient).foreach {
-        case (oldParameters, oldGradient) =>
-          val s = parameters.zip(oldParameters).map {
-            case (current, previous) => current - previous
-          }
-          val y = gradient.zip(oldGradient).map { case (current, previous) =>
-            current - previous
-          }
-          val curvature = dot(y, s)
-          if (curvature > 1.0e-12d && curvature.isFinite) {
-            sHistory = (sHistory :+ s).takeRight(optimizerMemory)
-            yHistory = (yHistory :+ y).takeRight(optimizerMemory)
-            rhoHistory =
-              (rhoHistory :+ (1.0d / curvature)).takeRight(optimizerMemory)
-          }
-      }
-      var direction = gradient
-      val alphas = Array.fill(sHistory.length)(0.0d)
-      var historyIndex = sHistory.length - 1
-      while (historyIndex >= 0) {
-        alphas(historyIndex) =
-          rhoHistory(historyIndex) * dot(sHistory(historyIndex), direction)
-        direction = direction.zip(yHistory(historyIndex)).map {
-          case (value, y) => value - alphas(historyIndex) * y
-        }
-        historyIndex -= 1
-      }
-      val scale = if (yHistory.nonEmpty) {
-        val last = yHistory.length - 1
-        dot(sHistory(last), yHistory(last)) / math.max(
-          dot(yHistory(last), yHistory(last)),
-          1.0e-12d
+      val currentObjective = currentDataLoss + 0.5d * regParam * weights
+        .map(weight => weight * weight)
+        .sum
+      val gradientNorm = math.sqrt(dot(gradient, gradient))
+      NativeDiagnostics.modelStage(
+        context,
+        "optimizer-iteration",
+        s"iteration=$iteration gradientNorm=$gradientNorm objective=$currentObjective"
+      )
+      if (gradientNorm <= effectiveTolerance) {
+        converged = true
+        NativeDiagnostics.modelStage(
+          context,
+          "optimizer-converged",
+          s"iteration=$iteration gradientNorm=$gradientNorm tolerance=$effectiveTolerance"
         )
-      } else 1.0d
-      direction = direction.map(_ * scale)
-      historyIndex = 0
-      while (historyIndex < sHistory.length) {
-        val beta =
-          rhoHistory(historyIndex) * dot(yHistory(historyIndex), direction)
-        direction = direction.zip(sHistory(historyIndex)).map {
-          case (value, s) => value + s * (alphas(historyIndex) - beta)
+      } else {
+        val parameters = weights :+ intercept
+        previousParameters.zip(previousGradient).foreach {
+          case (oldParameters, oldGradient) =>
+            val s = parameters.zip(oldParameters).map {
+              case (current, previous) => current - previous
+            }
+            val y = gradient.zip(oldGradient).map { case (current, previous) =>
+              current - previous
+            }
+            val curvature = dot(y, s)
+            if (curvature > 1.0e-12d && curvature.isFinite) {
+              sHistory = (sHistory :+ s).takeRight(optimizerMemory)
+              yHistory = (yHistory :+ y).takeRight(optimizerMemory)
+              rhoHistory =
+                (rhoHistory :+ (1.0d / curvature)).takeRight(optimizerMemory)
+            }
         }
-        historyIndex += 1
-      }
-      direction = direction.map(value => -value)
-      if (
-        dot(direction, gradient) >= 0.0d || direction
-          .exists(value => !value.isFinite)
-      ) {
-        direction = gradient.map(value => -value)
-      }
-      var step = 1.0d
-      var candidateWeights = weights
-      var candidateIntercept = intercept
-      // SQL line search is retained for small semantic/parity probes, where
-      // it makes convergence behavior observable without material cost. For
-      // the production 1,770-term model, the gradient action is already the
-      // dominant relational boundary; evaluating the objective repeatedly
-      // would add another full remote action per trial and turn a bounded
-      // production fit into an hours-long workload. The L-BFGS direction is
-      // therefore accepted directly for the large public-SQL path.
-      val useSqlLineSearch = parityProbe || quickProbe || terms.length < 32
-      if (useSqlLineSearch) {
-        val currentObjective =
-          objective(gradientFrame, gradientTerms, weights, intercept)
+        var direction = gradient
+        val alphas = Array.fill(sHistory.length)(0.0d)
+        var historyIndex = sHistory.length - 1
+        while (historyIndex >= 0) {
+          alphas(historyIndex) =
+            rhoHistory(historyIndex) * dot(sHistory(historyIndex), direction)
+          direction = direction.zip(yHistory(historyIndex)).map {
+            case (value, y) => value - alphas(historyIndex) * y
+          }
+          historyIndex -= 1
+        }
+        val scale = if (yHistory.nonEmpty) {
+          val last = yHistory.length - 1
+          dot(sHistory(last), yHistory(last)) / math.max(
+            dot(yHistory(last), yHistory(last)),
+            1.0e-12d
+          )
+        } else 1.0d
+        direction = direction.map(_ * scale)
+        historyIndex = 0
+        while (historyIndex < sHistory.length) {
+          val beta =
+            rhoHistory(historyIndex) * dot(yHistory(historyIndex), direction)
+          direction = direction.zip(sHistory(historyIndex)).map {
+            case (value, s) => value + s * (alphas(historyIndex) - beta)
+          }
+          historyIndex += 1
+        }
+        direction = direction.map(value => -value)
+        if (
+          dot(direction, gradient) >= 0.0d || direction
+            .exists(value => !value.isFinite)
+        ) {
+          direction = gradient.map(value => -value)
+        }
         val directionalDerivative = dot(gradient, direction)
+        var step = 1.0d
+        var candidateWeights = weights
+        var candidateIntercept = intercept
         var accepted = false
         var lineSearch = 0
         while (!accepted && lineSearch < 12) {
@@ -756,29 +794,37 @@ object NativeModelEngine {
             .map(index => weights(index) + step * direction(index))
             .toVector
           candidateIntercept = intercept + step * direction.last
-          val candidateObjective = objective(
+          val trialObjective = candidateObjective(
             gradientFrame,
             gradientTerms,
             candidateWeights,
-            candidateIntercept
+            candidateIntercept,
+            materializedTermFrame.isDefined
           )
           accepted =
-            candidateObjective <= currentObjective + 1.0e-4d * step * directionalDerivative
-          if (!accepted) {
-            step *= 0.5d
-            lineSearch += 1
-          }
+            trialObjective <= currentObjective + 1.0e-4d * step * directionalDerivative
+          if (!accepted) step *= 0.5d
+          lineSearch += 1
         }
-      } else {
-        candidateWeights = weights.indices
-          .map(index => weights(index) + step * direction(index))
-          .toVector
-        candidateIntercept = intercept + step * direction.last
+        if (accepted) {
+          previousParameters = Some(parameters)
+          previousGradient = Some(gradient)
+          weights = candidateWeights
+          intercept = candidateIntercept
+          NativeDiagnostics.modelStage(
+            context,
+            "line-search-accepted",
+            s"iteration=$iteration trials=$lineSearch step=$step"
+          )
+        } else {
+          converged = true
+          NativeDiagnostics.modelStage(
+            context,
+            "line-search-stalled",
+            s"iteration=$iteration trials=$lineSearch gradientNorm=$gradientNorm"
+          )
+        }
       }
-      previousParameters = Some(parameters)
-      previousGradient = Some(gradient)
-      weights = candidateWeights
-      intercept = candidateIntercept
       iteration += 1
     }
     val rawWeights =
