@@ -304,7 +304,7 @@ def test_registered_hash_family_has_a_public_native_rule():
     block = architecture.split('private val hashNames = Seq(', 1)[1].split(')\n  val preprocessNames', 1)[0]
     names = re.findall(r'"([A-Za-z0-9]+)"', block)
     assert len(names) >= 50
-    assert 'private val hashes:Seq[RewriteRule]=Seq(' in rules
+    assert re.search(r'private\s+val\s+hashes\s*:\s*Seq\[RewriteRule\]\s*=\s*Seq\(', rules)
     assert 'rewrite.blocking.first${n}' in rules
     assert 'rewrite.blocking.last${n}' in rules
     assert 'rewrite.blocking.round' in rules
