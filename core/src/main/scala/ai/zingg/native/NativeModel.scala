@@ -2,6 +2,7 @@ package ai.zingg.native
 
 import org.apache.spark.sql.{Column, DataFrame, Dataset, Row, SparkSession}
 import org.apache.spark.sql.functions._
+import org.apache.spark.sql.expressions.Window
 
 /** Public-DataFrame replacement for the Spark ML portion of Zingg 0.7
   * SparkModel.
@@ -793,60 +794,43 @@ object NativeModelEngine {
       labelColumn: String,
       context: RewriteContext
   ): Double = {
-    // A cumulative Window over grouped scores is mathematically compact but
-    // can leave a managed Serverless Scala kernel waiting indefinitely after
-    // a large native fit. Compare positive/negative score pairs instead. The
-    // join and aggregate are public relational expressions, and the result
-    // is exactly the Mann-Whitney formulation of ROC AUC: wins plus half of
-    // ties divided by all positive/negative pairs.
-    val scored = scoredInput
-      .select(
-        col(scoreColumn).cast("double").as("_native_score"),
-        col(labelColumn).cast("double").as("_native_label")
+    val scored = scoredInput.select(
+      col(scoreColumn).cast("double").as("_native_score"),
+      col(labelColumn).cast("double").as("_native_label")
+    )
+    val byScore = scored
+      .groupBy(col("_native_score"))
+      .agg(
+        sum(
+          when(col("_native_label") === lit(1.0d), lit(1L)).otherwise(lit(0L))
+        ).as("_native_positives"),
+        sum(
+          when(col("_native_label") =!= lit(1.0d), lit(1L)).otherwise(lit(0L))
+        ).as("_native_negatives")
       )
-    val positivesFrame = scored
-      .filter(col("_native_label") === lit(1.0d))
-      .alias("_native_positive")
-    val negativesFrame = scored
-      .filter(col("_native_label") =!= lit(1.0d))
-      .alias("_native_negative")
-    val positiveCount = positivesFrame.count()
-    val negativeCount = negativesFrame.count()
-    val pairResult =
-      if (positiveCount == 0L || negativeCount == 0L) None
-      else
-        Some(
-          positivesFrame
-            .crossJoin(negativesFrame)
-            .agg(
-              sum(
-                when(
-                  col("_native_positive._native_score") > col(
-                    "_native_negative._native_score"
-                  ),
-                  lit(1.0d)
-                )
-                  .when(
-                    col("_native_positive._native_score") === col(
-                      "_native_negative._native_score"
-                    ),
-                    lit(0.5d)
-                  )
-                  .otherwise(lit(0.0d))
-              ).as("wins")
-            )
-            .head()
-        )
-    val positives = positiveCount.toDouble
-    val negatives = negativeCount.toDouble
+    val lowerScores = Window
+      .orderBy(col("_native_score"))
+      .rowsBetween(Window.unboundedPreceding, -1L)
+    val ranked = byScore.withColumn(
+      "_native_negatives_below",
+      coalesce(sum(col("_native_negatives")).over(lowerScores), lit(0L))
+    )
+    val row = ranked
+      .agg(
+        sum(col("_native_positives")).as("_native_positive_count"),
+        sum(col("_native_negatives")).as("_native_negative_count"),
+        sum(
+          col("_native_positives").cast("double") *
+            (col("_native_negatives_below").cast("double") +
+              col("_native_negatives").cast("double") * lit(0.5d))
+        ).as("_native_auc_wins")
+      )
+      .head()
+    val positives = if (row.isNullAt(0)) 0.0d else row.getLong(0).toDouble
+    val negatives = if (row.isNullAt(1)) 0.0d else row.getLong(1).toDouble
     if (positives == 0.0d || negatives == 0.0d) 0.5d
     else
-      finiteDouble(
-        pairResult.get,
-        0,
-        context,
-        "auc-wins"
-      ) / (positives * negatives)
+      finiteDouble(row, 2, context, "auc-wins") / (positives * negatives)
   }
 
   private def withFold(input: DataFrame, labelColumn: String): DataFrame = {
