@@ -590,36 +590,54 @@ object NativeModelEngine {
       )
       val (gradients, interceptGradient) = materializedTermFrame match {
         case Some(_) =>
-          // The persisted term array lets Serverless compute all term
-          // gradients in one narrow aggregate without creating a 1,770-column
-          // result or issuing seven separate actions per iteration.
-          val contributions =
-            transform(col("_native_terms"), term => term * col("_native_error"))
-          val zero = array_repeat(lit(0.0d), gradientTerms.length)
-          val summed = aggregate(
-            collect_list(contributions),
-            zero,
-            (accumulator, values) =>
-              zip_with(
-                accumulator,
-                values,
-                (left, right) => left + coalesce(right, lit(0.0d))
-              )
-          )
-          val row = gradientFrame
-            .agg(
-              summed.alias("_native_gradient_array"),
-              avg(col("_native_error")).alias("_native_intercept_gradient"),
-              count(lit(1)).alias("_native_gradient_rows")
+          // Reduce each materialized coefficient gradient by feature position in
+          // Spark. The driver receives O(number of expanded features) rows,
+          // never a collect_list containing every training observation.
+          val byPosition = gradientFrame
+            .select(
+              col("_native_error"),
+              posexplode(col("_native_terms"))
+                .as(Seq("_native_position", "_native_term"))
             )
-            .head()
-          val rows = if (row.isNullAt(2)) 0L else row.getLong(2)
-          val divisor = if (rows == 0L) 1.0d else rows.toDouble
-          (
-            finiteArray(row, 0, gradientTerms.length, context, "gradient-array")
-              .map(_ / divisor),
-            finiteDouble(row, 1, context, "gradient-intercept")
-          )
+            .groupBy(col("_native_position"))
+            .agg(
+              sum(col("_native_term") * col("_native_error"))
+                .as("_native_gradient_sum"),
+              sum(col("_native_error")).as("_native_error_sum"),
+              count(lit(1)).as("_native_gradient_rows")
+            )
+            .orderBy(col("_native_position"))
+            .collect()
+          if (byPosition.isEmpty) {
+            (Vector.fill(gradientTerms.length)(0.0d), 0.0d)
+          } else {
+            if (byPosition.length != gradientTerms.length)
+              throw new NativeRewriteUnsupportedException(
+                s"Native gradient reduction returned ${byPosition.length} positions for ${gradientTerms.length} terms"
+              )
+            val gradients = byPosition.zipWithIndex.map {
+              case (row, expectedPosition) =>
+                val position = row.getInt(0)
+                if (position != expectedPosition)
+                  throw new NativeRewriteUnsupportedException(
+                    s"Native gradient reduction expected position $expectedPosition but received $position"
+                  )
+                val rows = if (row.isNullAt(3)) 0L else row.getLong(3)
+                val divisor = if (rows == 0L) 1.0d else rows.toDouble
+                finiteDouble(row, 1, context, "gradient-sum") / divisor
+            }.toVector
+            val first = byPosition.head
+            val rows = if (first.isNullAt(3)) 0L else first.getLong(3)
+            val divisor = if (rows == 0L) 1.0d else rows.toDouble
+            val interceptGradient =
+              finiteDouble(
+                first,
+                2,
+                context,
+                "gradient-intercept-sum"
+              ) / divisor
+            (gradients, interceptGradient)
+          }
         case None =>
           // For small non-materialized probes, bounded scalar aggregates keep
           // the result narrow and preserve the exact source term ordering.
