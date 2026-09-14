@@ -508,11 +508,17 @@ object NativeExpressions {
       .otherwise(lit(0).cast(outType))
   def javaRound(value: Column): Column = {
     val x = value.cast("double")
+    // Math.round is mathematically floor(x + 0.5), but implementing it with
+    // the floating-point addition is not equivalent for nextDown(0.5): the
+    // addition rounds to exactly 1.0. Split integer/fractional parts instead.
+    val lower = floor(x)
+    val rounded =
+      lower + when(x - lower >= 0.5d, lit(1.0d)).otherwise(lit(0.0d))
     when(x.isNull, lit(null).cast("long"))
       .when(isnan(x), lit(0L))
       .when(x >= lit(Long.MaxValue.toDouble), lit(Long.MaxValue))
       .when(x <= lit(Long.MinValue.toDouble), lit(Long.MinValue))
-      .otherwise(floor(x + 0.5).cast("long"))
+      .otherwise(rounded.cast("long"))
   }
   def stopWords(value: Column, pattern: String): Column =
     when(value.isNull || lit(pattern).isNull, lit(null).cast("string"))

@@ -55,6 +55,12 @@
       "property": "symmetry",
       "test": "core/src/test/scala/ai/zingg/native/JaroCompatibilityTest.scala",
       "oracle": "Zingg 0.7.0 SJaroWinkler / pinned SecondString Jaro"
+    },
+    "blocking.round": {
+      "vectors": 10,
+      "property": "finite results stay within 0.5 of the input and are monotone over ordered finite fixtures",
+      "test": "core/src/test/scala/ai/zingg/native/RoundHashCompatibilityTest.scala",
+      "oracle": "Zingg 0.7.0 SparkRound / java.lang.Math.round contract"
     }
   },
   "pending": [
@@ -85,7 +91,6 @@
     "blocking.rangeBetween10And100Float",
     "blocking.rangeBetween10And100Int",
     "blocking.rangeBetween10And100Long",
-    "blocking.round",
     "blocking.trimLast1DigitsDbl",
     "blocking.trimLast1DigitsFloat",
     "blocking.trimLast1DigitsInt",
