@@ -897,13 +897,24 @@ object NativeModelEngine {
       finiteDouble(row, 2, context, "auc-wins") / (positives * negatives)
   }
 
-  private def withFold(input: DataFrame, labelColumn: String): DataFrame = {
-    // Zingg 0.7 leaves CrossValidator's random seed implicit.  Native mode
-    // intentionally freezes it so model artifacts are reproducible.  rand(seed)
-    // is a public SQL expression and remains on the remote Spark plan.
+  private def withFold(
+      input: DataFrame,
+      labelColumn: String,
+      featureColumns: Seq[String]
+  ): DataFrame = {
+    // Cross-validation membership must be stable across repartitioning,
+    // materialization, retries and separate actions. Hash only deterministic
+    // training content plus the frozen native seed; never use _native_row_id,
+    // whose contract is intentionally action-local.
+    val foldKey =
+      xxhash64(
+        (Seq(lit(Seed), input.col(labelColumn)) ++ featureColumns.map(
+          input.col
+        )): _*
+      )
     input.withColumn(
       "_zingg_native_fold",
-      floor(rand(Seed) * lit(effectiveNumFolds)).cast("int")
+      pmod(foldKey, lit(effectiveNumFolds)).cast("int")
     )
   }
 
@@ -1008,7 +1019,7 @@ object NativeModelEngine {
       "terms-ready",
       s"terms=${termColumns.length}"
     )
-    val folded = withFold(materializedInput, labelColumn)
+    val folded = withFold(materializedInput, labelColumn, baseNames)
 
     var bestReg = RegGrid.head
     var bestThreshold = ThresholdGrid.head
