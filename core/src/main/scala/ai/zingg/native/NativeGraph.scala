@@ -42,7 +42,8 @@ object NativeGraph {
       .isEmpty
   }
 
-  /** Port of GraphFrames' default two_phase (large-star/small-star) algorithm. */
+  /** Port of GraphFrames' default two_phase (large-star/small-star) algorithm.
+    */
   def connectedComponents(
       vertices: DataFrame,
       edges: DataFrame,
