@@ -2,6 +2,54 @@
   "schemaVersion": 1,
   "scope": "registered similarity and blocking-hash rules",
   "covered": {
+    "blocking.first1Chars": {
+      "vectors": 7,
+      "property": "result is an upstream-compatible prefix no longer than one UTF-16 code unit",
+      "test": "core/src/test/scala/ai/zingg/native/StringHashCompatibilityTest.scala",
+      "oracle": "Zingg 0.7.0 SparkFirstChars reflection oracle"
+    },
+    "blocking.first2Chars": {
+      "vectors": 7,
+      "property": "result is an upstream-compatible prefix no longer than two UTF-16 code units",
+      "test": "core/src/test/scala/ai/zingg/native/StringHashCompatibilityTest.scala",
+      "oracle": "Zingg 0.7.0 SparkFirstChars reflection oracle"
+    },
+    "blocking.first3Chars": {
+      "vectors": 7,
+      "property": "result is an upstream-compatible prefix no longer than three UTF-16 code units",
+      "test": "core/src/test/scala/ai/zingg/native/StringHashCompatibilityTest.scala",
+      "oracle": "Zingg 0.7.0 SparkFirstChars reflection oracle"
+    },
+    "blocking.first4Chars": {
+      "vectors": 7,
+      "property": "result is an upstream-compatible prefix no longer than four UTF-16 code units",
+      "test": "core/src/test/scala/ai/zingg/native/StringHashCompatibilityTest.scala",
+      "oracle": "Zingg 0.7.0 SparkFirstChars reflection oracle"
+    },
+    "blocking.last1Chars": {
+      "vectors": 7,
+      "property": "result is an upstream-compatible suffix no longer than one UTF-16 code unit",
+      "test": "core/src/test/scala/ai/zingg/native/StringHashCompatibilityTest.scala",
+      "oracle": "Zingg 0.7.0 SparkLastChars reflection oracle"
+    },
+    "blocking.last2Chars": {
+      "vectors": 7,
+      "property": "result is an upstream-compatible suffix no longer than two UTF-16 code units",
+      "test": "core/src/test/scala/ai/zingg/native/StringHashCompatibilityTest.scala",
+      "oracle": "Zingg 0.7.0 SparkLastChars reflection oracle"
+    },
+    "blocking.last3Chars": {
+      "vectors": 7,
+      "property": "result is an upstream-compatible suffix no longer than three UTF-16 code units",
+      "test": "core/src/test/scala/ai/zingg/native/StringHashCompatibilityTest.scala",
+      "oracle": "Zingg 0.7.0 SparkLastChars reflection oracle"
+    },
+    "blocking.lastWord": {
+      "vectors": 7,
+      "property": "non-null output is the suffix word of the trimmed source",
+      "test": "core/src/test/scala/ai/zingg/native/StringHashCompatibilityTest.scala",
+      "oracle": "Zingg 0.7.0 SparkLastWord reflection oracle"
+    },
     "similarity.JaroWinklerFunction": {
       "vectors": 6,
       "property": "symmetry",
@@ -10,21 +58,13 @@
     }
   },
   "pending": [
-    "blocking.first1Chars",
-    "blocking.first2Chars",
     "blocking.first2CharsBox",
-    "blocking.first3Chars",
     "blocking.first3CharsBox",
-    "blocking.first4Chars",
     "blocking.identityBoolean",
     "blocking.identityInteger",
     "blocking.identityLong",
     "blocking.identityString",
     "blocking.isNullOrEmpty",
-    "blocking.last1Chars",
-    "blocking.last2Chars",
-    "blocking.last3Chars",
-    "blocking.lastWord",
     "blocking.lessThanZeroDbl",
     "blocking.lessThanZeroFloat",
     "blocking.lessThanZeroInt",
