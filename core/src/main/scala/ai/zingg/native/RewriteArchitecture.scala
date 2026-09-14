@@ -157,41 +157,21 @@ object NativePlanGuard {
 
 final case class NativeExecutionEvidence(
   phase:String, mode:String, appliedRules:Seq[String], planFingerprint:String,
-  runtime:RuntimeDescriptor, outputFingerprint:Option[String], photonEvidence:Option[String], correlationId:String,
-  optimizerStatus:Option[String]=None, discardedCurvaturePairs:Option[Int]=None)
+  runtime:RuntimeDescriptor, outputFingerprint:Option[String], photonEvidence:Option[String], correlationId:String)
 
 object NativeEvidenceCollector {
   private val rules = TrieMap.empty[String, Vector[String]]
   private val evidence = TrieMap.empty[String, NativeExecutionEvidence]
-  private val optimizerEvidence = TrieMap.empty[String, (String, Int)]
   @volatile private var latestEvidence:Option[NativeExecutionEvidence] = None
-  @volatile private var latestOptimizerEvidence:Option[(String, Int)] = None
   private def addRule(runId:String, ruleId:String):Unit = if(runId.nonEmpty) rules.updateWith(runId)(v => Some(v.getOrElse(Vector.empty) :+ ruleId))
-  private def optimizerFor(runId:String):Option[(String,Int)] =
-    optimizerEvidence.get(runId).orElse(if(runId.isEmpty) latestOptimizerEvidence else None)
-  private def withOptimizerEvidence(e:NativeExecutionEvidence, optimizer:Option[(String,Int)]):NativeExecutionEvidence =
-    optimizer.map { case(status, discarded) => e.copy(optimizerStatus=Some(status), discardedCurvaturePairs=Some(discarded)) }.getOrElse(e)
   def recordRule(runId:String, ruleId:String):Unit = addRule(runId,ruleId)
   def recordRule(context:RewriteContext, ruleId:String):Unit = { addRule(context.correlationId,ruleId); NativeDiagnostics.rewrite(context,ruleId) }
-  def recordOptimizer(context:RewriteContext, status:String, discardedCurvaturePairs:Int):Unit = {
-    val optimizer = status -> discardedCurvaturePairs
-    if(context.correlationId.nonEmpty) {
-      optimizerEvidence.put(context.correlationId, optimizer)
-      evidence.get(context.correlationId).foreach { existing =>
-        val updated = withOptimizerEvidence(existing, Some(optimizer))
-        evidence.put(context.correlationId, updated)
-        latestEvidence = Some(updated)
-      }
-    }
-    latestOptimizerEvidence = Some(optimizer)
-  }
   def applied(runId:String):Seq[String] = rules.getOrElse(runId,Vector.empty).distinct
   def capture(df:DataFrame, context:RewriteContext, photonEvidence:Option[String]=None):NativeExecutionEvidence = {
     val plan = NativePlanGuard.explain(df, extended=true)
     NativePlanGuard.inspectPlan(context.phase,plan,context)
     val outputFingerprint = captureOutputFingerprint(df)
-    val base = NativeExecutionEvidence(context.phase,context.mode.id,applied(context.correlationId),NativePlanGuard.fingerprint(plan),context.runtime,Some(outputFingerprint),photonEvidence,context.correlationId)
-    val e = withOptimizerEvidence(base, optimizerFor(context.correlationId))
+    val e = NativeExecutionEvidence(context.phase,context.mode.id,applied(context.correlationId),NativePlanGuard.fingerprint(plan),context.runtime,Some(outputFingerprint),photonEvidence,context.correlationId)
     if(context.correlationId.nonEmpty) evidence.put(context.correlationId,e)
     latestEvidence = Some(e)
     NativeDiagnostics.phaseSummary(e)
@@ -216,21 +196,16 @@ object NativeEvidenceCollector {
     * explicitly unavailable rather than being inferred or fabricated. */
   def phaseSummary(context:RewriteContext):NativeExecutionEvidence = {
     evidence.get(context.correlationId).orElse(latestEvidence.filter(_.phase == context.phase)).foreach { captured =>
-      val enriched = withOptimizerEvidence(captured, optimizerFor(context.correlationId))
-      if(context.correlationId.nonEmpty) evidence.put(context.correlationId,enriched)
-      latestEvidence = Some(enriched)
-      NativeDiagnostics.phaseSummary(enriched)
-      return enriched
+      NativeDiagnostics.phaseSummary(captured)
+      return captured
     }
-    val base = NativeExecutionEvidence(
+    val e = NativeExecutionEvidence(
       context.phase, context.mode.id, applied(context.correlationId),
       "unavailable", context.runtime, None, None, context.correlationId)
-    val e = withOptimizerEvidence(base, optimizerFor(context.correlationId))
     if(context.correlationId.nonEmpty) evidence.put(context.correlationId,e)
-    latestEvidence = Some(e)
     NativeDiagnostics.phaseSummary(e)
     e
   }
   def get(runId:String):Option[NativeExecutionEvidence] = evidence.get(runId)
-  def clear(runId:String):Unit = { rules.remove(runId); evidence.remove(runId); optimizerEvidence.remove(runId) }
+  def clear(runId:String):Unit = { rules.remove(runId); evidence.remove(runId) }
 }
