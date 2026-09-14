@@ -34,34 +34,13 @@ object NativeDiagnostics {
         s"rules=${e.appliedRules.mkString("[", ",", "]")} " +
         s"planFingerprint=${e.planFingerprint} outputFingerprint=${e.outputFingerprint.getOrElse("unavailable")} " +
         s"photon=${e.photonEvidence.getOrElse("unverified")} " +
-        s"optimizerStatus=${e.optimizerStatus.getOrElse("unavailable")} " +
-        s"discardedCurvaturePairs=${e.discardedCurvaturePairs.map(_.toString).getOrElse("unavailable")} " +
         s"nativeVersion=${Core.libraryVersion} zinggVersion=$upstreamZinggVersion")
 
-  def modelStage(context: RewriteContext, stage: String, detail: String): Unit = {
-    if (stage == "optimizer-complete") {
-      val fields = detail
-        .split("\\s+")
-        .iterator
-        .flatMap { token =>
-          token.split("=", 2) match {
-            case Array(name, value) => Some(name -> value)
-            case _                  => None
-          }
-        }
-        .toMap
-      for {
-        status <- fields.get("status")
-        discarded <- fields
-          .get("discardedCurvaturePairs")
-          .flatMap(value => scala.util.Try(value.toInt).toOption)
-      } NativeEvidenceCollector.recordOptimizer(context, status, discarded)
-    }
+  def modelStage(context: RewriteContext, stage: String, detail: String): Unit =
     logger.info(
       s"zingg-native model stage run=${context.correlationId} phase=${context.phase} " +
         s"stage=$stage detail=$detail mode=${context.mode.id} nativeVersion=${Core.libraryVersion} " +
         s"zinggVersion=$upstreamZinggVersion")
-  }
 
   def planGuard(context: RewriteContext, stage: String, detail: String): Unit =
     logger.info(
