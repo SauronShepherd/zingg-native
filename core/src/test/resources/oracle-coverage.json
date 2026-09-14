@@ -50,17 +50,113 @@
       "test": "core/src/test/scala/ai/zingg/native/StringHashCompatibilityTest.scala",
       "oracle": "Zingg 0.7.0 SparkLastWord reflection oracle"
     },
+    "similarity.AJaroWinklerFunction": {
+      "vectors": 18,
+      "property": "score matches the pinned upstream reflection oracle across the shared string differential fixture",
+      "test": "serverless-launcher/src/main/scala/ai/zingg/native/launch/ServerlessDifferentialProbe.scala",
+      "oracle": "Zingg 0.7.0 AJaroWinklerFunction reflection oracle; deterministic Serverless differential evidence"
+    },
+    "similarity.AffineGapSimilarityFunction": {
+      "vectors": 18,
+      "property": "score matches the pinned upstream reflection oracle across the shared string differential fixture",
+      "test": "serverless-launcher/src/main/scala/ai/zingg/native/launch/ServerlessDifferentialProbe.scala",
+      "oracle": "Zingg 0.7.0 AffineGapSimilarityFunction reflection oracle; deterministic Serverless differential evidence"
+    },
+    "similarity.CheckBlankOrNullFunction": {
+      "vectors": 18,
+      "property": "score matches the pinned upstream reflection oracle across null, blank, and non-blank string fixtures",
+      "test": "serverless-launcher/src/main/scala/ai/zingg/native/launch/ServerlessDifferentialProbe.scala",
+      "oracle": "Zingg 0.7.0 CheckBlankOrNullFunction reflection oracle; deterministic Serverless differential evidence"
+    },
+    "similarity.CheckNullFunction": {
+      "vectors": 18,
+      "property": "score matches the pinned upstream reflection oracle across null and non-null string fixtures",
+      "test": "serverless-launcher/src/main/scala/ai/zingg/native/launch/ServerlessDifferentialProbe.scala",
+      "oracle": "Zingg 0.7.0 CheckNullFunction reflection oracle; deterministic Serverless differential evidence"
+    },
     "similarity.DateSimilarityFunction": {
       "vectors": 7,
       "property": "score matches the pinned upstream oracle and is invariant across UTC, America/Los_Angeles, and Asia/Kathmandu Spark session zones",
       "test": "serverless-launcher/src/main/scala/ai/zingg/native/launch/ServerlessDateArrayDifferentialProbe.scala",
       "oracle": "Zingg 0.7.0 DateSimilarityFunction reflection oracle"
     },
+    "similarity.DoubleSimilarityFunction": {
+      "vectors": 5,
+      "property": "score matches the pinned upstream reflection oracle over null, signed, zero, NaN, and infinity fixtures",
+      "test": "serverless-launcher/src/main/scala/ai/zingg/native/launch/ServerlessNumericDifferentialProbe.scala",
+      "oracle": "Zingg 0.7.0 DoubleSimilarityFunction reflection oracle; Serverless numeric differential evidence"
+    },
+    "similarity.EmailMatchTypeFunction": {
+      "vectors": 18,
+      "property": "score matches the pinned upstream reflection oracle across the shared string differential fixture",
+      "test": "serverless-launcher/src/main/scala/ai/zingg/native/launch/ServerlessDifferentialProbe.scala",
+      "oracle": "Zingg 0.7.0 EmailMatchTypeFunction reflection oracle; deterministic Serverless differential evidence"
+    },
+    "similarity.IntegerSimilarityFunction": {
+      "vectors": 5,
+      "property": "score matches the pinned upstream reflection oracle over null, signed, zero, and integer-boundary fixtures",
+      "test": "serverless-launcher/src/main/scala/ai/zingg/native/launch/ServerlessNumericDifferentialProbe.scala",
+      "oracle": "Zingg 0.7.0 IntegerSimilarityFunction reflection oracle; Serverless numeric differential evidence"
+    },
+    "similarity.JaccSimFunction": {
+      "vectors": 18,
+      "property": "score matches the pinned upstream reflection oracle across the shared string differential fixture",
+      "test": "serverless-launcher/src/main/scala/ai/zingg/native/launch/ServerlessDifferentialProbe.scala",
+      "oracle": "Zingg 0.7.0 JaccSimFunction reflection oracle; deterministic Serverless differential evidence"
+    },
     "similarity.JaroWinklerFunction": {
       "vectors": 6,
       "property": "symmetry",
       "test": "core/src/test/scala/ai/zingg/native/JaroCompatibilityTest.scala",
       "oracle": "Zingg 0.7.0 SJaroWinkler / pinned SecondString Jaro"
+    },
+    "similarity.NumbersJaccardFunction": {
+      "vectors": 18,
+      "property": "score matches the pinned upstream reflection oracle across the shared string differential fixture",
+      "test": "serverless-launcher/src/main/scala/ai/zingg/native/launch/ServerlessDifferentialProbe.scala",
+      "oracle": "Zingg 0.7.0 NumbersJaccardFunction reflection oracle; deterministic Serverless differential evidence"
+    },
+    "similarity.OnlyAlphabetsAffineGapSimilarity": {
+      "vectors": 18,
+      "property": "score matches the pinned upstream reflection oracle across the shared string differential fixture",
+      "test": "serverless-launcher/src/main/scala/ai/zingg/native/launch/ServerlessDifferentialProbe.scala",
+      "oracle": "Zingg 0.7.0 OnlyAlphabetsAffineGapSimilarity reflection oracle; deterministic Serverless differential evidence"
+    },
+    "similarity.OnlyAlphabetsExactSimilarity": {
+      "vectors": 18,
+      "property": "score matches the pinned upstream reflection oracle across the shared string differential fixture",
+      "test": "serverless-launcher/src/main/scala/ai/zingg/native/launch/ServerlessDifferentialProbe.scala",
+      "oracle": "Zingg 0.7.0 OnlyAlphabetsExactSimilarity reflection oracle; deterministic Serverless differential evidence"
+    },
+    "similarity.PinCodeMatchTypeFunction": {
+      "vectors": 18,
+      "property": "score matches the pinned upstream reflection oracle across the shared string differential fixture",
+      "test": "serverless-launcher/src/main/scala/ai/zingg/native/launch/ServerlessDifferentialProbe.scala",
+      "oracle": "Zingg 0.7.0 PinCodeMatchTypeFunction reflection oracle; deterministic Serverless differential evidence"
+    },
+    "similarity.ProductCodeFunction": {
+      "vectors": 18,
+      "property": "score matches the pinned upstream reflection oracle across punctuation, digits, repeated tokens, Unicode, blanks, and nulls",
+      "test": "serverless-launcher/src/main/scala/ai/zingg/native/launch/ServerlessDifferentialProbe.scala",
+      "oracle": "Zingg 0.7.0 ProductCodeFunction reflection oracle; deterministic Serverless differential evidence"
+    },
+    "similarity.SameFirstWordFunction": {
+      "vectors": 18,
+      "property": "score matches the pinned upstream reflection oracle across hyphenated, whitespace, Unicode, blank, and null fixtures",
+      "test": "serverless-launcher/src/main/scala/ai/zingg/native/launch/ServerlessDifferentialProbe.scala",
+      "oracle": "Zingg 0.7.0 SameFirstWordFunction reflection oracle; deterministic Serverless differential evidence"
+    },
+    "similarity.SimilarityFunctionExact": {
+      "vectors": 18,
+      "property": "score matches the pinned upstream reflection oracle across exact, case-varied, blank, Unicode, and null fixtures",
+      "test": "serverless-launcher/src/main/scala/ai/zingg/native/launch/ServerlessDifferentialProbe.scala",
+      "oracle": "Zingg 0.7.0 SimilarityFunctionExact reflection oracle; deterministic Serverless differential evidence"
+    },
+    "similarity.StringSimilarityFunction": {
+      "vectors": 18,
+      "property": "score matches the pinned upstream reflection oracle across the shared string differential fixture",
+      "test": "serverless-launcher/src/main/scala/ai/zingg/native/launch/ServerlessDifferentialProbe.scala",
+      "oracle": "Zingg 0.7.0 StringSimilarityFunction reflection oracle; deterministic Serverless differential evidence"
     },
     "blocking.round": {
       "vectors": 10,
@@ -115,25 +211,9 @@
     "blocking.truncateFloatTo1Places",
     "blocking.truncateFloatTo2Places",
     "blocking.truncateFloatTo3Places",
-    "similarity.AJaroWinklerFunction",
-    "similarity.AffineGapSimilarityFunction",
     "similarity.ArrayDoubleSimilarityFunction",
     "similarity.BigramJaccSimFn",
-    "similarity.CheckBlankOrNullFunction",
-    "similarity.CheckNullFunction",
-    "similarity.DoubleSimilarityFunction",
-    "similarity.EmailMatchTypeFunction",
     "similarity.FloatSimilarityFunction",
-    "similarity.IntegerSimilarityFunction",
-    "similarity.JaccSimFunction",
-    "similarity.LongSimilarityFunction",
-    "similarity.NumbersJaccardFunction",
-    "similarity.OnlyAlphabetsAffineGapSimilarity",
-    "similarity.OnlyAlphabetsExactSimilarity",
-    "similarity.PinCodeMatchTypeFunction",
-    "similarity.ProductCodeFunction",
-    "similarity.SameFirstWordFunction",
-    "similarity.SimilarityFunctionExact",
-    "similarity.StringSimilarityFunction"
+    "similarity.LongSimilarityFunction"
   ]
 }
