@@ -21,7 +21,12 @@ object NativeGraph {
   private def sameAssignments(left: DataFrame, right: DataFrame): Boolean = {
     val leftAssignments = left.select(col(Src), col(MinNbr))
     val rightAssignments = right.select(col(Src), col(MinNbr))
-    leftAssignments.except(rightAssignments).isEmpty && rightAssignments.except(leftAssignments).isEmpty
+    // Keep the exact symmetric-difference semantics, but evaluate both sides
+    // in one Spark action instead of issuing two sequential isEmpty actions.
+    leftAssignments.except(rightAssignments)
+      .unionByName(rightAssignments.except(leftAssignments))
+      .limit(1)
+      .isEmpty
   }
 
   /** Port of GraphFrames' default two_phase (large-star/small-star) algorithm. */
