@@ -1,0 +1,31 @@
+name: validate-numeric-oracle-prep
+on:
+  push:
+    branches: [build-plan/2026-09-14-numeric-truncate-oracles-prep]
+permissions:
+  contents: write
+jobs:
+  validate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: build-plan/2026-09-14-numeric-truncate-oracles-prep
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - run: mvn -B -Pdatabricks-serverless-env5 spotless:apply
+      - run: mvn -B -Pdatabricks-serverless-env5 -pl core -Dtest=NumericHashCompatibilityTest test
+      - name: Commit formatter output
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add core/src/test/scala/ai/zingg/native/NumericHashCompatibilityTest.scala
+          if ! git diff --cached --quiet; then
+            git commit -m 'style: format numeric hash compatibility test'
+            git push
+          fi
