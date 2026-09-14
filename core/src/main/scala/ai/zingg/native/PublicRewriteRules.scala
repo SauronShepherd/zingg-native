@@ -127,8 +127,14 @@ object NativeExpressions {
   }
 
   def dateSimilarity(left: Column, right: Column): Column = {
-    val l = unix_millis(left.cast("timestamp"));
-    val r = unix_millis(right.cast("timestamp"))
+    // java.sql.Date is an epoch-day value. Converting Date -> Timestamp first
+    // makes midnight depend on spark.sql.session.timeZone, which changes the
+    // millisecond values around offsets/DST. Reconstruct epoch millis directly
+    // from epoch days so the native rewrite matches java.sql.Date#getTime and
+    // remains invariant across Spark session zones.
+    val millisPerDay = lit(86400000L)
+    val l = unix_date(left.cast("date")).cast("long") * millisPerDay
+    val r = unix_date(right.cast("date")).cast("long") * millisPerDay
     val diff = wrapSigned(l.cast("decimal(38,0)") - r.cast("decimal(38,0)"), 64)
     val sum =
       wrapSigned(l.cast("decimal(38,0)") + r.cast("decimal(38,0)") + lit(1), 64)

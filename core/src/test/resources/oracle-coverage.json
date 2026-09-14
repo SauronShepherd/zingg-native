@@ -50,6 +50,12 @@
       "test": "core/src/test/scala/ai/zingg/native/StringHashCompatibilityTest.scala",
       "oracle": "Zingg 0.7.0 SparkLastWord reflection oracle"
     },
+    "similarity.DateSimilarityFunction": {
+      "vectors": 7,
+      "property": "score matches the pinned upstream oracle and is invariant across UTC, America/Los_Angeles, and Asia/Kathmandu Spark session zones",
+      "test": "serverless-launcher/src/main/scala/ai/zingg/native/launch/ServerlessDateArrayDifferentialProbe.scala",
+      "oracle": "Zingg 0.7.0 DateSimilarityFunction reflection oracle"
+    },
     "similarity.JaroWinklerFunction": {
       "vectors": 6,
       "property": "symmetry",
@@ -115,7 +121,6 @@
     "similarity.BigramJaccSimFn",
     "similarity.CheckBlankOrNullFunction",
     "similarity.CheckNullFunction",
-    "similarity.DateSimilarityFunction",
     "similarity.DoubleSimilarityFunction",
     "similarity.EmailMatchTypeFunction",
     "similarity.FloatSimilarityFunction",
