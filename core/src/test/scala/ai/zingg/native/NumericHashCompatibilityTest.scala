@@ -48,10 +48,19 @@ class NumericHashCompatibilityTest {
         DataTypes.FloatType
       )
 
-      val expected = Map(
+      val expectedDouble = Map(
         1 -> Seq(-12.3d, -1.9d, 0.0d, 0.0d, 0.0d, 1.9d, 12.3d),
         2 -> Seq(-12.34d, -1.99d, -0.04d, 0.0d, 0.04d, 1.99d, 12.34d),
         3 -> Seq(-12.345d, -1.999d, -0.049d, 0.0d, 0.049d, 1.999d, 12.345d)
+      )
+      // The Float variants operate on binary32 inputs. Values such as 1.999f
+      // and 0.049f are represented just below their decimal spelling, so
+      // truncating to three places yields 1.998f / 0.048f rather than the
+      // Double-domain result. Pin that upstream/JVM-visible distinction.
+      val expectedFloat = Map(
+        1 -> Seq(-12.3f, -1.9f, 0.0f, 0.0f, 0.0f, 1.9f, 12.3f),
+        2 -> Seq(-12.34f, -1.99f, -0.04f, 0.0f, 0.04f, 1.99f, 12.34f),
+        3 -> Seq(-12.345f, -1.998f, -0.048f, 0.0f, 0.048f, 1.998f, 12.345f)
       )
 
       (1 to 3).foreach { places =>
@@ -66,7 +75,7 @@ class NumericHashCompatibilityTest {
           .collect()
           .map(_.getDouble(0))
           .toSeq
-        expected(places).zip(doubles).foreach { case (oracle, actual) =>
+        expectedDouble(places).zip(doubles).foreach { case (oracle, actual) =>
           assertEquals(oracle, actual, 1.0e-12d)
         }
         DoubleValues.zip(doubles).foreach { case (source, actual) =>
@@ -86,8 +95,8 @@ class NumericHashCompatibilityTest {
           .collect()
           .map(_.getFloat(0))
           .toSeq
-        expected(places).map(_.toFloat).zip(floats).foreach {
-          case (oracle, actual) => assertEquals(oracle, actual, 1.0e-6f)
+        expectedFloat(places).zip(floats).foreach { case (oracle, actual) =>
+          assertEquals(oracle, actual, 1.0e-6f)
         }
         floatValues.zip(floats).foreach { case (source, actual) =>
           assertTrue(math.abs(actual) <= math.abs(source) + 1.0e-6f)
