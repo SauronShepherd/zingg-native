@@ -30,7 +30,9 @@ final case class NativeTrainedModel(
     maxIter: Int,
     numFolds: Int,
     seed: Long,
-    optimizer: String
+    optimizer: String,
+    optimizerStatus: String = "unknown",
+    discardedCurvaturePairs: Int = 0
 )
 
 object NativeModelEngine {
@@ -41,8 +43,29 @@ object NativeModelEngine {
   val NumFolds = 2
   val Seed = 13L
   val Optimizer = "lbfgs-public-sql-v1"
+  private[native] val OptimizerStatusConverged = "converged"
+  private[native] val OptimizerStatusLineSearchStalled = "line-search-stalled"
+  private[native] val OptimizerStatusMaxIterExhausted = "max-iter-exhausted"
+  private[native] val OptimizerStatusUnknown = "unknown"
+  private[native] val OptimizerStatuses = Set(
+    OptimizerStatusConverged,
+    OptimizerStatusLineSearchStalled,
+    OptimizerStatusMaxIterExhausted,
+    OptimizerStatusUnknown
+  )
   private val RegGrid = Vector(0.0001d, 0.001d, 0.01d, 0.1d, 1.0d)
   private val ThresholdGrid = Vector(0.40d, 0.45d, 0.50d, 0.55d)
+
+  private final case class OptimizationResult(
+      weights: Vector[Double],
+      intercept: Double,
+      status: String,
+      discardedCurvaturePairs: Int,
+      iterations: Int
+  )
+
+  private[native] def keepCurvaturePair(curvature: Double): Boolean =
+    curvature > 1.0e-12d && curvature.isFinite
 
   /** Optional bounded Databricks probe override; production default remains
     * 100.
@@ -318,7 +341,7 @@ object NativeModelEngine {
       maxIter: Int,
       polynomialDegree: Int,
       context: RewriteContext
-  ): (Vector[Double], Double) = {
+  ): OptimizationResult = {
     // A single wide aggregate returns one column per polynomial term. That
     // shape made the managed Serverless Scala kernel unresponsive on the
     // 1,770-term production case. The gradient below therefore converts the
@@ -398,7 +421,8 @@ object NativeModelEngine {
     var weights = Vector.fill(terms.length)(0.0d)
     var intercept = math.log((positives + 1.0e-12d) / (negatives + 1.0e-12d))
     var iteration = 0
-    var converged = false
+    var optimizerStatus: Option[String] = None
+    var discardedCurvaturePairs = 0
     var previousParameters: Option[Vector[Double]] = None
     var previousGradient: Option[Vector[Double]] = None
     var sHistory = Vector.empty[Vector[Double]]
@@ -477,7 +501,7 @@ object NativeModelEngine {
       }
     } else None
 
-    while (iteration < maxIter && !converged) {
+    while (iteration < maxIter && optimizerStatus.isEmpty) {
       // The materialized-term path below does not consume `withMargin` at
       // all.  Do not construct the large margin/contribution plan in that
       // case: merely building that unused Connect plan on every iteration
@@ -724,7 +748,7 @@ object NativeModelEngine {
         s"iteration=$iteration gradientNorm=$gradientNorm objective=$currentObjective"
       )
       if (gradientNorm <= effectiveTolerance) {
-        converged = true
+        optimizerStatus = Some(OptimizerStatusConverged)
         NativeDiagnostics.modelStage(
           context,
           "optimizer-converged",
@@ -741,11 +765,18 @@ object NativeModelEngine {
               current - previous
             }
             val curvature = dot(y, s)
-            if (curvature > 1.0e-12d && curvature.isFinite) {
+            if (keepCurvaturePair(curvature)) {
               sHistory = (sHistory :+ s).takeRight(optimizerMemory)
               yHistory = (yHistory :+ y).takeRight(optimizerMemory)
               rhoHistory =
                 (rhoHistory :+ (1.0d / curvature)).takeRight(optimizerMemory)
+            } else {
+              discardedCurvaturePairs += 1
+              NativeDiagnostics.modelStage(
+                context,
+                "curvature-pair-discarded",
+                s"iteration=$iteration curvature=$curvature discarded=$discardedCurvaturePairs"
+              )
             }
         }
         var direction = gradient
@@ -817,7 +848,7 @@ object NativeModelEngine {
             s"iteration=$iteration trials=$lineSearch step=$step"
           )
         } else {
-          converged = true
+          optimizerStatus = Some(OptimizerStatusLineSearchStalled)
           NativeDiagnostics.modelStage(
             context,
             "line-search-stalled",
@@ -827,6 +858,18 @@ object NativeModelEngine {
       }
       iteration += 1
     }
+    val finalStatus = optimizerStatus.getOrElse(OptimizerStatusMaxIterExhausted)
+    if (finalStatus == OptimizerStatusMaxIterExhausted)
+      NativeDiagnostics.modelStage(
+        context,
+        "optimizer-max-iter",
+        s"iterations=$iteration maxIter=$maxIter"
+      )
+    NativeDiagnostics.modelStage(
+      context,
+      "optimizer-complete",
+      s"status=$finalStatus iterations=$iteration discardedCurvaturePairs=$discardedCurvaturePairs"
+    )
     val rawWeights =
       weights.zip(featureStats).map { case (weight, (_, standardDeviation)) =>
         weight / standardDeviation
@@ -837,7 +880,13 @@ object NativeModelEngine {
         weight * mean / standardDeviation
       }
       .sum
-    (rawWeights, rawIntercept)
+    OptimizationResult(
+      rawWeights,
+      rawIntercept,
+      finalStatus,
+      discardedCurvaturePairs,
+      iteration
+    )
   }
 
   private def scored(
@@ -1060,7 +1109,7 @@ object NativeModelEngine {
           baseNames.map(validation.col),
           effectivePolynomialDegree
         )
-        val (weights, intercept) = fitLogistic(
+        val optimization = fitLogistic(
           training,
           trainingTerms,
           baseNames,
@@ -1073,8 +1122,8 @@ object NativeModelEngine {
         val validationScored = scored(
           validation,
           validationTerms,
-          weights,
-          intercept,
+          optimization.weights,
+          optimization.intercept,
           "_zingg_native_cv_score"
         )
         // Bounded probes isolate gradient/materialization scalability. Keep
@@ -1107,7 +1156,7 @@ object NativeModelEngine {
       s"bestReg=$bestReg bestMetric=$bestMetric"
     )
 
-    val (coefficients, intercept) = fitLogistic(
+    val optimization = fitLogistic(
       materializedInput,
       termColumns,
       baseNames,
@@ -1120,21 +1169,24 @@ object NativeModelEngine {
     NativeDiagnostics.modelStage(
       context,
       "fit-complete",
-      s"coefficients=${coefficients.length}"
+      s"coefficients=${optimization.weights.length} optimizerStatus=${optimization.status} " +
+        s"iterations=${optimization.iterations} discardedCurvaturePairs=${optimization.discardedCurvaturePairs}"
     )
     val model = NativeTrainedModel(
       SchemaVersion,
       features,
       effectivePolynomialDegree,
       PolynomialOrdering,
-      coefficients,
-      intercept,
+      optimization.weights,
+      optimization.intercept,
       bestReg,
       bestThreshold,
       effectiveMaxIter,
       effectiveNumFolds,
       Seed,
-      Optimizer
+      Optimizer,
+      optimization.status,
+      optimization.discardedCurvaturePairs
     )
     NativeEvidenceCollector.recordRule(context, "model.nativeLogisticCv")
     model
@@ -1207,7 +1259,9 @@ object NativeModelEngine {
         lit(model.maxIter).as("maxIter"),
         lit(model.numFolds).as("numFolds"),
         lit(model.seed).as("seed"),
-        lit(model.optimizer).as("optimizer")
+        lit(model.optimizer).as("optimizer"),
+        lit(model.optimizerStatus).as("optimizerStatus"),
+        lit(model.discardedCurvaturePairs).as("discardedCurvaturePairs")
       )
       .write
       .mode("overwrite")
@@ -1230,6 +1284,7 @@ object NativeModelEngine {
               "use OFF/AUDIT to load a legacy CrossValidatorModel or convert/retrain it. Cause: ${e.getMessage}"
           )
       }
+    val fields = row.schema.fieldNames.toSet
     val model = try {
       NativeTrainedModel(
         row.getAs[Int]("schemaVersion"),
@@ -1243,7 +1298,13 @@ object NativeModelEngine {
         row.getAs[Int]("maxIter"),
         row.getAs[Int]("numFolds"),
         row.getAs[Long]("seed"),
-        row.getAs[String]("optimizer")
+        row.getAs[String]("optimizer"),
+        if (fields.contains("optimizerStatus"))
+          row.getAs[String]("optimizerStatus")
+        else OptimizerStatusUnknown,
+        if (fields.contains("discardedCurvaturePairs"))
+          row.getAs[Int]("discardedCurvaturePairs")
+        else 0
       )
     } catch {
       case e: Exception =>
@@ -1275,6 +1336,14 @@ object NativeModelEngine {
         model.threshold
       ),
       s"Native model persistence rule model.nativePersistence.load rejected grid values regParam=${model.regParam} threshold=${model.threshold}"
+    )
+    require(
+      OptimizerStatuses.contains(model.optimizerStatus),
+      s"Native model persistence rule model.nativePersistence.load rejected optimizer status ${model.optimizerStatus}"
+    )
+    require(
+      model.discardedCurvaturePairs >= 0,
+      s"Native model persistence rule model.nativePersistence.load rejected discarded curvature count ${model.discardedCurvaturePairs}"
     )
     NativeEvidenceCollector.recordRule(context, "model.nativePersistence.load")
     model
