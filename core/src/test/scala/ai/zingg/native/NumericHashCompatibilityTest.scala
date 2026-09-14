@@ -81,7 +81,9 @@ class NumericHashCompatibilityTest {
         DoubleValues.zip(doubles).foreach { case (source, actual) =>
           assertTrue(math.abs(actual) <= math.abs(source) + 1.0e-12d)
           assertTrue(math.abs(source - actual) < math.pow(10.0d, -places))
-          assertTrue(actual == 0.0d || math.signum(actual) == math.signum(source))
+          assertTrue(
+            actual == 0.0d || math.signum(actual) == math.signum(source)
+          )
         }
 
         val floats = provider
@@ -103,13 +105,16 @@ class NumericHashCompatibilityTest {
           assertTrue(
             math.abs(source - actual) < math.pow(10.0d, -places) + 1.0e-6d
           )
-          assertTrue(actual == 0.0f || math.signum(actual) == math.signum(source))
+          assertTrue(
+            actual == 0.0f || math.signum(actual) == math.signum(source)
+          )
         }
       }
     } finally spark.stop()
   }
 
-  @Test def roundMatchesPinnedJavaMathRoundVectorsAndHalfUnitProperty(): Unit = {
+  @Test def roundMatchesPinnedJavaMathRoundVectorsAndHalfUnitProperty()
+      : Unit = {
     val spark = sparkSession()
     try {
       val provider =
