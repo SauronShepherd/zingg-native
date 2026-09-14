@@ -9,6 +9,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 ARCHITECTURE = ROOT / "core/src/main/scala/ai/zingg/native/RewriteArchitecture.scala"
 CONTRACT = ROOT / "core/src/test/resources/oracle-coverage.json"
+# Build Plan v4 Z1.9: 66 rules are pending at the reviewed baseline. Coverage
+# work may only burn this count down; adding another pending exemption requires
+# an explicit baseline review rather than silently weakening the oracle gate.
+PENDING_ORACLE_BASELINE = 66
 
 
 def _extract_registry_names(source: str, name: str, next_name: str) -> list[str]:
@@ -20,6 +24,15 @@ def _extract_registry_names(source: str, name: str, next_name: str) -> list[str]
     if not match:
         raise SystemExit(f"could not locate {name} in {ARCHITECTURE}")
     return re.findall(r'"([A-Za-z0-9]+)"', match.group(1))
+
+
+def _pending_ratchet_error(pending_count: int) -> str | None:
+    if pending_count <= PENDING_ORACLE_BASELINE:
+        return None
+    return (
+        "pending oracle coverage grew from ratchet baseline "
+        f"{PENDING_ORACLE_BASELINE} to {pending_count}"
+    )
 
 
 def main() -> int:
@@ -53,6 +66,10 @@ def main() -> int:
     if stale:
         errors.append(f"oracle contract contains stale rules: {sorted(stale)}")
 
+    ratchet_error = _pending_ratchet_error(len(pending_ids))
+    if ratchet_error:
+        errors.append(ratchet_error)
+
     for operation_id, evidence in sorted(covered.items()):
         if not isinstance(evidence, dict):
             errors.append(f"covered rule {operation_id} must map to an evidence object")
@@ -80,7 +97,8 @@ def main() -> int:
 
     print(
         "oracle coverage contract: "
-        f"live={len(live)} covered={len(covered_ids)} pending={len(pending_ids)}"
+        f"live={len(live)} covered={len(covered_ids)} pending={len(pending_ids)} "
+        f"baseline={PENDING_ORACLE_BASELINE}"
     )
     if pending_ids:
         print("Z1.8 remains partial until pending reaches zero.")
