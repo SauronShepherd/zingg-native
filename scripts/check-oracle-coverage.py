@@ -5,10 +5,15 @@ import json
 import re
 import sys
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 ARCHITECTURE = ROOT / "core/src/main/scala/ai/zingg/native/RewriteArchitecture.scala"
 CONTRACT = ROOT / "core/src/test/resources/oracle-coverage.json"
+# Build Plan v4 Z1.9: the reviewed oracle contract currently has 66 pending
+# rules. Coverage work may burn this number down, but new pending exemptions
+# must not silently grow the backlog without an explicit baseline review.
+PENDING_RULE_BASELINE = 66
 
 
 def _extract_registry_names(source: str, name: str, next_name: str) -> list[str]:
@@ -20,6 +25,26 @@ def _extract_registry_names(source: str, name: str, next_name: str) -> list[str]
     if not match:
         raise SystemExit(f"could not locate {name} in {ARCHITECTURE}")
     return re.findall(r'"([A-Za-z0-9]+)"', match.group(1))
+
+
+def _pending_rule_count(contract: dict[str, Any]) -> int:
+    pending = contract.get("pending", [])
+    if not isinstance(pending, list):
+        raise ValueError("oracle coverage contract must contain list 'pending'")
+    return len(set(pending))
+
+
+def _ratchet_errors(contract: dict[str, Any]) -> list[str]:
+    try:
+        pending_count = _pending_rule_count(contract)
+    except ValueError as exc:
+        return [str(exc)]
+    if pending_count > PENDING_RULE_BASELINE:
+        return [
+            "pending oracle rule count grew from the ratchet baseline "
+            f"{PENDING_RULE_BASELINE} to {pending_count}"
+        ]
+    return []
 
 
 def main() -> int:
@@ -37,7 +62,7 @@ def main() -> int:
 
     covered_ids = set(covered)
     pending_ids = set(pending)
-    errors: list[str] = []
+    errors: list[str] = _ratchet_errors(contract)
 
     if len(pending_ids) != len(pending):
         errors.append("pending coverage entries contain duplicates")
@@ -80,7 +105,8 @@ def main() -> int:
 
     print(
         "oracle coverage contract: "
-        f"live={len(live)} covered={len(covered_ids)} pending={len(pending_ids)}"
+        f"live={len(live)} covered={len(covered_ids)} pending={len(pending_ids)} "
+        f"baseline={PENDING_RULE_BASELINE}"
     )
     if pending_ids:
         print("Z1.8 remains partial until pending reaches zero.")
