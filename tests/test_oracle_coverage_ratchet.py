@@ -19,10 +19,15 @@ def _contract() -> dict[str, object]:
     return json.loads(CONTRACT.read_text())
 
 
-def test_pending_oracle_rule_count_is_ratchet() -> None:
+def test_pending_oracle_rule_count_matches_ratchet_baseline() -> None:
     contract = _contract()
     current = validator._pending_rule_count(contract)
     assert validator.PENDING_RULE_BASELINE == current
+
+
+def test_pending_oracle_rule_ratchet_rejects_backlog_growth() -> None:
+    contract = _contract()
+    current = validator._pending_rule_count(contract)
 
     broken = copy.deepcopy(contract)
     pending = broken["pending"]
@@ -37,10 +42,16 @@ def test_pending_oracle_rule_count_is_ratchet() -> None:
     ]
 
 
-def test_pending_oracle_rule_ratchet_allows_backlog_reduction() -> None:
+def test_pending_oracle_rule_ratchet_requires_baseline_after_reduction() -> None:
     contract = _contract()
+    current = validator._pending_rule_count(contract)
     pending = contract["pending"]
     assert isinstance(pending, list)
     contract["pending"] = pending[:-1]
 
-    assert validator._ratchet_errors(contract) == []
+    assert validator._ratchet_errors(contract) == [
+        (
+            "pending oracle ratchet baseline is stale: lower it from "
+            f"{validator.PENDING_RULE_BASELINE} to {current - 1}"
+        )
+    ]
