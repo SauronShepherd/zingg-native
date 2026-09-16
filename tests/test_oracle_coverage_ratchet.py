@@ -1,21 +1,57 @@
-from importlib.util import module_from_spec, spec_from_file_location
+from __future__ import annotations
+
+import copy
+import importlib.util
+import json
 from pathlib import Path
 
+ROOT = Path(__file__).resolve().parents[1]
+SCRIPT = ROOT / "scripts" / "check-oracle-coverage.py"
+CONTRACT = ROOT / "core/src/test/resources/oracle-coverage.json"
 
-def _checker():
-    path = Path(__file__).parents[1] / "scripts" / "check-oracle-coverage.py"
-    spec = spec_from_file_location("check_oracle_coverage", path)
-    assert spec is not None and spec.loader is not None
-    module = module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+spec = importlib.util.spec_from_file_location("check_oracle_coverage", SCRIPT)
+assert spec is not None and spec.loader is not None
+validator = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(validator)
 
 
-def test_pending_oracle_count_is_a_downward_only_ratchet() -> None:
-    checker = _checker()
+def _contract() -> dict[str, object]:
+    return json.loads(CONTRACT.read_text())
 
-    assert checker._pending_ratchet_error(checker.PENDING_ORACLE_BASELINE) is None
-    assert checker._pending_ratchet_error(checker.PENDING_ORACLE_BASELINE - 1) is None
-    assert checker._pending_ratchet_error(checker.PENDING_ORACLE_BASELINE + 1) == (
-        "pending oracle coverage grew from ratchet baseline 66 to 67"
-    )
+
+def test_pending_oracle_rule_count_matches_ratchet_baseline() -> None:
+    contract = _contract()
+    current = validator._pending_rule_count(contract)
+    assert validator.PENDING_RULE_BASELINE == current
+
+
+def test_pending_oracle_rule_ratchet_rejects_backlog_growth() -> None:
+    contract = _contract()
+    current = validator._pending_rule_count(contract)
+
+    broken = copy.deepcopy(contract)
+    pending = broken["pending"]
+    assert isinstance(pending, list)
+    pending.append("similarity.NewUncoveredRule")
+
+    assert validator._ratchet_errors(broken) == [
+        (
+            "pending oracle rule count grew from the ratchet baseline "
+            f"{validator.PENDING_RULE_BASELINE} to {current + 1}"
+        )
+    ]
+
+
+def test_pending_oracle_rule_ratchet_requires_baseline_after_reduction() -> None:
+    contract = _contract()
+    current = validator._pending_rule_count(contract)
+    pending = contract["pending"]
+    assert isinstance(pending, list)
+    contract["pending"] = pending[:-1]
+
+    assert validator._ratchet_errors(contract) == [
+        (
+            "pending oracle ratchet baseline is stale: lower it from "
+            f"{validator.PENDING_RULE_BASELINE} to {current - 1}"
+        )
+    ]
