@@ -5,14 +5,15 @@ import json
 import re
 import sys
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 ARCHITECTURE = ROOT / "core/src/main/scala/ai/zingg/native/RewriteArchitecture.scala"
 CONTRACT = ROOT / "core/src/test/resources/oracle-coverage.json"
-# Build Plan v4 Z1.9: 66 rules are pending at the reviewed baseline. Coverage
-# work may only burn this count down; adding another pending exemption requires
-# an explicit baseline review rather than silently weakening the oracle gate.
-PENDING_ORACLE_BASELINE = 66
+# Build Plan v5 Z1.10: the reviewed oracle contract currently has 65 pending
+# rules. Any change to that count must update the baseline in the same review so
+# reductions are recorded and cannot silently regress later.
+PENDING_RULE_BASELINE = 65
 
 
 def _extract_registry_names(source: str, name: str, next_name: str) -> list[str]:
@@ -26,13 +27,29 @@ def _extract_registry_names(source: str, name: str, next_name: str) -> list[str]
     return re.findall(r'"([A-Za-z0-9]+)"', match.group(1))
 
 
-def _pending_ratchet_error(pending_count: int) -> str | None:
-    if pending_count <= PENDING_ORACLE_BASELINE:
-        return None
-    return (
-        "pending oracle coverage grew from ratchet baseline "
-        f"{PENDING_ORACLE_BASELINE} to {pending_count}"
-    )
+def _pending_rule_count(contract: dict[str, Any]) -> int:
+    pending = contract.get("pending", [])
+    if not isinstance(pending, list):
+        raise ValueError("oracle coverage contract must contain list 'pending'")
+    return len(set(pending))
+
+
+def _ratchet_errors(contract: dict[str, Any]) -> list[str]:
+    try:
+        pending_count = _pending_rule_count(contract)
+    except ValueError as exc:
+        return [str(exc)]
+    if pending_count > PENDING_RULE_BASELINE:
+        return [
+            "pending oracle rule count grew from the ratchet baseline "
+            f"{PENDING_RULE_BASELINE} to {pending_count}"
+        ]
+    if pending_count < PENDING_RULE_BASELINE:
+        return [
+            "pending oracle ratchet baseline is stale: lower it from "
+            f"{PENDING_RULE_BASELINE} to {pending_count}"
+        ]
+    return []
 
 
 def main() -> int:
@@ -50,7 +67,7 @@ def main() -> int:
 
     covered_ids = set(covered)
     pending_ids = set(pending)
-    errors: list[str] = []
+    errors: list[str] = _ratchet_errors(contract)
 
     if len(pending_ids) != len(pending):
         errors.append("pending coverage entries contain duplicates")
@@ -65,10 +82,6 @@ def main() -> int:
         errors.append(f"live rules missing from oracle contract: {sorted(missing)}")
     if stale:
         errors.append(f"oracle contract contains stale rules: {sorted(stale)}")
-
-    ratchet_error = _pending_ratchet_error(len(pending_ids))
-    if ratchet_error:
-        errors.append(ratchet_error)
 
     for operation_id, evidence in sorted(covered.items()):
         if not isinstance(evidence, dict):
@@ -98,7 +111,7 @@ def main() -> int:
     print(
         "oracle coverage contract: "
         f"live={len(live)} covered={len(covered_ids)} pending={len(pending_ids)} "
-        f"baseline={PENDING_ORACLE_BASELINE}"
+        f"baseline={PENDING_RULE_BASELINE}"
     )
     if pending_ids:
         print("Z1.8 remains partial until pending reaches zero.")
