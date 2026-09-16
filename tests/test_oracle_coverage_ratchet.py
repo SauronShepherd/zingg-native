@@ -30,8 +30,10 @@ def test_pending_oracle_rule_count_is_ratchet() -> None:
     pending.append("similarity.NewUncoveredRule")
 
     assert validator._ratchet_errors(broken) == [
-        "pending oracle rule count grew from the ratchet baseline "
-        f"{validator.PENDING_RULE_BASELINE} to {current + 1}"
+        (
+            "pending oracle rule count grew from the ratchet baseline "
+            f"{validator.PENDING_RULE_BASELINE} to {current + 1}"
+        )
     ]
 
 
