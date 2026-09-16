@@ -10,9 +10,9 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 ARCHITECTURE = ROOT / "core/src/main/scala/ai/zingg/native/RewriteArchitecture.scala"
 CONTRACT = ROOT / "core/src/test/resources/oracle-coverage.json"
-# Build Plan v4 Z1.9: the reviewed oracle contract currently has 66 pending
-# rules. Coverage work may burn this number down, but new pending exemptions
-# must not silently grow the backlog without an explicit baseline review.
+# Build Plan v5 Z1.10: the reviewed oracle contract currently has 66 pending
+# rules. Any change to that count must update the baseline in the same review so
+# reductions are recorded and cannot silently regress later.
 PENDING_RULE_BASELINE = 66
 
 
@@ -42,6 +42,11 @@ def _ratchet_errors(contract: dict[str, Any]) -> list[str]:
     if pending_count > PENDING_RULE_BASELINE:
         return [
             "pending oracle rule count grew from the ratchet baseline "
+            f"{PENDING_RULE_BASELINE} to {pending_count}"
+        ]
+    if pending_count < PENDING_RULE_BASELINE:
+        return [
+            "pending oracle ratchet baseline is stale: lower it from "
             f"{PENDING_RULE_BASELINE} to {pending_count}"
         ]
     return []
