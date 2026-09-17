@@ -55,21 +55,7 @@ jobs:
           java-version: '17'
           cache: maven
       - name: Check Scala formatting
-        run: |
-          mvn -B -Pdatabricks-serverless-env5 spotless:apply
-          echo '===Z48_CORE_BEGIN==='
-          base64 -w0 core/src/main/scala/ai/zingg/native/Core.scala
-          echo
-          echo '===Z48_CORE_END==='
-          echo '===Z48_EXPLAIN_BEGIN==='
-          base64 -w0 core/src/main/scala/ai/zingg/native/NativeExplain.scala
-          echo
-          echo '===Z48_EXPLAIN_END==='
-          echo '===Z48_TEST_BEGIN==='
-          base64 -w0 core/src/test/scala/ai/zingg/native/RewriteArchitectureTest.scala
-          echo
-          echo '===Z48_TEST_END==='
-          mvn -B -Pdatabricks-serverless-env5 spotless:check
+        run: mvn -B -Pdatabricks-serverless-env5 spotless:check
       - name: Build production Spark 4 Serverless artifacts
         run: |
           mvn -B -Dmaven.test.skip=true -Pdatabricks-serverless-env5 package -pl serverless-launcher -am
@@ -88,7 +74,7 @@ jobs:
           python scripts/artifact-checksums.py | tee artifact-sha256.txt
           test $(wc -l < artifact-sha256.txt) -eq 2
       - name: Qualify pinned similarity and hash compatibility
-        run: mvn -B -Pdatabricks-serverless-env5 -pl core -Dtest=JaroCompatibilityTest,StringHashCompatibilityTest,RoundHashCompatibilityTest,NativeOperationProviderTest test
+        run: mvn -B -Pdatabricks-serverless-env5 -pl core -Dtest=JaroCompatibilityTest,StringHashCompatibilityTest,RoundHashCompatibilityTest,NativeOperationProviderTest,RewriteArchitectureTest test
       - name: Upload artifact checksums
         uses: actions/upload-artifact@v4
         with:
