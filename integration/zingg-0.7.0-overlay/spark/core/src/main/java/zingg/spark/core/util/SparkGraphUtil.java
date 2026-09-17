@@ -45,13 +45,14 @@ public class SparkGraphUtil implements GraphUtil<Dataset<Row>, Row, Column> {
         NativeOperationProvider nativeProvider = NativeOperationProvider.fromSpark(
                 vertices.sparkSession(), "graph.connectedComponents");
         if (nativeProvider.shouldRewrite()) {
+            int maxIterations = Integer.getInteger("zingg.native.graph.maxIterations", 128);
             Dataset<Row> returnGraph = nativeProvider.connectedComponents(
                     vertices,
                     edges,
                     ColName.ID_COL,
                     ColName.COL_PREFIX + ColName.ID_COL,
                     ColName.CLUSTER_COLUMN,
-                    128);
+                    maxIterations);
             returnGraph = returnGraph.withColumnRenamed(
                     ColName.ID_EXTERNAL_COL, ColName.ID_EXTERNAL_ORIG_COL);
             return new SparkFrame(returnGraph);
