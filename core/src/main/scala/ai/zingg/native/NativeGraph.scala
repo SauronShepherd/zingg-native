@@ -11,7 +11,6 @@ object NativeGraph {
   private val Src = "src"
   private val Dst = "dst"
   private val MinNbr = "min_nbr"
-  private val Count = "cnt"
   private def minValue(x: Column, y: Column): Column =
     when(x < y, x).otherwise(y)
   private def maxValue(x: Column, y: Column): Column =
@@ -28,7 +27,7 @@ object NativeGraph {
     .select(col("edge.src").alias(Src), col("edge.dst").alias(Dst))
   private def minNbrs(e: DataFrame): DataFrame = symmetrize(e)
     .groupBy(Src)
-    .agg(min(col(Dst)).alias(MinNbr), count(lit(1)).alias(Count))
+    .agg(min(col(Dst)).alias(MinNbr))
     .withColumn(MinNbr, minValue(col(Src), col(MinNbr)))
   private def sameAssignments(left: DataFrame, right: DataFrame): Boolean = {
     val leftAssignments = left.select(col(Src), col(MinNbr))
@@ -88,7 +87,7 @@ object NativeGraph {
         .distinct()
       val smallNbrs = large
         .groupBy(Src)
-        .agg(min(col(Dst)).alias(MinNbr), count(lit(1)).alias(Count))
+        .agg(min(col(Dst)).alias(MinNbr))
       val next = large
         .join(smallNbrs, Seq(Src))
         .select(col(MinNbr).alias(Src), col(Dst))
