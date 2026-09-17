@@ -17,6 +17,7 @@ object ServerlessNumericDifferentialProbe {
     Rule("LongSimilarityFunction", Seq(
       (null, null), (java.lang.Long.valueOf(Long.MinValue), java.lang.Long.valueOf(Long.MinValue)),
       (java.lang.Long.valueOf(-1L), java.lang.Long.valueOf(1L)),
+      (java.lang.Long.valueOf(0L), java.lang.Long.valueOf(1L)),
       (java.lang.Long.valueOf(Long.MaxValue), java.lang.Long.valueOf(Long.MaxValue - 1L))), DataTypes.LongType),
     Rule("DoubleSimilarityFunction", Seq(
       (null, null), (java.lang.Double.valueOf(-1.0d), java.lang.Double.valueOf(1.0d)),
@@ -26,7 +27,8 @@ object ServerlessNumericDifferentialProbe {
     Rule("FloatSimilarityFunction", Seq(
       (null, null), (java.lang.Float.valueOf(-1.0f), java.lang.Float.valueOf(1.0f)),
       (java.lang.Float.valueOf(0.0f), java.lang.Float.valueOf(0.0f)),
-      (java.lang.Float.valueOf(Float.NaN), java.lang.Float.valueOf(Float.NaN))), DataTypes.FloatType))
+      (java.lang.Float.valueOf(Float.NaN), java.lang.Float.valueOf(Float.NaN)),
+      (java.lang.Float.valueOf(Float.PositiveInfinity), java.lang.Float.valueOf(Float.PositiveInfinity))), DataTypes.FloatType))
 
   def run(spark: SparkSession): Unit = {
     val provider = NativeOperationProvider.fromSpark(spark, "numeric-differential")
