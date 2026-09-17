@@ -1,6 +1,6 @@
 package ai.zingg.native
 
-import org.junit.jupiter.api.Assertions.{assertEquals, assertThrows, assertTrue}
+import org.junit.jupiter.api.Assertions.{assertEquals, assertFalse, assertThrows, assertTrue}
 import org.junit.jupiter.api.Test
 
 class RewriteArchitectureTest {
@@ -32,6 +32,24 @@ class RewriteArchitectureTest {
     val failure = assertThrows(classOf[NativeRewriteUnsupportedException], () =>
       Core.rewrite(null, "similarity.SimilarityFunctionExact", "left", None, "out", context))
     assertTrue(failure.getMessage.contains("similarity.SimilarityFunctionExact"))
+  }
+
+  @Test def nativeExplainRequiresExplicitTruthyOptIn(): Unit = {
+    val key = "zingg.native.explain"
+    val previous = Option(System.getProperty(key))
+    try {
+      System.clearProperty(key)
+      assertFalse(NativeExplain.enabled)
+      System.setProperty(key, "true")
+      assertTrue(NativeExplain.enabled)
+      System.setProperty(key, "off")
+      assertFalse(NativeExplain.enabled)
+    } finally {
+      previous match {
+        case Some(value) => System.setProperty(key, value)
+        case None => System.clearProperty(key)
+      }
+    }
   }
 
   @Test def defaultRegistryContainsOnlyStablePublicRules(): Unit = {
