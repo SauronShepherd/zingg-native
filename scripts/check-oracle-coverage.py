@@ -10,10 +10,10 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 ARCHITECTURE = ROOT / "core/src/main/scala/ai/zingg/native/RewriteArchitecture.scala"
 CONTRACT = ROOT / "core/src/test/resources/oracle-coverage.json"
-# Build Plan v5 Z1.10: the reviewed oracle contract currently has 65 pending
+# Build Plan v5 Z1.10: the reviewed oracle contract currently has 40 pending
 # rules. Any change to that count must update the baseline in the same review so
 # reductions are recorded and cannot silently regress later.
-PENDING_RULE_BASELINE = 65
+PENDING_RULE_BASELINE = 40
 
 
 def _extract_registry_names(source: str, name: str, next_name: str) -> list[str]:
