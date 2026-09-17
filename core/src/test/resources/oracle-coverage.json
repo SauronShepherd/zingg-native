@@ -62,6 +62,12 @@
       "test": "serverless-launcher/src/main/scala/ai/zingg/native/launch/ServerlessDifferentialProbe.scala",
       "oracle": "Zingg 0.7.0 AffineGapSimilarityFunction reflection oracle; deterministic Serverless differential evidence"
     },
+    "similarity.ArrayDoubleSimilarityFunction": {
+      "vectors": 5,
+      "property": "score matches the pinned upstream reflection oracle across null, equal, reordered, zero, and signed array fixtures",
+      "test": "serverless-launcher/src/main/scala/ai/zingg/native/launch/ServerlessDateArrayDifferentialProbe.scala",
+      "oracle": "Zingg 0.7.0 ArrayDoubleSimilarityFunction reflection oracle; Serverless typed differential evidence"
+    },
     "similarity.CheckBlankOrNullFunction": {
       "vectors": 18,
       "property": "score matches the pinned upstream reflection oracle across null, blank, and non-blank string fixtures",
@@ -92,6 +98,12 @@
       "test": "serverless-launcher/src/main/scala/ai/zingg/native/launch/ServerlessDifferentialProbe.scala",
       "oracle": "Zingg 0.7.0 EmailMatchTypeFunction reflection oracle; deterministic Serverless differential evidence"
     },
+    "similarity.FloatSimilarityFunction": {
+      "vectors": 5,
+      "property": "score matches the pinned upstream reflection oracle over null, signed, zero, NaN, and infinity fixtures",
+      "test": "serverless-launcher/src/main/scala/ai/zingg/native/launch/ServerlessNumericDifferentialProbe.scala",
+      "oracle": "Zingg 0.7.0 FloatSimilarityFunction reflection oracle; Serverless numeric differential evidence"
+    },
     "similarity.IntegerSimilarityFunction": {
       "vectors": 5,
       "property": "score matches the pinned upstream reflection oracle over null, signed, zero, and integer-boundary fixtures",
@@ -109,6 +121,12 @@
       "property": "symmetry",
       "test": "core/src/test/scala/ai/zingg/native/JaroCompatibilityTest.scala",
       "oracle": "Zingg 0.7.0 SJaroWinkler / pinned SecondString Jaro"
+    },
+    "similarity.LongSimilarityFunction": {
+      "vectors": 5,
+      "property": "score matches the pinned upstream reflection oracle over null, signed, zero, and long-boundary fixtures",
+      "test": "serverless-launcher/src/main/scala/ai/zingg/native/launch/ServerlessNumericDifferentialProbe.scala",
+      "oracle": "Zingg 0.7.0 LongSimilarityFunction reflection oracle; Serverless numeric differential evidence"
     },
     "similarity.NumbersJaccardFunction": {
       "vectors": 18,
@@ -211,9 +229,6 @@
     "blocking.truncateFloatTo1Places",
     "blocking.truncateFloatTo2Places",
     "blocking.truncateFloatTo3Places",
-    "similarity.ArrayDoubleSimilarityFunction",
-    "similarity.BigramJaccSimFn",
-    "similarity.FloatSimilarityFunction",
-    "similarity.LongSimilarityFunction"
+    "similarity.BigramJaccSimFn"
   ]
 }
