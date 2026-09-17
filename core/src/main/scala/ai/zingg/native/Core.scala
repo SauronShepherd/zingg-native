@@ -66,8 +66,18 @@ object Core {
       registry: RewriteRegistry = NativeRewriteRegistry.default): DataFrame = {
     val normalized = normalizeOperation(operationId)
     val operation = NativeOperation.resolve(normalized)
+    if (!registry.contains(operation)) {
+      NativeExplain.emit(context, operation.id, None, "unsupported")
+      registry.resolve(operation)
+    }
     val rule = registry.resolve(operation)
-    if (context.isDisabled(operation.id, rule.id))
+    val disabled = context.isDisabled(operation.id, rule.id)
+    NativeExplain.emit(
+      context,
+      operation.id,
+      Some(rule.id),
+      if (disabled) "disabled" else if (context.mode.rewrites) "rewrite" else "passthrough")
+    if (disabled)
       throw new NativeRewriteUnsupportedException(
         s"Native rewrite disabled for ${operation.id} (${rule.id})")
     NativeEvidenceCollector.recordRule(context, rule.id)
@@ -91,8 +101,18 @@ object Core {
     val additions: Seq[(String, Column)] = operations.map { case (operationId, left, right, output) =>
       val normalized = normalizeOperation(operationId)
       val operation = NativeOperation.resolve(normalized)
+      if (!registry.contains(operation)) {
+        NativeExplain.emit(context, operation.id, None, "unsupported")
+        registry.resolve(operation)
+      }
       val rule = registry.resolve(operation)
-      if (context.isDisabled(operation.id, rule.id))
+      val disabled = context.isDisabled(operation.id, rule.id)
+      NativeExplain.emit(
+        context,
+        operation.id,
+        Some(rule.id),
+        if (disabled) "disabled" else if (context.mode.rewrites) "rewrite" else "passthrough")
+      if (disabled)
         throw new NativeRewriteUnsupportedException(
           s"Native rewrite disabled for ${operation.id} (${rule.id})")
       NativeEvidenceCollector.recordRule(context, rule.id)
