@@ -112,6 +112,10 @@ object ServerlessDateArrayDifferentialProbe {
       (
         Array(java.lang.Double.valueOf(0.0d), java.lang.Double.valueOf(0.0d)),
         Array(java.lang.Double.valueOf(1.0d), java.lang.Double.valueOf(1.0d))
+      ),
+      (
+        Array(java.lang.Double.valueOf(-1.0d), java.lang.Double.valueOf(3.0d)),
+        Array(java.lang.Double.valueOf(3.0d), java.lang.Double.valueOf(-1.0d))
       )
     )
     val arrayRows = new ArrayList[Row]();
