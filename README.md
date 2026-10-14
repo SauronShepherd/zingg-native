@@ -72,3 +72,23 @@ evidence. Semantic differential parity, general large-data scale readiness, and 
 Photon execution remain release gates.
 
 See `docs/architecture.md`, `docs/databricks.md`, `docs/model-native.md`, and `integration/README.md`.
+
+## Documentation and manual validation
+
+The documentation is organized around the transparent adapter boundary:
+
+- `docs/architecture.md` — execution model and ownership boundaries;
+- `docs/internal-how-it-works.md` — detailed internal control flow, module
+  responsibilities, rewrite lifecycle, model/graph paths, and evidence;
+- `docs/rewrite-rules.md` and `docs/semantic-contracts.md` — registered rules
+  and invariants;
+- `docs/compatibility.md`, `docs/databricks.md`, and `docs/serverless.md` —
+  supported Databricks targets and transport/runtime contracts;
+- `docs/evidence/` — retained runtime and Photon evidence;
+- `docs/manual-test-catalog.md` — exhaustive manual test checklist, expected
+  results, evidence requirements, and release sign-off matrix.
+
+The manual catalog separates Serverless runtime validation, Dedicated + Photon
+validation, semantic parity, and operator-level Photon attribution. A
+successful job or a Photon configuration flag is not, by itself, proof of any
+of the latter claims.

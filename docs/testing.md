@@ -1,5 +1,16 @@
 # Validation status
 
+For the complete human-executed test plan, see
+[`manual-test-catalog.md`](manual-test-catalog.md). It covers build and
+artifact gates, policy modes, launcher/session lifecycle, Classic/Py4J and
+managed Connect parity, every registered similarity and hash family, ordinary
+Zingg phases, native model and graph boundaries, materialization safety,
+observability, Photon evidence, performance, security, and release sign-off.
+
+The catalog is deliberately a checklist rather than a claim that every test
+has passed. Record each result with the release ID, artifact checksums, target
+runtime, Databricks run/task/query IDs, and retained output/plan evidence.
+
 Validation for this workspace is restricted to Databricks Serverless using CLI
 profile `sda`. Dedicated and Fabric are not run in this workspace.
 
