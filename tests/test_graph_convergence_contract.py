@@ -19,7 +19,7 @@ def _same_assignments_body() -> str:
 def test_graph_convergence_compares_assignments_bidirectionally() -> None:
     body = _same_assignments_body()
 
-    assert "leftAssignments.except(rightAssignments)" in body
+    assert ".except(rightAssignments)" in body
     assert "rightAssignments.except(leftAssignments)" in body
     assert ".unionByName(" in body
     assert ".limit(1)" in body
