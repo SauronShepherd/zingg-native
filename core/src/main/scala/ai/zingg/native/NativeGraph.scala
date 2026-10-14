@@ -29,7 +29,7 @@ object NativeGraph {
     .groupBy(Src)
     .agg(min(col(Dst)).alias(MinNbr))
     .withColumn(MinNbr, minValue(col(Src), col(MinNbr)))
-  private def sameAssignments(left: DataFrame, right: DataFrame): Boolean = {
+  private[native] def sameAssignments(left: DataFrame, right: DataFrame): Boolean = {
     val leftAssignments = left.select(col(Src), col(MinNbr))
     val rightAssignments = right.select(col(Src), col(MinNbr))
     // Keep the exact symmetric-difference semantics, but evaluate both sides
